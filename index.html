@@ -117,7 +117,7 @@
       <!-- Footer: Buttons -->
       <div class="lobby-footer">
         <button class="btn-side" onclick="window.Navigation?.go('shop')">SHOP</button>
-        <button class="start-btn lobby-start" onclick="window.startGame(event)">GAME START</button>
+        <button class="start-btn lobby-start" id="btn-start">GAME START</button>
         <button class="btn-side" onclick="window.Navigation?.go('qa')">QA</button>
       </div>
     </div>
@@ -361,7 +361,7 @@
       </div>
 
       <div class="result-footer">
-        <button class="btn-common result-btn" onclick="window.startGame(event)">RESTART</button>
+        <button class="btn-common result-btn" id="btn-result-restart">RESTART</button>
         <button class="btn-common result-btn" style="background:#7f8c8d;" onclick="window.Navigation?.go('lobby')">LOBBY</button>
       </div>
     </div>

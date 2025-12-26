@@ -1,8 +1,15 @@
 (function() {
-  const { attachQAConfig, createQAConfig } = window.GameModules.Config;
-  const { createLifecycle } = window.GameModules.Lifecycle;
-  const { STATE, createRuntimeState, syncCanvasSize } = window.GameModules.Runtime;
-  const { loadGameData, persistGameData, resetGameData } = window.GameModules.Storage;
+  try {
+  const modules = window.GameModules || {};
+  const { attachQAConfig, createQAConfig } = modules.Config || {};
+  const { createLifecycle } = modules.Lifecycle || {};
+  const { STATE, createRuntimeState, syncCanvasSize } = modules.Runtime || {};
+  const { loadGameData, persistGameData, resetGameData } = modules.Storage || {};
+  if (!attachQAConfig || !createLifecycle || !createRuntimeState) {
+    console.error('[BOOT] Missing GameModules dependencies', modules);
+    return;
+  }
+
   const canvas = document.getElementById('gameCanvas');
   const ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
 
@@ -38,6 +45,28 @@
   }
 
   const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
+
+  function safeStartGame(e) {
+    if (e?.preventDefault) e.preventDefault();
+    if (!lifecycle || typeof lifecycle.startGame !== 'function') {
+      console.error('[BOOT] lifecycle.startGame missing', lifecycle);
+      return;
+    }
+    try {
+      lifecycle.startGame();
+    } catch (err) {
+      console.error('[BOOT] startGame failed', err);
+    }
+  }
+
+  function bindStartButtons() {
+    const btnStart = document.getElementById('btn-start');
+    const btnResultRestart = document.getElementById('btn-result-restart');
+    btnStart?.addEventListener('click', safeStartGame);
+    btnResultRestart?.addEventListener('click', safeStartGame);
+    console.log('[BOOT] window.startGame type=', typeof safeStartGame);
+    console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
+  }
 
   // Lobby character helpers
   let lobbyInterval = null;
@@ -90,7 +119,7 @@
   }
 
   // Expose limited API for UI bindings
-  window.startGame = lifecycle.startGame;
+  window.startGame = safeStartGame;
   window.togglePause = lifecycle.togglePause;
   window.restartFromPause = lifecycle.restartFromPause;
   window.quitGame = lifecycle.quitGame;
@@ -124,6 +153,7 @@
   window.startLobbyLoop = startLobbyLoop;
   window.stopLobbyLoop = stopLobbyLoop;
   window.interactLobbyChar = interactLobbyChar;
+  bindStartButtons();
 
   // Audio focus handling
   let mutedByVisibility = false;
@@ -148,4 +178,7 @@
   });
 
   window.dashOnClick = function(e) { e.preventDefault(); window.Input?.attemptDash?.(); };
+  } catch (err) {
+    console.error('[BOOT] init failed', err);
+  }
 })();

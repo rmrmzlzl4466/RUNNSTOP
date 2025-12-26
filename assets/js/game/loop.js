@@ -245,20 +245,25 @@ window.GameModules = window.GameModules || {};
   }
 
   function tick(ts) {
-    const dt = Math.min((ts - lastTime) / 1000, 0.033);
-    const nowSec = ts / 1000;
-    lastTime = ts;
-    if (!runtime.gameActive) return;
+    try {
+      const dt = Math.min((ts - lastTime) / 1000, 0.033);
+      const nowSec = ts / 1000;
+      lastTime = ts;
+      if (!runtime.gameActive) return;
 
-    if (runtime.gameState !== STATE.PAUSE) {
-      update(dt, nowSec);
-      render();
-    }
+      if (runtime.gameState !== STATE.PAUSE) {
+        update(dt, nowSec);
+        render();
+      }
 
-    if (!player.isDead && runtime.gameState !== STATE.PAUSE) {
-      rafId = requestAnimationFrame(tick);
-    } else if (player.isDead) {
-      handlers.onGameOver?.();
+      if (!player.isDead && runtime.gameState !== STATE.PAUSE) {
+        rafId = requestAnimationFrame(tick);
+      } else if (player.isDead) {
+        handlers.onGameOver?.();
+      }
+    } catch (e) {
+      console.error('[LOOP] fatal', e);
+      runtime.gameActive = false;
     }
   }
 
