@@ -14,10 +14,32 @@
  * - 마그넷: baseMagnet, magnetRange
  * - 스폰: coinRate, minCoinRunLength, itemRate, itemWeights
  * - 속도: stormBaseSpeed, stormSpeedMult, baseSpeedMult
- * - 타이밍: firstWarningTimeBase, runPhaseDuration, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration
+ * - 타이밍: firstWarningTimeBase, runPhaseDuration, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration (기본적으로 전역 제어)
  * - 점수: scoreMult
  * - 모프: morphTrigger, morphDuration
+ *
+ * Global-only vs Stage-tunable:
+ * - Global-only (qaConfig): runPhaseDuration, firstWarningTimeBase, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration, stormBaseSpeed
+ * - Stage-tunable: coinRate, itemRate, stormSpeedMult, baseSpeedMult, scoreMult, itemWeights, physics values (friction 등)
  */
+
+// Stage tuning defaults (null = use qaConfig/global defaults)
+window.STAGE_TUNING_DEFAULTS = {
+  coinRate: null,
+  minCoinRunLength: null,
+  itemRate: null,
+  itemWeights: null,
+  stormSpeedMult: null,
+  baseSpeedMult: null,
+  scoreMult: null,
+  // Global-only timing values intentionally null to enforce qaConfig control
+  firstWarningTimeBase: null,
+  runPhaseDuration: null,
+  warningTimeBase: null,
+  warningTimeMin: null,
+  warningTimeMult: null,
+  stopPhaseDuration: null
+};
 
 window.STAGE_CONFIG = [
   // ============================================
@@ -74,8 +96,7 @@ window.STAGE_CONFIG = [
     tuning: {
       // 고속도로 - 빠른 속도
       baseSpeed: 1100,
-      stormSpeedMult: 1.2,
-      warningTimeBase: 6.0
+      stormSpeedMult: 1.2
     }
   },
   {
@@ -99,8 +120,8 @@ window.STAGE_CONFIG = [
     tuning: {
       // 사이버 폭풍 - 빠르고 위험
       stormSpeedMult: 1.35,
-      warningTimeBase: 5.5,
-      stopPhaseDuration: 0.4
+      warningTimeBase: null,
+      stopPhaseDuration: null
     }
   },
   {
@@ -123,8 +144,7 @@ window.STAGE_CONFIG = [
     name: "SYSTEM REBOOT",
     tuning: {
       // 재부팅 - 정상화되는 느낌
-      stormSpeedMult: 1.3,
-      warningTimeBase: 5.0
+      stormSpeedMult: 1.3
     }
   },
   {
@@ -135,8 +155,8 @@ window.STAGE_CONFIG = [
     tuning: {
       // 마지막 스테이지 - 최고 난이도
       stormSpeedMult: 1.5,
-      warningTimeBase: 4.5,
-      stopPhaseDuration: 0.35,
+      warningTimeBase: null,
+      stopPhaseDuration: null,
       scoreMult: 2.0
     }
   },
@@ -152,7 +172,7 @@ window.STAGE_CONFIG = [
     isLoop: true,
     tuning: {
       stormSpeedMult: 1.4,
-      warningTimeBase: 4.0,
+      warningTimeBase: null,
       scoreMult: 2.5
     }
   },
@@ -167,7 +187,7 @@ window.STAGE_CONFIG = [
       friction: 0.97,
       stopFriction: 0.92,
       stormSpeedMult: 1.5,
-      warningTimeBase: 3.5,
+      warningTimeBase: null,
       scoreMult: 3.0
     }
   },
@@ -182,8 +202,8 @@ window.STAGE_CONFIG = [
       friction: 0.78,
       stopFriction: 0.68,
       stormSpeedMult: 1.6,
-      warningTimeBase: 3.0,
-      stopPhaseDuration: 0.3,
+      warningTimeBase: null,
+      stopPhaseDuration: null,
       scoreMult: 4.0
     }
   }

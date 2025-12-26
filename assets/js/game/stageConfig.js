@@ -1,17 +1,47 @@
 /**
  * StageConfig Module
  *
- * Priority chain for per-stage values:
- * 1. QA Override (localStorage) - highest
+ * Priority chain for stage-tunable values:
+ * 1. QA Override (localStorage) - highest (per-stage tuning only)
  * 2. Stage Tuning (stage.tuning)
- * 3. STAGE_DEFAULTS (core/config.js)
+ * 3. qaConfig (global QA sliders)
+ * 4. STAGE_DEFAULTS (core/config.js)
  *
- * GLOBAL values are always from core/config.js
+ * GLOBAL-ONLY values (run/warn/stop cycle, stormBaseSpeed) skip Stage Tuning and come directly from qaConfig/defaults.
  */
 window.GameModules = window.GameModules || {};
 
 (function() {
   'use strict';
+
+  // === Priority Rules ===
+  // GLOBAL_ONLY_KEYS: Always come from qaConfig (or STAGE_DEFAULTS fallback). Stage tuning/overrides are ignored.
+  // STAGE_TUNABLE_KEYS: Per-stage knobs. Priority: QA Override → Stage Tuning → qaConfig → STAGE_DEFAULTS.
+  const GLOBAL_ONLY_KEYS = new Set([
+    'runPhaseDuration',
+    'warningTimeBase',
+    'warningTimeMin',
+    'warningTimeMult',
+    'firstWarningTimeBase',
+    'stopPhaseDuration',
+    'stormBaseSpeed'
+  ]);
+
+  const STAGE_TUNABLE_KEYS = new Set([
+    'baseSpeed', 'friction', 'stopFriction', 'baseAccel', 'turnAccelMult',
+    'dashForce', 'minDashForce', 'maxDashForce', 'maxChargeTime', 'dashCooldown', 'chargeSlowdown',
+    'baseMagnet', 'magnetRange',
+    'coinRate', 'minCoinRunLength', 'itemRate', 'itemWeights',
+    'stormSpeedMult', 'baseSpeedMult',
+    'scoreMult',
+    'morphTrigger', 'morphDuration'
+  ]);
+
+  // qaConfig fields that affect effective config (used for cache invalidation)
+  const QA_HASH_KEYS = [
+    ...STAGE_TUNABLE_KEYS,
+    ...GLOBAL_ONLY_KEYS
+  ];
 
   // ========== Cache System ==========
   let cachedEffective = null;
@@ -31,6 +61,18 @@ window.GameModules = window.GameModules || {};
     } catch (e) {
       return String(Date.now());
     }
+  }
+
+  /**
+   * Get qaConfig subset relevant to effective config
+   */
+  function getQaHashSource(qaConfig) {
+    if (!qaConfig) return null;
+    const source = {};
+    QA_HASH_KEYS.forEach((key) => {
+      source[key] = qaConfig[key];
+    });
+    return source;
   }
 
   /**
@@ -75,20 +117,27 @@ window.GameModules = window.GameModules || {};
 
   /**
    * Get value with priority chain:
-   * QA Override → Stage Tuning → STAGE_DEFAULTS
+   * QA Override → Stage Tuning → qaConfig → STAGE_DEFAULTS
+   * GLOBAL_ONLY_KEYS ignore Stage Tuning / overrides and always use qaConfig/defaults.
    */
-  function getValue(key, stageTuning, qaOverride, defaults) {
-    // 1. QA Override (highest priority)
-    if (qaOverride && qaOverride[key] !== undefined && qaOverride[key] !== null) {
-      return qaOverride[key];
+  function getValue(key, stageTuning, qaOverride, qaConfig, defaults) {
+    const isGlobalOnly = GLOBAL_ONLY_KEYS.has(key);
+
+    // Stage-specific path
+    if (!isGlobalOnly && STAGE_TUNABLE_KEYS.has(key)) {
+      if (qaOverride && qaOverride[key] !== undefined && qaOverride[key] !== null) {
+        return qaOverride[key];
+      }
+      if (stageTuning && stageTuning[key] !== undefined && stageTuning[key] !== null) {
+        return stageTuning[key];
+      }
     }
 
-    // 2. Stage Tuning
-    if (stageTuning && stageTuning[key] !== undefined && stageTuning[key] !== null) {
-      return stageTuning[key];
+    // Global (or shared) values come from qaConfig first
+    if (qaConfig && qaConfig[key] !== undefined && qaConfig[key] !== null) {
+      return qaConfig[key];
     }
 
-    // 3. STAGE_DEFAULTS
     if (defaults && defaults[key] !== undefined) {
       return defaults[key];
     }
@@ -99,13 +148,13 @@ window.GameModules = window.GameModules || {};
   /**
    * Check cache validity
    */
-  function isCacheValid(stageId, loopCount, qaOverrides) {
+  function isCacheValid(stageId, loopCount, qaHash, overrideHash) {
     if (!cachedEffective) return false;
     if (cachedStageId !== stageId) return false;
     if (cachedLoopCount !== loopCount) return false;
 
-    const currentOverrideHash = hashObject(qaOverrides);
-    if (cachedOverrideHash !== currentOverrideHash) return false;
+    if (cachedQaHash !== qaHash) return false;
+    if (cachedOverrideHash !== overrideHash) return false;
 
     return true;
   }
@@ -118,14 +167,17 @@ window.GameModules = window.GameModules || {};
     const stageIdStr = normalizeStageId(stageId);
     const loopCount = runtime?.stage?.loopCount ?? 0;
     const qaOverrides = getQAOverrides();
+    const qaHash = hashObject(getQaHashSource(qaConfig));
+    const overrideHash = hashObject(qaOverrides);
 
-    if (!forceRecalc && isCacheValid(stageId, loopCount, qaOverrides)) {
+    if (!forceRecalc && isCacheValid(stageId, loopCount, qaHash, overrideHash)) {
       return cachedEffective;
     }
 
     // Get stage config and tuning
     const stageConfig = runtime?.stage?.currentConfig;
-    const stageTuning = stageConfig?.tuning ?? {};
+    const stageTuningDefaults = window.STAGE_TUNING_DEFAULTS ?? {};
+    const stageTuning = { ...stageTuningDefaults, ...(stageConfig?.tuning ?? {}) };
     const stageOverride = qaOverrides[stageIdStr] ?? {};
 
     // Get defaults from core/config.js
@@ -136,9 +188,10 @@ window.GameModules = window.GameModules || {};
     const loopScale = runtime?.stage?.loopDifficultyScale ?? 1.0;
 
     // Helper function
-    const get = (key) => getValue(key, stageTuning, stageOverride, DEFAULTS);
+    const get = (key) => getValue(key, stageTuning, stageOverride, qaConfig, DEFAULTS);
 
     // Build effective config
+    const stormBaseSpeed = get('stormBaseSpeed') ?? 150;
     const stormSpeedMult = get('stormSpeedMult') ?? 1.0;
     const baseSpeedMult = get('baseSpeedMult') ?? 1.0;
     const scoreMult = get('scoreMult') ?? 1.0;
@@ -172,10 +225,10 @@ window.GameModules = window.GameModules || {};
 
       // === 속도 (Per-Stage with multipliers) ===
       stormSpeedMult: stormSpeedMult,
-      stormSpeed: (get('stormBaseSpeed') ?? 150) * stormSpeedMult * loopScale,
+      stormSpeed: stormBaseSpeed * stormSpeedMult * loopScale,
       baseSpeedMult: baseSpeedMult,
 
-      // === 타이밍 (Per-Stage) ===
+      // === 타이밍 (Global-only; qaConfig-driven) ===
       firstWarningTimeBase: get('firstWarningTimeBase') ?? 12.0,
       runPhaseDuration: get('runPhaseDuration') ?? 3.0,
       warningTimeBase: get('warningTimeBase') ?? 7.0,
@@ -201,7 +254,8 @@ window.GameModules = window.GameModules || {};
     cachedEffective = effective;
     cachedStageId = stageId;
     cachedLoopCount = loopCount;
-    cachedOverrideHash = hashObject(qaOverrides);
+    cachedQaHash = qaHash;
+    cachedOverrideHash = overrideHash;
 
     return effective;
   }
