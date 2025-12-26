@@ -200,17 +200,6 @@ window.GameModules = window.GameModules || {};
     runtime.isFirstWarning = true;
   }
 
-  return {
-    startGame,
-    togglePause,
-    restartFromPause,
-    quitGame,
-    warpToDistance,
-    pauseForVisibility,
-    resumeIfPausedByVisibility
-  };
-  }
-
   function pauseGame({ showOverlay = false, reason = 'manual' } = {}) {
     runtime.previousState = runtime.gameState || STATE.RUN;
     runtime.gameState = STATE.PAUSE;
@@ -244,6 +233,17 @@ window.GameModules = window.GameModules || {};
       window.Navigation?.showOverlay?.('overlay-pause');
       runtime._lastPauseReason = null;
     }
+  }
+
+  return {
+    startGame,
+    togglePause,
+    restartFromPause,
+    quitGame,
+    warpToDistance,
+    pauseForVisibility,
+    resumeIfPausedByVisibility
+  };
   }
 
   window.GameModules.Lifecycle = { createLifecycle };
