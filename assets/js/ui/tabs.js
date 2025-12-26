@@ -108,6 +108,16 @@ window.initQASliders = function() {
   setValue('qa-zoom-lerp', (camConfig.lerpRunToWarning ?? 0.15) * 100);
   setValue('qa-pan-ratio', (camConfig.panRatioX ?? 0.35) * 100);
 
+  // Slow Motion
+  const slowMoConfig = activeConfig.slowMo ?? {};
+  document.getElementById('qa-slowmo-enabled').value = (slowMoConfig.enabled !== false) ? 'true' : 'false';
+  setValue('qa-slowmo-duration', (slowMoConfig.durationSec ?? 0.22) * 100);
+  setValue('qa-slowmo-scale', (slowMoConfig.scale ?? 0.7) * 100);
+  setValue('qa-slowmo-easeout', (slowMoConfig.easeOutSec ?? 0.08) * 100);
+  setValue('qa-slowmo-interval', (slowMoConfig.minIntervalSec ?? 0.4) * 100);
+  document.getElementById('qa-slowmo-cancel').value = slowMoConfig.cancelPolicy ?? 'on_boost_press';
+  document.getElementById('qa-slowmo-mask').value = slowMoConfig.applyMask ?? 'world_only';
+
   // After setting slider values, call updateQA to sync labels
   window.updateQA();
 };
@@ -241,6 +251,24 @@ window.updateQA = function() {
   window.qaConfig.camera.lerpRunToWarning = zoomLerpRaw / 100;
   window.qaConfig.camera.panRatioX = panRatioRaw / 100;
 
+  // Slow Motion 저장
+  const slowMoEnabled = document.getElementById('qa-slowmo-enabled')?.value === 'true';
+  const slowMoDurationRaw = parseInt(document.getElementById('qa-slowmo-duration')?.value ?? 22, 10);
+  const slowMoScaleRaw = parseInt(document.getElementById('qa-slowmo-scale')?.value ?? 70, 10);
+  const slowMoEaseOutRaw = parseInt(document.getElementById('qa-slowmo-easeout')?.value ?? 8, 10);
+  const slowMoIntervalRaw = parseInt(document.getElementById('qa-slowmo-interval')?.value ?? 40, 10);
+  const slowMoCancelPolicy = document.getElementById('qa-slowmo-cancel')?.value ?? 'on_boost_press';
+  const slowMoApplyMask = document.getElementById('qa-slowmo-mask')?.value ?? 'world_only';
+
+  window.qaConfig.slowMo = window.qaConfig.slowMo ?? {};
+  window.qaConfig.slowMo.enabled = slowMoEnabled;
+  window.qaConfig.slowMo.durationSec = slowMoDurationRaw / 100;
+  window.qaConfig.slowMo.scale = slowMoScaleRaw / 100;
+  window.qaConfig.slowMo.easeOutSec = slowMoEaseOutRaw / 100;
+  window.qaConfig.slowMo.minIntervalSec = slowMoIntervalRaw / 100;
+  window.qaConfig.slowMo.cancelPolicy = slowMoCancelPolicy;
+  window.qaConfig.slowMo.applyMask = slowMoApplyMask;
+
   // 플레이어에게 즉시 반영 (게임 중이 아닐 때도 적용)
   if (window.player) {
     const baseRadius = window.player._baseRadius ?? window.player.originalRadius ?? 15;
@@ -320,6 +348,12 @@ window.updateQA = function() {
   setText('qa-val-zoom-boost', `${(zoomBoostRaw / 100).toFixed(2)}x`);
   setText('qa-val-zoom-lerp', `${(zoomLerpRaw / 100).toFixed(2)}`);
   setText('qa-val-pan-ratio', `${(panRatioRaw / 100).toFixed(2)}`);
+
+  // Slow Motion
+  setText('qa-val-slowmo-duration', `${(slowMoDurationRaw / 100).toFixed(2)}s`);
+  setText('qa-val-slowmo-scale', `${(slowMoScaleRaw / 100).toFixed(2)}x`);
+  setText('qa-val-slowmo-easeout', `${(slowMoEaseOutRaw / 100).toFixed(2)}s`);
+  setText('qa-val-slowmo-interval', `${(slowMoIntervalRaw / 100).toFixed(2)}s`);
 };
 
 // === [Stage Warp System] ===

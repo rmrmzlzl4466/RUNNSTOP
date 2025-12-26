@@ -27,6 +27,7 @@
   window.Game.player = player;
 
   const runtime = createRuntimeState(canvas, qaConfig);
+  window.Game.runtime = runtime;
 
   // Initialize subsystems
   window.Game.UI?.init?.();

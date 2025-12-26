@@ -23,14 +23,14 @@ window.GameModules = window.GameModules || {};
 
   const FALLBACK_SLOWMO = {
     enabled: true,
-    scale: 0.55,                 // Time scale during slow motion (0.1~1.0)
-    durationSec: 1.35,           // Duration in seconds
-    easeOutSec: 0.25,            // Final segment eased back to normal (seconds)
-    cancelPolicy: 'on_boost_press', // or 'on_boost_start' | 'never'
-    blockWhileBoosting: true,
-    blockWindowAfterBoostSec: 0.2,
+    scale: 0.7,                  // Time scale during slow motion (0.1~1.0)
+    durationSec: 0.22,           // Duration in seconds (short for emphasis)
+    easeOutSec: 0.08,            // Final segment eased back to normal (seconds)
+    cancelPolicy: 'on_boost_press', // 'on_boost_press' | 'on_boost_start' | 'never'
+    blockWhileBoosting: true,    // Never apply slowmo during boosting
+    blockWindowAfterBoostSec: 0.22, // Block window after boost ends
     applyMask: 'world_only',     // 'world_only' | 'everything'
-    minIntervalSec: 0
+    minIntervalSec: 0.4          // Minimum interval between slowmo triggers
   };
 
   const FALLBACK_QA_CONFIG = {

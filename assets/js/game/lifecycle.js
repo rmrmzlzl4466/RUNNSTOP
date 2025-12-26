@@ -32,6 +32,8 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('item');
       return;
     }
+    // Force off slow motion before death animation
+    window.GameModules?.SlowMo?.forceOff?.(runtime);
     window.Sound?.bgmStop?.();
     player.die(qaConfig.deathDelay);
     window.Sound?.sfx('die');
@@ -40,6 +42,8 @@ window.GameModules = window.GameModules || {};
   function handleGameOver() {
     if (!runtime.gameActive) return;
     runtime.gameActive = false;
+    // Force off slow motion
+    window.GameModules?.SlowMo?.forceOff?.(runtime);
 
     gameData.coins += player.sessionCoins;
     gameData.gems += player.sessionGems;

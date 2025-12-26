@@ -296,7 +296,53 @@
           </div>
         </fieldset>
 
-        <!-- Group 7: Stage Warp (Debug) -->
+        <!-- Group 7: Slow Motion -->
+        <fieldset class="qa-section" style="border:1px solid #fd79a8; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#fd79a8; font-weight:bold; padding:0 8px;">Slow Motion</legend>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎬 Enabled</span>
+              <select id="qa-slowmo-enabled" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="true">ON</option>
+                <option value="false">OFF</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⏱️ Duration</span> <span class="val-display" id="qa-val-slowmo-duration">0.22s</span></div>
+            <input type="range" id="qa-slowmo-duration" min="5" max="100" step="5" value="22" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🐢 Time Scale</span> <span class="val-display" id="qa-val-slowmo-scale">0.70x</span></div>
+            <input type="range" id="qa-slowmo-scale" min="10" max="90" step="5" value="70" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🌊 Ease Out</span> <span class="val-display" id="qa-val-slowmo-easeout">0.08s</span></div>
+            <input type="range" id="qa-slowmo-easeout" min="0" max="30" step="2" value="8" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⏳ Min Interval</span> <span class="val-display" id="qa-val-slowmo-interval">0.40s</span></div>
+            <input type="range" id="qa-slowmo-interval" min="0" max="100" step="10" value="40" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🚫 Cancel Policy</span>
+              <select id="qa-slowmo-cancel" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="on_boost_press">On Boost Press</option>
+                <option value="on_boost_start">On Boost Start</option>
+                <option value="never">Never</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎯 Apply Mask</span>
+              <select id="qa-slowmo-mask" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="world_only">World Only</option>
+                <option value="everything">Everything (UI too)</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Group 8: Stage Warp (Debug) -->
         <fieldset class="qa-section" style="border:1px solid #f39c12; border-radius:8px; padding:10px; margin-bottom:15px;">
           <legend style="color:#f39c12; font-weight:bold; padding:0 8px;">Stage Warp (Debug)</legend>
           <div class="setting-item">
@@ -401,6 +447,7 @@
   <script src="./assets/js/game/camera.js"></script>
   <script src="./assets/js/game/items.js"></script>
   <script src="./assets/js/game/stage.js"></script>
+  <script src="./assets/js/game/slowmo.js"></script>
   <script src="./assets/js/game/loop.js"></script>
   <script src="./assets/js/game/storage.js"></script>
   <script src="./assets/js/game/lifecycle.js"></script>

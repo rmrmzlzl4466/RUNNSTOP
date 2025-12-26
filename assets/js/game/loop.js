@@ -16,7 +16,9 @@ window.GameModules = window.GameModules || {};
   function createGameLoop(runtime, player, qaConfig, handlers) {
   let rafId = null;
   let lastTime = 0;
-  const slowMoCfg = qaConfig.slowMo || {};
+
+  // Get SlowMo module (may not be loaded yet, so use optional chaining)
+  const SlowMo = window.GameModules.SlowMo;
 
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
@@ -47,41 +49,13 @@ window.GameModules = window.GameModules || {};
     });
   }
 
-  function startSlowMo(reason, nowSec) {
-    if (!slowMoCfg.enabled) return;
-    const now = nowSec ?? (performance.now() / 1000);
-    if ((slowMoCfg.blockWhileBoosting !== false) && player.isBoosting) return;
-    if (now < (runtime.slowMo.blockUntil ?? 0)) return;
-    if (slowMoCfg.minIntervalSec && runtime.slowMo.lastTriggerTime && (now - runtime.slowMo.lastTriggerTime) < slowMoCfg.minIntervalSec) return;
-    const duration = slowMoCfg.durationSec ?? slowMoCfg.slowMoDuration ?? 0;
-    if (duration <= 0) return;
-
-    runtime.slowMo.active = true;
-    runtime.slowMo.remaining = duration;
-    runtime.slowMo.scaleBase = slowMoCfg.scale ?? 1.0;
-    runtime.slowMo.applyMask = slowMoCfg.applyMask ?? 'world_only';
-    runtime.slowMo.lastTriggerTime = now;
-    runtime.slowMo.reason = reason;
-  }
-
-  function cancelSlowMo(reason, { setBlockWindow = false, nowSec } = {}) {
-    const now = nowSec ?? (performance.now() / 1000);
-    runtime.slowMo.active = false;
-    runtime.slowMo.remaining = 0;
-    runtime.slowMo.reason = reason;
-    if (setBlockWindow) {
-      const blockDur = slowMoCfg.blockWindowAfterBoostSec ?? 0.2;
-      runtime.slowMo.blockUntil = now + blockDur;
-    }
-  }
-
   function checkStopJudgment(nowSec) {
     if (player.isBoosting) return;
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     if (result.isSafe) {
       player.grantSurvivalBooster();
-      // Trigger slow motion on perfect survival to emphasize the moment
-      startSlowMo('stop_survival', nowSec);
+      // Trigger slow motion on survival success
+      SlowMo?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
     } else if (result.action === 'barrier_save') {
@@ -120,25 +94,16 @@ window.GameModules = window.GameModules || {};
   }
 
   function update(dt, nowSec) {
-    const isBlockedForBoost = (slowMoCfg.blockWhileBoosting !== false) && player.isBoosting;
-    const allowSlowMo = runtime.slowMo.active &&
-      runtime.slowMo.remaining > 0 &&
-      nowSec >= (runtime.slowMo.blockUntil ?? 0) &&
-      !isBlockedForBoost;
-
-    let worldScale = 1.0;
-    if (allowSlowMo) {
-      const easeOut = slowMoCfg.easeOutSec ?? 0;
-      if (easeOut > 0 && runtime.slowMo.remaining < easeOut) {
-        const t = Math.max(0, runtime.slowMo.remaining / easeOut);
-        worldScale = 1 - (1 - runtime.slowMo.scaleBase) * t;
-      } else {
-        worldScale = runtime.slowMo.scaleBase ?? 1.0;
-      }
-    }
-
+    // Get world scale from SlowMo module
+    const worldScale = SlowMo?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
-    const uiDt = (runtime.slowMo.applyMask === 'everything' && allowSlowMo) ? worldDt : dt;
+
+    // UI uses real time (not slowed)
+    const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
+    const uiDt = (applyMask === 'everything') ? worldDt : dt;
+
+    // Update SlowMo timer with real dt
+    SlowMo?.update?.(runtime, dt);
 
     window.Game.UI.updateFloatingTexts(uiDt);
     window.Game.UI.updateBuffs(player);
@@ -175,14 +140,8 @@ window.GameModules = window.GameModules || {};
     handleItems();
 
     runtime.cycleTimer -= worldDt;
-    if (runtime.slowMo.active && runtime.slowMo.remaining > 0) {
-      runtime.slowMo.remaining = Math.max(0, runtime.slowMo.remaining - dt);
-      if (runtime.slowMo.remaining === 0) {
-        runtime.slowMo.active = false;
-        runtime.slowMo.reason = null;
-      }
-    }
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
+
     if (runtime.gameState === STATE.RUN) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, 3.0, STATE);
     } else if (runtime.gameState === STATE.WARNING) {
@@ -199,10 +158,11 @@ window.GameModules = window.GameModules || {};
       }
     }
 
+    // Check if boost started - cancel slowmo based on policy
     const boostStarted = player.isBoosting && !runtime._prevBoosting;
     runtime._prevBoosting = player.isBoosting;
-    if (boostStarted && slowMoCfg.cancelPolicy === 'on_boost_start') {
-      cancelSlowMo('boost_start', { setBlockWindow: true, nowSec });
+    if (boostStarted) {
+      SlowMo?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
     }
 
     if (runtime.gameState === STATE.RUN) {
