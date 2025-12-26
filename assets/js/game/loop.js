@@ -155,7 +155,7 @@ window.GameModules = window.GameModules || {};
     }
 
     const stormSpeed = window.Game.Physics.getStormSpeed(player.dist, qaConfig.stormBaseSpeed);
-    runtime.storm.y -= stormSpeed * effectiveDt;
+    runtime.storm.y -= stormSpeed * worldDt;
     if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
       handlers.onDie?.('STORM');
       return;
@@ -167,9 +167,9 @@ window.GameModules = window.GameModules || {};
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
     const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
-    runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * effectiveDt;
+    runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * worldDt;
 
-    updateCameraZoom(runtime, player, qaConfig, effectiveDt);
+    updateCameraZoom(runtime, player, qaConfig, worldDt);
     ensureRowsAroundPlayer();
     window.Game.Physics.filterItemsBehindStorm(runtime.items, runtime.storm);
     handleItems();
@@ -293,10 +293,6 @@ window.GameModules = window.GameModules || {};
     isRunning: () => !!rafId
   };
   }
-
-  // Expose minimal slow-mo controls for other modules (e.g., input cancelling)
-  window.Game = window.Game || {};
-  window.Game.SlowMo = { start: startSlowMo, cancel: cancelSlowMo };
 
   window.GameModules.Loop = { createGameLoop };
 })();

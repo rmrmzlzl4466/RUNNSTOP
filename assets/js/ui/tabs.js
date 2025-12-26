@@ -8,15 +8,15 @@ window.addQAData = function(type, amount) {
     window.GameData.gems += amount;
   }
   window.SaveManager.persist(window.GameData);
-  if (typeof updateUpgradeUI === 'function') updateUpgradeUI();
+  if (typeof window.updateUpgradeUI === 'function') window.updateUpgradeUI();
   if (typeof window.showToast === 'function') {
     window.showToast(`+${amount.toLocaleString()} ${type === 'gold' ? 'GOLD' : 'GEMS'}`, 'info', 800);
   }
-  Sound.sfx('coin');
+  window.Sound?.sfx('coin');
 };
 
 window.switchTab = function(t) {
-  Sound.sfx('btn');
+  window.Sound?.sfx('btn');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.shop-content').forEach(c => c.style.display = 'none');
 
@@ -25,9 +25,9 @@ window.switchTab = function(t) {
   if (tabEl) tabEl.classList.add('active');
   if (contentEl) contentEl.style.display = 'block';
 
-  if (t === 'upgrade') updateUpgradeUI();
+  if (t === 'upgrade') window.updateUpgradeUI?.();
   if (t === 'treasure') window.renderTreasureList?.();
-  if (t === 'skin') renderSkinList();
+  if (t === 'skin') window.renderSkinList?.();
   if (t === 'qa' && typeof window.updateQA === 'function') window.updateQA();
 };
 
@@ -185,61 +185,61 @@ window.updateQA = function() {
   const panRatioRaw = parseInt(document.getElementById('qa-pan-ratio')?.value ?? 35, 10);
 
   // qaConfig에 저장
-  qaConfig.coinRate = coinPct / 100;
-  qaConfig.itemRate = itemPct / 100;
-  qaConfig.minCoinRunLength = coinLen;
-  qaConfig.baseSpeed = baseSpeed;
-  qaConfig.friction = friction;
-  qaConfig.stopFriction = stopFriction;
-  qaConfig.turnAccelMult = turnAccelMult; // [추가]
-  qaConfig.baseAccel = baseAccel;
-  qaConfig.dashForce = dashForce;
+  window.qaConfig.coinRate = coinPct / 100;
+  window.qaConfig.itemRate = itemPct / 100;
+  window.qaConfig.minCoinRunLength = coinLen;
+  window.qaConfig.baseSpeed = baseSpeed;
+  window.qaConfig.friction = friction;
+  window.qaConfig.stopFriction = stopFriction;
+  window.qaConfig.turnAccelMult = turnAccelMult; // [추가]
+  window.qaConfig.baseAccel = baseAccel;
+  window.qaConfig.dashForce = dashForce;
   // [CHARGING SYSTEM] 차징 대쉬 설정
-  qaConfig.minDashForce = minDashForce;
-  qaConfig.maxDashForce = maxDashForce;
-  qaConfig.maxChargeTime = maxChargeTime;
-  qaConfig.dashCooldown = dashCooldown;
-  qaConfig.chargeSlowdown = chargeSlowdown;
-  qaConfig.joystickSens = joystickSens;
-  qaConfig.playerScale = scale;
-  qaConfig.wallPaddingCap = wallPaddingCap;
-  qaConfig.baseMagnet = baseMagnet;
-  qaConfig.magnetRange = magnetRange;
-  qaConfig.stormBaseSpeed = stormBaseSpeed;
-  qaConfig.boostDist = boostDist;
-  qaConfig.stageLength = stageLength;
-  qaConfig.safetyThreshold = safetyPct / 100;
-  qaConfig.morphTrigger = morphTrigger;
-  qaConfig.morphDuration = morphDuration;
-  qaConfig.stopPhaseDuration = stopPhaseDuration;
-  qaConfig.deathDelay = deathDelay;
+  window.qaConfig.minDashForce = minDashForce;
+  window.qaConfig.maxDashForce = maxDashForce;
+  window.qaConfig.maxChargeTime = maxChargeTime;
+  window.qaConfig.dashCooldown = dashCooldown;
+  window.qaConfig.chargeSlowdown = chargeSlowdown;
+  window.qaConfig.joystickSens = joystickSens;
+  window.qaConfig.playerScale = scale;
+  window.qaConfig.wallPaddingCap = wallPaddingCap;
+  window.qaConfig.baseMagnet = baseMagnet;
+  window.qaConfig.magnetRange = magnetRange;
+  window.qaConfig.stormBaseSpeed = stormBaseSpeed;
+  window.qaConfig.boostDist = boostDist;
+  window.qaConfig.stageLength = stageLength;
+  window.qaConfig.safetyThreshold = safetyPct / 100;
+  window.qaConfig.morphTrigger = morphTrigger;
+  window.qaConfig.morphDuration = morphDuration;
+  window.qaConfig.stopPhaseDuration = stopPhaseDuration;
+  window.qaConfig.deathDelay = deathDelay;
 
   // [JFB v2] Just Frame Booster
-  qaConfig.jfbDelayMin = jfbDelayMinRaw / 100;
-  qaConfig.jfbDelayMax = jfbDelayMaxRaw / 100;
-  qaConfig.jfbWindow = jfbWindowRaw / 100;
+  window.qaConfig.jfbDelayMin = jfbDelayMinRaw / 100;
+  window.qaConfig.jfbDelayMax = jfbDelayMaxRaw / 100;
+  window.qaConfig.jfbWindow = jfbWindowRaw / 100;
 
-  qaConfig.bgmVol = (bgmPct/100) * 0.25;
-  qaConfig.sfxVol = (sfxPct/100);
-  qaConfig.scoreSfxVol = (scoreSfxPct/100);
-  qaConfig.coinSfxVol = (coinSfxPct/100);
-  qaConfig.itemSfxVol = (itemSfxPct/100);
-  qaConfig.dashSfxVol = (dashSfxPct/100);
-  if (typeof Sound?.bgmSetVolume === 'function') Sound.bgmSetVolume(qaConfig.bgmVol);
+  window.qaConfig.bgmVol = (bgmPct/100) * 0.25;
+  window.qaConfig.sfxVol = (sfxPct/100);
+  window.qaConfig.scoreSfxVol = (scoreSfxPct/100);
+  window.qaConfig.coinSfxVol = (coinSfxPct/100);
+  window.qaConfig.itemSfxVol = (itemSfxPct/100);
+  window.qaConfig.dashSfxVol = (dashSfxPct/100);
+  if (typeof window.Sound?.bgmSetVolume === 'function') window.Sound.bgmSetVolume(window.qaConfig.bgmVol);
 
-  qaConfig.trailLength = trailLength;
-  qaConfig.trailOpacity = trailOpacityPct / 100;
-  qaConfig.cameraOffsetPct = camOffsetPctRaw / 100;
-  qaConfig.visualMode = visualMode;
+  window.qaConfig.trailLength = trailLength;
+  window.qaConfig.trailOpacity = trailOpacityPct / 100;
+  window.qaConfig.cameraOffsetPct = camOffsetPctRaw / 100;
+  window.qaConfig.visualMode = visualMode;
 
   // Dynamic Camera 저장
-  qaConfig.camera = qaConfig.camera ?? {};
-  qaConfig.camera.zoomRun = zoomRunRaw / 100;
-  qaConfig.camera.zoomWarning = zoomWarningRaw / 100;
-  qaConfig.camera.zoomStop = zoomStopRaw / 100;
-  qaConfig.camera.zoomBoost = zoomBoostRaw / 100;
-  qaConfig.camera.lerpRunToWarning = zoomLerpRaw / 100;
-  qaConfig.camera.panRatioX = panRatioRaw / 100;
+  window.qaConfig.camera = window.qaConfig.camera ?? {};
+  window.qaConfig.camera.zoomRun = zoomRunRaw / 100;
+  window.qaConfig.camera.zoomWarning = zoomWarningRaw / 100;
+  window.qaConfig.camera.zoomStop = zoomStopRaw / 100;
+  window.qaConfig.camera.zoomBoost = zoomBoostRaw / 100;
+  window.qaConfig.camera.lerpRunToWarning = zoomLerpRaw / 100;
+  window.qaConfig.camera.panRatioX = panRatioRaw / 100;
 
   // 플레이어에게 즉시 반영 (게임 중이 아닐 때도 적용)
   if (window.player) {

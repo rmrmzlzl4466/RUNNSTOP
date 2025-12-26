@@ -452,4 +452,20 @@
   };
 
   window.Game.UI = UI;
+
+  // Global toast function for UI feedback (non-game context)
+  let toastTimeout = null;
+  window.showToast = function(msg, type = 'info', duration = 1000) {
+    const el = document.getElementById('toast-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    el.className = `toast-${type}`;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => { el.style.display = 'none'; }, 300);
+    }, duration);
+  };
 })();

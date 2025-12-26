@@ -32,12 +32,12 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
   var Sound = window.Sound = {
     play(freq, type, dur=0.1) {
       if (actx.state === 'suspended') actx.resume();
-      try { const osc = actx.createOscillator(); const gain = actx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, actx.currentTime); gain.gain.setValueAtTime(0.12 * (qaConfig?.sfxVol ?? 1), actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+dur); osc.connect(gain); gain.connect(actx.destination); osc.start(); osc.stop(actx.currentTime+dur); } catch(e){}
+      try { const osc = actx.createOscillator(); const gain = actx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, actx.currentTime); gain.gain.setValueAtTime(0.12 * (window.qaConfig?.sfxVol ?? 1), actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+dur); osc.connect(gain); gain.connect(actx.destination); osc.start(); osc.stop(actx.currentTime+dur); } catch(e){}
     },
     playClip(path, volume) {
       try {
         const audio = getPooledClip(path);
-        audio.volume = volume ?? qaConfig?.sfxVol ?? 1;
+        audio.volume = volume ?? window.qaConfig?.sfxVol ?? 1;
         audio.play().catch(() => {});
       } catch(e) {
         console.error(`[Sound] Error playing clip: ${path}`, e);
@@ -50,17 +50,17 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const getDashPath = './assets/sounds/player/move_Dash.wav';
       switch(type) {
         case 'coin':
-          this.playClip(getCoinPath, qaConfig?.coinSfxVol);
+          this.playClip(getCoinPath, window.qaConfig?.coinSfxVol);
           break;
         case 'bit':
         case 'gem':
-          this.playClip(getScorePath, qaConfig?.scoreSfxVol);
+          this.playClip(getScorePath, window.qaConfig?.scoreSfxVol);
           break;
         case 'item':
-          this.playClip(getItemPath, qaConfig?.itemSfxVol);
+          this.playClip(getItemPath, window.qaConfig?.itemSfxVol);
           break;
         case 'dash':
-          this.playClip(getDashPath, qaConfig?.dashSfxVol);
+          this.playClip(getDashPath, window.qaConfig?.dashSfxVol);
           break;
         case 'jump': this.play(200, 'sawtooth', 0.15); break;
         case 'die': this.play(100, 'sawtooth', 0.5); break;
@@ -90,7 +90,7 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     playChord(freqs, type, dur = 0.1, vol = 0.1) {
       if (actx.state === 'suspended') actx.resume();
       try {
-        const baseVol = vol * (qaConfig?.sfxVol ?? 1);
+        const baseVol = vol * (window.qaConfig?.sfxVol ?? 1);
         freqs.forEach(freq => {
           const osc = actx.createOscillator();
           const gain = actx.createGain();
@@ -109,7 +109,7 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     playArpeggio(freqs, type, interval = 0.05, dur = 0.1) {
       if (actx.state === 'suspended') actx.resume();
       try {
-        const baseVol = 0.12 * (qaConfig?.sfxVol ?? 1);
+        const baseVol = 0.12 * (window.qaConfig?.sfxVol ?? 1);
         freqs.forEach((freq, i) => {
           const startTime = actx.currentTime + i * interval;
           const osc = actx.createOscillator();
@@ -134,7 +134,7 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (this._bgmRaf) return;
       if (actx.state === 'suspended') actx.resume();
       try {
-        if (!this._bgmGain) { this._bgmGain = actx.createGain(); this._bgmGain.gain.value = (qaConfig?.bgmVol ?? 0.15); this._bgmGain.connect(actx.destination); }
+        if (!this._bgmGain) { this._bgmGain = actx.createGain(); this._bgmGain.gain.value = (window.qaConfig?.bgmVol ?? 0.15); this._bgmGain.connect(actx.destination); }
         const seq = [
           // 8-step loop: (base, melody)
           [110, 440], [110, 0], [110, 523.25], [110, 0],

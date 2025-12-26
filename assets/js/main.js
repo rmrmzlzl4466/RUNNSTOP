@@ -15,6 +15,7 @@
 
   const qaConfig = createQAConfig();
   attachQAConfig(qaConfig);
+  window.qaConfig = qaConfig;
 
   const gameData = loadGameData();
   window.GameData = gameData;
