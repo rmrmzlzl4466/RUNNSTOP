@@ -1,7 +1,7 @@
 window.GameModules = window.GameModules || {};
 
 (function() {
-  const { applyLoadoutStats, formatNumber, getSkins } = window.GameModules.Config;
+  const { applyLoadoutStats, formatNumber, getSkins, getCameraOffsetPct } = window.GameModules.Config;
   const { resetRuntime, STATE, syncCanvasSize } = window.GameModules.Runtime;
   const { createGameLoop } = window.GameModules.Loop;
   const { spawnItemAtCol, pruneItemsBehindPlayer } = window.GameModules.Items;
@@ -98,11 +98,14 @@ window.GameModules = window.GameModules || {};
 
     syncCanvasSize(runtime, canvas);
     resetRuntime(runtime, qaConfig);
+    runtime._lastPauseReason = null;
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
 
     player.reset(canvas.width / 2, 550);
     player.sessionScore = 0;
     player.sessionBits = 0;
+    player.sessionCoins = 0;
+    player.sessionGems = 0;
 
     applyLoadoutStats(player, qaConfig, gameData);
 
@@ -131,16 +134,9 @@ window.GameModules = window.GameModules || {};
   function togglePause() {
     if (!runtime.gameActive) return;
     if (runtime.gameState === STATE.PAUSE) {
-      runtime.gameState = runtime.previousState;
-      window.Navigation?.hideOverlay?.('overlay-pause');
-      window.Sound?.bgmStart?.();
-      loop.resume();
+      resumeGame();
     } else {
-      window.Sound?.bgmStop?.();
-      runtime.previousState = runtime.gameState;
-      runtime.gameState = STATE.PAUSE;
-      window.Navigation?.showOverlay?.('overlay-pause');
-      loop.pause();
+      pauseGame({ showOverlay: true, reason: 'manual' });
     }
     window.Sound?.sfx?.('btn');
   }
@@ -181,7 +177,7 @@ window.GameModules = window.GameModules || {};
     }
     pruneItemsBehindPlayer(runtime, player);
 
-    const camOffsetPct = qaConfig.cameraOffsetPct ?? 0.6;
+    const camOffsetPct = getCameraOffsetPct(qaConfig);
     runtime.cameraY = player.y - runtime.canvasSize.height * camOffsetPct;
 
     const stageInfo = window.Game.LevelManager.getStageInfo(targetDistance);
@@ -209,8 +205,45 @@ window.GameModules = window.GameModules || {};
     togglePause,
     restartFromPause,
     quitGame,
-    warpToDistance
+    warpToDistance,
+    pauseForVisibility,
+    resumeIfPausedByVisibility
   };
+  }
+
+  function pauseGame({ showOverlay = false, reason = 'manual' } = {}) {
+    runtime.previousState = runtime.gameState || STATE.RUN;
+    runtime.gameState = STATE.PAUSE;
+    window.Sound?.bgmStop?.();
+    if (showOverlay) window.Navigation?.showOverlay?.('overlay-pause');
+    loop.pause();
+    runtime._lastPauseReason = reason;
+  }
+
+  function resumeGame() {
+    const targetState = runtime.previousState || STATE.RUN;
+    runtime.gameState = targetState;
+    runtime.previousState = STATE.RUN;
+    window.Navigation?.hideOverlay?.('overlay-pause');
+    window.Sound?.bgmStart?.();
+    loop.resume();
+    runtime._lastPauseReason = null;
+  }
+
+  function pauseForVisibility() {
+    if (!runtime.gameActive) return;
+    if (runtime.gameState !== STATE.PAUSE) {
+      pauseGame({ showOverlay: true, reason: 'visibility' });
+    } else {
+      runtime._lastPauseReason = 'visibility';
+    }
+  }
+
+  function resumeIfPausedByVisibility() {
+    if (runtime.gameState === STATE.PAUSE && runtime._lastPauseReason === 'visibility') {
+      window.Navigation?.showOverlay?.('overlay-pause');
+      runtime._lastPauseReason = null;
+    }
   }
 
   window.GameModules.Lifecycle = { createLifecycle };

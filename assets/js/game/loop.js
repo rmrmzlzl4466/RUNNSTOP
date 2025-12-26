@@ -4,7 +4,7 @@ window.GameModules = window.GameModules || {};
   const { STATE, syncCanvasSize } = window.GameModules.Runtime;
   const { resetCamera, updateCameraZoom } = window.GameModules.Camera;
   const { getTargetColor, updateStageProgress } = window.GameModules.Stage;
-  const { formatNumber } = window.GameModules.Config;
+  const { formatNumber, getCameraOffsetPct } = window.GameModules.Config;
   const {
     applyItem,
     pruneItemsBehindPlayer,
@@ -18,7 +18,7 @@ window.GameModules = window.GameModules || {};
   let lastTime = 0;
 
   function render() {
-    const camOffsetPct = qaConfig.cameraOffsetPct ?? 0.75;
+    const camOffsetPct = getCameraOffsetPct(qaConfig);
     const pivotY = runtime.canvasSize.height * camOffsetPct;
     const panRatioX = qaConfig.camera?.panRatioX ?? 0.35;
     const centerX = runtime.canvasSize.width / 2;
@@ -113,7 +113,7 @@ window.GameModules = window.GameModules || {};
     const screenBottom = runtime.cameraY + runtime.canvasSize.height;
     window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
     window.Game.LevelManager.cleanupRows(runtime.storm.y);
-    const camOffsetPct = qaConfig.cameraOffsetPct ?? 0.6;
+    const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - runtime.canvasSize.height * camOffsetPct;
     runtime.cameraY += (targetCamY - runtime.cameraY) * 5 * dt;
 
@@ -208,11 +208,9 @@ window.GameModules = window.GameModules || {};
     pause() {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = null;
-      runtime.gameState = STATE.PAUSE;
     },
     resume() {
-      if (runtime.gameState !== STATE.PAUSE) return;
-      runtime.gameState = runtime.previousState ?? STATE.RUN;
+      if (rafId) cancelAnimationFrame(rafId);
       lastTime = performance.now();
       rafId = requestAnimationFrame(tick);
     },

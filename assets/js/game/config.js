@@ -1,32 +1,57 @@
 window.GameModules = window.GameModules || {};
 
 (function() {
+  const FALLBACK_CAMERA = {
+    zoomRun: 1.0,
+    zoomWarning: 1.15,
+    zoomStop: 1.35,
+    zoomBoost: 0.85,
+    lerpRunToWarning: 0.15,
+    lerpWarningToStop: 8.0,
+    lerpStopToBoost: 15.0,
+    lerpBoostToRun: 1.5,
+    lerpDefault: 3.0,
+    panRatioX: 0.35,
+    cameraOffsetPct: 0.75
+  };
+
+  const FALLBACK_ITEM = {
+    magnetDurationSec: 10,
+    bigGemScore: 50000,
+    bigGemGems: 50
+  };
+
   const FALLBACK_QA_CONFIG = {
-  trailLength: 40,
-  trailOpacity: 0.9,
-  coinRate: 0.3,
-  itemRate: 0.03,
-  deathDelay: 1.0,
-  morphTrigger: 3.0,
-  morphDuration: 2.0,
-  boostDist: 400,
-  magnetRange: 170,
-  stormBaseSpeed: 150,
-  cycleSpeedMult: 1.0,
-  dashForce: 1200,
-  baseAccel: 1500,
-  sfxVol: 1.0,
-  bgmVol: 0.15,
-  scorePerSecond: 50,
-  scorePerMeter: 10,
-  scorePerBit: 50,
-  scorePerCoin: 200,
-  scorePerGem: 1000,
-  stageLength: 2000
+    trailLength: 40,
+    trailOpacity: 0.9,
+    coinRate: 0.3,
+    itemRate: 0.03,
+    deathDelay: 1.0,
+    morphTrigger: 3.0,
+    morphDuration: 2.0,
+    boostDist: 400,
+    magnetRange: 170,
+    stormBaseSpeed: 150,
+    cycleSpeedMult: 1.0,
+    dashForce: 1200,
+    baseAccel: 1500,
+    sfxVol: 1.0,
+    bgmVol: 0.15,
+    scorePerSecond: 50,
+    scorePerMeter: 10,
+    scorePerBit: 50,
+    scorePerCoin: 200,
+    scorePerGem: 1000,
+    stageLength: 2000
   };
 
   function createQAConfig() {
-    return { ...(window.GameConfig?.defaultQAConfig ?? FALLBACK_QA_CONFIG) };
+    const merged = { ...FALLBACK_QA_CONFIG, ...(window.GameConfig?.defaultQAConfig ?? {}) };
+    merged.camera = { ...FALLBACK_CAMERA, ...(merged.camera || {}) };
+    merged.item = { ...FALLBACK_ITEM, ...(merged.item || {}) };
+    // expose camera offset both inside camera.* and top-level for legacy reads
+    merged.cameraOffsetPct = merged.cameraOffsetPct ?? merged.camera.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct;
+    return merged;
   }
 
   function attachQAConfig(config) {
@@ -95,6 +120,9 @@ window.GameModules = window.GameModules || {};
     getSkins,
     getThemes,
     defaultSaveData,
-    applyLoadoutStats
+    applyLoadoutStats,
+    FALLBACK_CAMERA,
+    FALLBACK_ITEM,
+    getCameraOffsetPct: (qaConfig = {}) => qaConfig.cameraOffsetPct ?? qaConfig.camera?.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct
   };
 })();

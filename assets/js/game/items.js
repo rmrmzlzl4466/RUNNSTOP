@@ -59,6 +59,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function applyItem(runtime, player, qaConfig, item) {
+    const itemCfg = qaConfig.item || {};
     if (item.type === 'bit') {
       player.sessionBits += 1;
       player.sessionScore += qaConfig.scorePerBit ?? 0;
@@ -81,8 +82,8 @@ window.GameModules = window.GameModules || {};
       window.Game.UI.showToast(player, '+1', '#00d2d3', 650);
       window.Game.UI.updateScore(player.sessionScore, formatNumber);
     } else if (item.type === 'big_gem') {
-      const bigGemScore = 50000;
-      const bigGemReward = 50;
+      const bigGemScore = itemCfg.bigGemScore ?? 50000;
+      const bigGemReward = itemCfg.bigGemGems ?? 50;
       player.sessionGems += bigGemReward;
       player.sessionScore += bigGemScore;
       window.Game.UI.setGemDisplay(player.sessionGems);
@@ -101,7 +102,8 @@ window.GameModules = window.GameModules || {};
       player.boostTargetY = player.y - qaConfig.boostDist;
       window.Sound?.sfx('item');
     } else if (item.type === 'magnet') {
-      player.magnetTimer = 10.0;
+      const magnetDuration = itemCfg.magnetDurationSec ?? 10.0;
+      player.magnetTimer = magnetDuration;
       window.Sound?.sfx('item');
     }
   }

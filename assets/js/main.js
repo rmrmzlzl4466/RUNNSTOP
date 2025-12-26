@@ -135,17 +135,15 @@
       } else {
         window.Sound?.bgmStop?.();
       }
-      if (runtime.gameActive && runtime.gameState !== STATE.PAUSE) {
-        lifecycle.togglePause();
+      if (runtime.gameActive) {
+        lifecycle.pauseForVisibility();
       }
     } else {
       if (mutedByVisibility && window.Sound?.toggleMute) {
         window.Sound.toggleMute(false);
       }
       mutedByVisibility = false;
-      if (runtime.gameActive && runtime.gameState === STATE.PAUSE && runtime.previousState !== STATE.PAUSE) {
-        window.Sound?.bgmStart?.();
-      }
+      lifecycle.resumeIfPausedByVisibility();
     }
   });
 
