@@ -192,6 +192,9 @@ window.GameModules = window.GameModules || {};
     runtime.stage.loopCount = stageInfo.loopCount;
     runtime.currentLevelGoal = (window.STAGE_CUMULATIVE?.[stageInfo.stageIndex] ?? 0) + stageInfo.stageConfig.length;
 
+    // Update currentConfig for StageConfig system
+    window.GameModules?.StageConfig?.updateCurrentConfig?.(runtime, stageInfo.stageConfig.id);
+
     if (stageInfo.isLooping && stageInfo.loopCount > 0) {
       applyLoopDifficultyScaling(runtime, qaConfig, stageInfo.loopCount);
     } else {

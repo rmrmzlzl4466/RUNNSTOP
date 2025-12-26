@@ -6,23 +6,89 @@
  *
  * To customize stage lengths, simply modify the 'length' values below.
  * All calculations (cumulative distances, loop boundaries) update automatically.
+ *
+ * Tuning Fields (null = use qaConfig default):
+ * - coinRate: Coin pattern start probability (0.0~1.0)
+ * - minCoinRunLength: Minimum coin pattern length
+ * - itemRate: Item spawn probability (0.0~1.0)
+ * - itemWeights: { barrier, booster, magnet } distribution
+ * - stormSpeedMult: Storm speed multiplier (1.0 = normal)
+ * - baseSpeedMult: Player/scroll speed multiplier (1.0 = normal)
+ * - scoreMult: Score multiplier (1.0 = normal)
+ * - runPhaseDuration: RUN state duration (seconds)
+ * - warningTimeMult: WARNING time multiplier (1.0 = normal)
+ * - stopPhaseDuration: STOP state duration (seconds)
  */
+
+// Default tuning values (used when stage value is null)
+const STAGE_TUNING_DEFAULTS = {
+  coinRate: null,
+  minCoinRunLength: null,
+  itemRate: null,
+  itemWeights: null,
+  stormSpeedMult: 1.0,
+  baseSpeedMult: 1.0,
+  scoreMult: 1.0,
+  runPhaseDuration: null,
+  warningTimeMult: 1.0,
+  stopPhaseDuration: null
+};
+
 window.STAGE_CONFIG = [
   // Main Progression (1-10) - Gradually increasing length
-  { id: 1,  themeIdx: 0, length: 2000, name: "BOOT SEQUENCE" },
-  { id: 2,  themeIdx: 0, length: 2300, name: "DIGITAL CIRCUIT" },
-  { id: 3,  themeIdx: 1, length: 2600, name: "NEON ALLEY" },
-  { id: 4,  themeIdx: 1, length: 2900, name: "GLITCH CITY" },
-  { id: 5,  themeIdx: 0, length: 3200, name: "DATA HIGHWAY" },
-  { id: 6,  themeIdx: 2, length: 3500, name: "VOID ENTRANCE" },
-  { id: 7,  themeIdx: 1, length: 3800, name: "CYBER STORM" },
-  { id: 8,  themeIdx: 2, length: 4100, name: "THE VOID" },
-  { id: 9,  themeIdx: 0, length: 4400, name: "SYSTEM REBOOT" },
-  { id: 10, themeIdx: 2, length: 4500, name: "INFINITE HORIZON" },
+  {
+    id: 1, themeIdx: 0, length: 2000, name: "BOOT SEQUENCE",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 2, themeIdx: 0, length: 2300, name: "DIGITAL CIRCUIT",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 3, themeIdx: 1, length: 2600, name: "NEON ALLEY",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 4, themeIdx: 1, length: 2900, name: "GLITCH CITY",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 5, themeIdx: 0, length: 3200, name: "DATA HIGHWAY",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 6, themeIdx: 2, length: 3500, name: "VOID ENTRANCE",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 7, themeIdx: 1, length: 3800, name: "CYBER STORM",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 8, themeIdx: 2, length: 4100, name: "THE VOID",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 9, themeIdx: 0, length: 4400, name: "SYSTEM REBOOT",
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 10, themeIdx: 2, length: 4500, name: "INFINITE HORIZON",
+    ...STAGE_TUNING_DEFAULTS
+  },
   // Loop Section (11-13) - These repeat forever after stage 10
-  { id: 11, themeIdx: 0, length: 3500, name: "LOOP: ALPHA", isLoop: true },
-  { id: 12, themeIdx: 1, length: 4000, name: "LOOP: BETA",  isLoop: true },
-  { id: 13, themeIdx: 2, length: 4500, name: "LOOP: OMEGA", isLoop: true }
+  {
+    id: 11, themeIdx: 0, length: 3500, name: "LOOP: ALPHA", isLoop: true,
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 12, themeIdx: 1, length: 4000, name: "LOOP: BETA", isLoop: true,
+    ...STAGE_TUNING_DEFAULTS
+  },
+  {
+    id: 13, themeIdx: 2, length: 4500, name: "LOOP: OMEGA", isLoop: true,
+    ...STAGE_TUNING_DEFAULTS
+  }
 ];
 
 // Precomputed values for performance

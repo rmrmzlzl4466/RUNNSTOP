@@ -36,7 +36,8 @@ window.GameModules = window.GameModules || {};
         currentStageId: 1,
         previousStageId: 1,
         loopCount: 0,
-        loopDifficultyScale: 1.0
+        loopDifficultyScale: 1.0,
+        currentConfig: null  // Current stage's StageConfig object
       },
       grid: {
         COLS: window.Game?.LevelManager?.COLS ?? 5,
@@ -94,8 +95,11 @@ window.GameModules = window.GameModules || {};
       currentStageId: 1,
       previousStageId: 1,
       loopCount: 0,
-      loopDifficultyScale: 1.0
+      loopDifficultyScale: 1.0,
+      currentConfig: null
     };
+    // Initialize Stage 1 config
+    window.GameModules?.StageConfig?.updateCurrentConfig?.(runtime, 1);
   }
 
   window.GameModules.Runtime = {

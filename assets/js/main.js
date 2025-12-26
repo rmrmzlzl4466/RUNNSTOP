@@ -27,6 +27,7 @@
   window.Game.player = player;
 
   const runtime = createRuntimeState(canvas, qaConfig);
+  window.runtime = runtime;  // For StageConfig module
   window.Game.runtime = runtime;
 
   // Initialize subsystems

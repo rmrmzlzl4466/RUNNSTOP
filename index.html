@@ -182,12 +182,11 @@
             <button class="btn-common" onclick="window.addQAData('gold', 10000)" style="flex:1; background:#f1c40f; color:#000;">+10,000 Gold</button>
             <button class="btn-common" onclick="window.addQAData('gems', 1000)" style="flex:1; background:#00d2d3; color:#000;">+1,000 Gems</button>
           </div>
-          <div class="setting-item"><div class="vol-row"><span>💰 Coin Rate</span> <span class="val-display" id="qa-val-coin">30%</span></div><input type="range" id="qa-coin" min="0" max="100" step="5" value="30" oninput="window.updateQA()"></div>
-          <div class="setting-item"><div class="vol-row"><span>🎁 Item Rate</span> <span class="val-display" id="qa-val-item">3%</span></div><input type="range" id="qa-item" min="0" max="20" step="1" value="3" oninput="window.updateQA()"></div>
-<div class="setting-item">
-  <div class="vol-row"><span>📏 Min Coin Run</span> <span class="val-display" id="qa-val-coinlen">5</span></div>
-  <input type="range" id="qa-coinlen" min="3" max="20" step="1" value="5" oninput="window.updateQA()">
-</div>
+          <!-- Coin Rate / Item Rate moved to Stage Tuning section -->
+          <div class="setting-item">
+            <div class="vol-row"><span>📏 Min Coin Run</span> <span class="val-display" id="qa-val-coinlen">5</span></div>
+            <input type="range" id="qa-coinlen" min="3" max="20" step="1" value="5" oninput="window.updateQA()">
+          </div>
         </fieldset>
 
         <!-- Group 2: Physics -->
@@ -346,7 +345,68 @@
           </div>
         </fieldset>
 
-        <!-- Group 8: Stage Warp (Debug) -->
+        <!-- Group 8: Stage Tuning -->
+        <fieldset class="qa-section" style="border:1px solid #00cec9; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#00cec9; font-weight:bold; padding:0 8px;">Stage Tuning</legend>
+          <div class="setting-item">
+            <div class="vol-row">
+              <span>🎯 Target Stage</span>
+              <select id="qa-stage-select" onchange="window.onStageSelectChange?.()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:4px 8px; min-width:140px;">
+                <option value="1">Stage 1</option>
+                <option value="2">Stage 2</option>
+                <option value="3">Stage 3</option>
+                <option value="4">Stage 4</option>
+                <option value="5">Stage 5</option>
+                <option value="6">Stage 6</option>
+                <option value="7">Stage 7</option>
+                <option value="8">Stage 8</option>
+                <option value="9">Stage 9</option>
+                <option value="10">Stage 10</option>
+                <option value="11">Stage 11</option>
+                <option value="12">Stage 12</option>
+                <option value="13">Stage 13</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🪙 Coin Rate</span> <span class="val-display" id="qa-val-stage-coinrate">0.30</span></div>
+            <input type="range" id="qa-stage-coinrate" min="0" max="100" step="5" value="30" oninput="window.updateStageParam?.('coinRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>📦 Item Rate</span> <span class="val-display" id="qa-val-stage-itemrate">0.03</span></div>
+            <input type="range" id="qa-stage-itemrate" min="0" max="20" step="1" value="3" oninput="window.updateStageParam?.('itemRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🌪️ Storm Speed Mult</span> <span class="val-display" id="qa-val-stage-stormmult">1.00x</span></div>
+            <input type="range" id="qa-stage-stormmult" min="50" max="200" step="10" value="100" oninput="window.updateStageParam?.('stormSpeedMult', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🏃 Base Speed Mult</span> <span class="val-display" id="qa-val-stage-speedmult">1.00x</span></div>
+            <input type="range" id="qa-stage-speedmult" min="50" max="200" step="10" value="100" oninput="window.updateStageParam?.('baseSpeedMult', this.value/100)">
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
+            <div class="vol-row" style="margin-bottom:5px;"><span>⚖️ Item Weights</span></div>
+            <div style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+              <div class="vol-row"><span>🛡️ Barrier</span> <span class="val-display" id="qa-val-stage-wbarrier">0.20</span></div>
+              <input type="range" id="qa-stage-wbarrier" min="0" max="100" step="5" value="20" oninput="window.updateStageWeight?.('barrier', this.value/100)">
+              <div class="vol-row"><span>🚀 Booster</span> <span class="val-display" id="qa-val-stage-wbooster">0.40</span></div>
+              <input type="range" id="qa-stage-wbooster" min="0" max="100" step="5" value="40" oninput="window.updateStageWeight?.('booster', this.value/100)">
+              <div class="vol-row"><span>🧲 Magnet</span> <span class="val-display" id="qa-val-stage-wmagnet">0.40</span></div>
+              <input type="range" id="qa-stage-wmagnet" min="0" max="100" step="5" value="40" oninput="window.updateStageWeight?.('magnet', this.value/100)">
+            </div>
+          </div>
+          <div class="setting-item" style="margin-top:10px; display:flex; gap:5px;">
+            <button class="btn-common" onclick="window.resetStageOverride?.()" style="flex:1; background:#636e72; color:#fff; font-size:12px; padding:6px;">Reset Stage</button>
+            <button class="btn-common" onclick="window.resetAllStageOverrides?.()" style="flex:1; background:#d63031; color:#fff; font-size:12px; padding:6px;">Reset All</button>
+          </div>
+          <div class="setting-item" style="margin-top:5px; display:flex; gap:5px;">
+            <button class="btn-common" onclick="window.applyStagePreset?.('easy')" style="flex:1; background:#00b894; color:#fff; font-size:11px; padding:5px;">Easy</button>
+            <button class="btn-common" onclick="window.applyStagePreset?.('normal')" style="flex:1; background:#0984e3; color:#fff; font-size:11px; padding:5px;">Normal</button>
+            <button class="btn-common" onclick="window.applyStagePreset?.('hard')" style="flex:1; background:#e17055; color:#fff; font-size:11px; padding:5px;">Hard</button>
+          </div>
+        </fieldset>
+
+        <!-- Group 9: Stage Warp (Debug) -->
         <fieldset class="qa-section" style="border:1px solid #f39c12; border-radius:8px; padding:10px; margin-bottom:15px;">
           <legend style="color:#f39c12; font-weight:bold; padding:0 8px;">Stage Warp (Debug)</legend>
           <div class="setting-item">
@@ -423,7 +483,7 @@
           </div>
           <!-- Distance Row -->
           <div class="breakdown-row" id="row-distance" data-status="pending">
-            <div class="breakdown-icon"><img src="./assets/images/icons/distance.png" alt="distance" onerror="this.outerHTML='<span style=font-size:20px>📏</span>'"></div>
+            <div class="breakdown-icon"><span style="font-size:18px">📏</span></div>
             <div class="breakdown-label">DISTANCE</div>
             <div class="breakdown-count"><span id="result-dist-count" class="numeric-val">0</span>m</div>
             <div class="breakdown-mult">x<span id="result-dist-mult">10</span></div>
@@ -525,6 +585,7 @@
   <script src="./assets/js/game/camera.js"></script>
   <script src="./assets/js/game/items.js"></script>
   <script src="./assets/js/game/stage.js"></script>
+  <script src="./assets/js/game/stageConfig.js"></script>
   <script src="./assets/js/game/slowmo.js"></script>
   <script src="./assets/js/game/loop.js"></script>
   <script src="./assets/js/game/storage.js"></script>

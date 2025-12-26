@@ -37,7 +37,9 @@ window.GameModules = window.GameModules || {};
     trailLength: 40,
     trailOpacity: 0.9,
     coinRate: 0.3,
+    minCoinRunLength: 5,
     itemRate: 0.03,
+    itemWeights: { barrier: 0.2, booster: 0.4, magnet: 0.4 },
     deathDelay: 1.0,
     morphTrigger: 3.0,
     morphDuration: 2.0,
@@ -54,7 +56,12 @@ window.GameModules = window.GameModules || {};
     scorePerBit: 50,
     scorePerCoin: 200,
     scorePerGem: 1000,
-    stageLength: 2000
+    stageLength: 2000,
+    // Cycle timing defaults
+    runPhaseDuration: 3.0,
+    warningTimeBase: 7.0,
+    warningTimeMin: 3.0,
+    stopPhaseDuration: 1.5
   };
 
   function createQAConfig() {

@@ -29,6 +29,14 @@
     const qaConfig = window.qaConfig || {};
     const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
 
+    // Get effective config (stage-specific values with QA overrides)
+    const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
+      coinRate: qaConfig.coinRate ?? 0.3,
+      minCoinRunLength: qaConfig.minCoinRunLength ?? 5,
+      itemRate: qaConfig.itemRate ?? 0.03,
+      itemWeights: qaConfig.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 }
+    };
+
     const dist = -rowIndex * 10;
 
     // Use new stage system if available, fallback to legacy
@@ -54,11 +62,11 @@
     let coinCol = -1; // 이번 행에 코인이 생성될 컬럼 (-1이면 생성 안 함)
 
     // [A] 패턴 시작 (새로운 직선 구간 시작)
-    if (!coinPattern.active && Math.random() < (qaConfig.coinRate || 0.3)) {
+    if (!coinPattern.active && Math.random() < effective.coinRate) {
       coinPattern.active = true;
-      
-      // 길이 결정 (QA 설정값 + 랜덤 다양성)
-      const baseLen = qaConfig.minCoinRunLength || 5;
+
+      // 길이 결정 (effective config + 랜덤 다양성)
+      const baseLen = effective.minCoinRunLength;
       coinPattern.remainingRows = baseLen + Math.floor(Math.random() * 5);
 
       // 차선 결정 (인접 이동 로직)
@@ -94,11 +102,14 @@
     }
 
     // === 기타 아이템 스폰 (코인 패턴 컬럼 회피) ===
-    if (Math.random() < (qaConfig.itemRate || 0.03)) {
+    if (Math.random() < effective.itemRate) {
+      // Use effective itemWeights for distribution
+      const { barrier, booster, magnet } = effective.itemWeights;
       const rand = Math.random();
       let itemType = 'barrier';
-      if (rand < 0.4) itemType = 'booster';
-      else if (rand < 0.8) itemType = 'magnet';
+      if (rand < booster) itemType = 'booster';
+      else if (rand < booster + magnet) itemType = 'magnet';
+      // else: barrier (remaining probability)
 
       // 코인 패턴 위치와 겹치지 않도록 다른 컬럼 선택
       let itemCol = Math.floor(Math.random() * COLS);

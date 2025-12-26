@@ -98,6 +98,16 @@ window.GameModules = window.GameModules || {};
     const worldScale = SlowMo?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
 
+    // Get effective config (stage-specific values with QA overrides)
+    const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
+      stormSpeed: qaConfig.stormBaseSpeed ?? 150,
+      runPhaseDuration: qaConfig.runPhaseDuration ?? 3.0,
+      warningTimeBase: qaConfig.warningTimeBase ?? 7.0,
+      warningTimeMin: qaConfig.warningTimeMin ?? 3.0,
+      warningTimeMult: 1.0,
+      stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
+    };
+
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
     const uiDt = (applyMask === 'everything') ? worldDt : dt;
@@ -119,7 +129,8 @@ window.GameModules = window.GameModules || {};
       updateStageProgress(runtime, player.dist, qaConfig);
     }
 
-    const stormSpeed = window.Game.Physics.getStormSpeed(player.dist, qaConfig.stormBaseSpeed);
+    // Use effective stormSpeed (includes stage multiplier and loop scaling)
+    const stormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
     runtime.storm.y -= stormSpeed * worldDt;
     if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
       handlers.onDie?.('STORM');
@@ -143,11 +154,11 @@ window.GameModules = window.GameModules || {};
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
 
     if (runtime.gameState === STATE.RUN) {
-      window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, 3.0, STATE);
+      window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, effective.runPhaseDuration, STATE);
     } else if (runtime.gameState === STATE.WARNING) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, runtime.currentWarningMax || 6.0, STATE);
     } else if (runtime.gameState === STATE.STOP) {
-      window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, qaConfig.stopPhaseDuration ?? 1.5, STATE);
+      window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, effective.stopPhaseDuration, STATE);
     }
     window.Game.UI.setStateGlow(runtime.gameState, STATE);
 
@@ -168,7 +179,11 @@ window.GameModules = window.GameModules || {};
     if (runtime.gameState === STATE.RUN) {
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.WARNING;
-        runtime.cycleTimer = runtime.isFirstWarning ? 12.0 : Math.max(7.0 - Math.min(player.dist / 5000, 1.0) * 4.0, 3.0);
+        // Use effective warning time values
+        const baseWarning = runtime.isFirstWarning
+          ? 12.0 * effective.warningTimeMult
+          : Math.max(effective.warningTimeBase - Math.min(player.dist / 5000, 1.0) * 4.0, effective.warningTimeMin) * effective.warningTimeMult;
+        runtime.cycleTimer = baseWarning;
         runtime.isFirstWarning = false;
         runtime.currentWarningMax = runtime.cycleTimer;
         runtime.targetColorIndex = window.Game.LevelManager.pickSafeTargetColor(player.y, runtime.currentThemeIdx);
@@ -186,7 +201,7 @@ window.GameModules = window.GameModules || {};
       }
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.STOP;
-        runtime.cycleTimer = qaConfig.stopPhaseDuration ?? 1.5;
+        runtime.cycleTimer = effective.stopPhaseDuration;
         window.Game.UI.onStopStart();
         if (!player.isDashing) {
           player.vx *= 0.1;
@@ -198,7 +213,7 @@ window.GameModules = window.GameModules || {};
       if (!player.isBoosting) checkFallDie();
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.RUN;
-        runtime.cycleTimer = 3.0;
+        runtime.cycleTimer = effective.runPhaseDuration;
         window.Game.UI.onRunStart();
       }
     }

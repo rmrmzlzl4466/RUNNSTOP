@@ -47,9 +47,7 @@ window.initQASliders = function() {
     if (el && value !== undefined) el.value = value;
   };
 
-  // Economy
-  setValue('qa-coin', activeConfig.coinRate * 100);
-  setValue('qa-item', activeConfig.itemRate * 100);
+  // Economy (Coin Rate / Item Rate moved to Stage Tuning)
   setValue('qa-coinlen', activeConfig.minCoinRunLength);
 
   // Physics
@@ -126,10 +124,8 @@ window.initQASliders = function() {
 window.updateQA = function() {
   // 1) Read slider values -> qaConfig (used by gameplay logic)
 
-  // Economy
-  const coinPct = parseInt(document.getElementById('qa-coin').value, 10);
-  const itemPct = parseInt(document.getElementById('qa-item').value, 10);
-  const coinLen = parseInt(document.getElementById('qa-coinlen').value, 10);
+  // Economy (Coin Rate / Item Rate moved to Stage Tuning)
+  const coinLen = parseInt(document.getElementById('qa-coinlen')?.value ?? 5, 10);
 
   // Physics (신규 추가: baseSpeed, friction)
   const baseSpeed = parseInt(document.getElementById('qa-basespeed')?.value ?? 400, 10);
@@ -196,9 +192,7 @@ window.updateQA = function() {
   const zoomLerpRaw = parseInt(document.getElementById('qa-zoom-lerp')?.value ?? 15, 10);
   const panRatioRaw = parseInt(document.getElementById('qa-pan-ratio')?.value ?? 35, 10);
 
-  // qaConfig에 저장
-  window.qaConfig.coinRate = coinPct / 100;
-  window.qaConfig.itemRate = itemPct / 100;
+  // qaConfig에 저장 (coinRate / itemRate moved to Stage Tuning)
   window.qaConfig.minCoinRunLength = coinLen;
   window.qaConfig.baseSpeed = baseSpeed;
   window.qaConfig.friction = friction;
@@ -292,9 +286,7 @@ window.updateQA = function() {
     if (el) el.innerText = value;
   };
 
-  // Economy
-  setText('qa-val-coin', `${coinPct}%`);
-  setText('qa-val-item', `${itemPct}%`);
+  // Economy (Coin Rate / Item Rate moved to Stage Tuning)
   setText('qa-val-coinlen', `${coinLen}`);
 
   // Physics
@@ -413,5 +405,194 @@ window.warpToStage = function() {
   }
 
   // Play sound
+  window.Sound?.sfx?.('btn');
+};
+
+// === [Stage Tuning System] ===
+
+/**
+ * Current stage being edited in QA panel
+ */
+let _currentEditStageId = '1';
+
+/**
+ * Called when stage selector changes
+ */
+window.onStageSelectChange = function() {
+  const select = document.getElementById('qa-stage-select');
+  if (!select) return;
+  _currentEditStageId = select.value;
+  window.refreshStageTuningUI?.();
+};
+
+/**
+ * Refresh Stage Tuning UI with current stage's values
+ */
+window.refreshStageTuningUI = function() {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  const stageId = _currentEditStageId;
+  const override = StageConfig.getQAOverride?.(stageId) ?? {};
+  const stageData = window.STAGE_CONFIG?.[parseInt(stageId, 10) - 1] ?? {};
+  const defaults = window.qaConfig ?? {};
+
+  // Helper: get value with fallback chain
+  const getValue = (key, defaultVal) => {
+    if (override[key] !== undefined && override[key] !== null) return override[key];
+    if (stageData[key] !== undefined && stageData[key] !== null) return stageData[key];
+    return defaults[key] ?? defaultVal;
+  };
+
+  // Update sliders and labels
+  const coinRate = getValue('coinRate', 0.3);
+  const itemRate = getValue('itemRate', 0.03);
+  const stormSpeedMult = getValue('stormSpeedMult', 1.0);
+  const baseSpeedMult = getValue('baseSpeedMult', 1.0);
+  const weights = override.itemWeights ?? stageData.itemWeights ?? defaults.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
+
+  // Set slider values
+  const setSlider = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  };
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
+
+  setSlider('qa-stage-coinrate', coinRate * 100);
+  setText('qa-val-stage-coinrate', coinRate.toFixed(2));
+
+  setSlider('qa-stage-itemrate', itemRate * 100);
+  setText('qa-val-stage-itemrate', itemRate.toFixed(2));
+
+  setSlider('qa-stage-stormmult', stormSpeedMult * 100);
+  setText('qa-val-stage-stormmult', stormSpeedMult.toFixed(2) + 'x');
+
+  setSlider('qa-stage-speedmult', baseSpeedMult * 100);
+  setText('qa-val-stage-speedmult', baseSpeedMult.toFixed(2) + 'x');
+
+  setSlider('qa-stage-wbarrier', (weights.barrier ?? 0.2) * 100);
+  setText('qa-val-stage-wbarrier', (weights.barrier ?? 0.2).toFixed(2));
+
+  setSlider('qa-stage-wbooster', (weights.booster ?? 0.4) * 100);
+  setText('qa-val-stage-wbooster', (weights.booster ?? 0.4).toFixed(2));
+
+  setSlider('qa-stage-wmagnet', (weights.magnet ?? 0.4) * 100);
+  setText('qa-val-stage-wmagnet', (weights.magnet ?? 0.4).toFixed(2));
+};
+
+/**
+ * Update a stage parameter
+ */
+window.updateStageParam = function(key, value) {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  StageConfig.setQAOverride?.(_currentEditStageId, key, value);
+
+  // Update UI label
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
+
+  if (key === 'coinRate') setText('qa-val-stage-coinrate', value.toFixed(2));
+  if (key === 'itemRate') setText('qa-val-stage-itemrate', value.toFixed(2));
+  if (key === 'stormSpeedMult') setText('qa-val-stage-stormmult', value.toFixed(2) + 'x');
+  if (key === 'baseSpeedMult') setText('qa-val-stage-speedmult', value.toFixed(2) + 'x');
+};
+
+/**
+ * Update item weight for current stage
+ */
+window.updateStageWeight = function(type, value) {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  // Get current weights
+  const override = StageConfig.getQAOverride?.(_currentEditStageId) ?? {};
+  const stageData = window.STAGE_CONFIG?.[parseInt(_currentEditStageId, 10) - 1] ?? {};
+  const defaults = window.qaConfig?.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
+
+  const currentWeights = { ...(override.itemWeights ?? stageData.itemWeights ?? defaults) };
+  currentWeights[type] = value;
+
+  // Normalize weights
+  const normalized = StageConfig.normalizeWeights?.(currentWeights) ?? currentWeights;
+  StageConfig.setQAOverride?.(_currentEditStageId, 'itemWeights', normalized);
+
+  // Refresh UI to show normalized values
+  window.refreshStageTuningUI?.();
+};
+
+/**
+ * Reset current stage's QA overrides
+ */
+window.resetStageOverride = function() {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  StageConfig.clearQAOverride?.(_currentEditStageId);
+  window.refreshStageTuningUI?.();
+  window.showToast?.(`Stage ${_currentEditStageId} reset`, 'info', 800);
+  window.Sound?.sfx?.('btn');
+};
+
+/**
+ * Reset all stages' QA overrides
+ */
+window.resetAllStageOverrides = function() {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  StageConfig.clearAllQAOverrides?.();
+  window.refreshStageTuningUI?.();
+  window.showToast?.('All stages reset', 'info', 800);
+  window.Sound?.sfx?.('btn');
+};
+
+/**
+ * Apply preset to current stage
+ */
+window.applyStagePreset = function(presetName) {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) return;
+
+  const presets = {
+    easy: {
+      coinRate: 0.5,
+      itemRate: 0.08,
+      stormSpeedMult: 0.7,
+      baseSpeedMult: 1.0,
+      itemWeights: { barrier: 0.4, booster: 0.4, magnet: 0.2 }
+    },
+    normal: {
+      coinRate: 0.3,
+      itemRate: 0.03,
+      stormSpeedMult: 1.0,
+      baseSpeedMult: 1.0,
+      itemWeights: { barrier: 0.2, booster: 0.4, magnet: 0.4 }
+    },
+    hard: {
+      coinRate: 0.15,
+      itemRate: 0.02,
+      stormSpeedMult: 1.5,
+      baseSpeedMult: 1.2,
+      itemWeights: { barrier: 0.1, booster: 0.5, magnet: 0.4 }
+    }
+  };
+
+  const preset = presets[presetName];
+  if (!preset) return;
+
+  // Apply all preset values
+  for (const [key, value] of Object.entries(preset)) {
+    StageConfig.setQAOverride?.(_currentEditStageId, key, value);
+  }
+
+  window.refreshStageTuningUI?.();
+  window.showToast?.(`Applied ${presetName} preset to Stage ${_currentEditStageId}`, 'info', 1000);
   window.Sound?.sfx?.('btn');
 };
