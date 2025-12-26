@@ -114,8 +114,9 @@ window.GameModules = window.GameModules || {};
     window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
     window.Game.LevelManager.cleanupRows(runtime.storm.y);
     const camOffsetPct = getCameraOffsetPct(qaConfig);
-    const targetCamY = player.y - runtime.canvasSize.height * camOffsetPct;
-    runtime.cameraY += (targetCamY - runtime.cameraY) * 5 * dt;
+    const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
+    const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
+    runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * dt;
 
     updateCameraZoom(runtime, player, qaConfig, dt);
     ensureRowsAroundPlayer();

@@ -9,6 +9,7 @@
 
 <body>
   <div id="game-container">
+    <div id="game-surface">
     <canvas id="gameCanvas"></canvas>
 
     <div id="mobile-controls" style="display:none;">
@@ -69,7 +70,7 @@
       <div id="score-display" class="score-display" style="display:none;">SCORE: 0</div>
     </div>
 
-<div id="toast-msg" aria-live="polite" style="display: none;"></div>
+    <div id="toast-msg" aria-live="polite" style="display: none;"></div>
     <div id="theme-notify">ZONE 1<br>DIGITAL CIRCUIT</div>
     <div id="storm-warning">DATA STORM APPROACHING!</div>
 
@@ -374,6 +375,7 @@
         <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.quitGame?.()">QUIT</button>
       </div>
     </div>
+  </div>
   </div>
 
   <script src="./assets/js/core/config.js"></script>

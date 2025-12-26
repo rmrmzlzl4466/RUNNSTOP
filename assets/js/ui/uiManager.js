@@ -44,7 +44,7 @@
      */
     init: function() {
       elements.phaseFill = document.getElementById('phase-bar-fill');
-      elements.gameContainer = document.getElementById('game-container');
+      elements.gameContainer = document.getElementById('game-surface') || document.getElementById('game-container');
       elements.dashVisual = document.getElementById('btn-dash-visual');
       elements.dashCdText = document.getElementById('dash-cooldown-text');
       elements.scoreDisplay = document.getElementById('score-display');
