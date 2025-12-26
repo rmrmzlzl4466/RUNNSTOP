@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>RUN! & STOP! : FINAL FIX</title>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="mobile-controls" style="display:none;">
+      <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
+      <div id="dash-zone"><div id="btn-dash-visual">DASH<div id="dash-cooldown-text"></div></div></div>
+    </div>
+
+    <div id="hud">
+      <!-- 좌측 상단: 점수/코인/보석 -->
+      <div class="hud-left">
+        <div class="score-pill score-main"><img src="./assets/images/icons/bit.png" class="hud-icon" alt="score"> <span id="score-display-left" class="numeric-val score-green">0</span></div>
+        <div class="score-pill coin-pill"><img src="./assets/images/icons/coin.png" class="hud-icon" alt="coin"> <span id="coin-display" class="numeric-val">0</span></div>
+        <div class="score-pill gem-pill"><img src="./assets/images/icons/gem.png" class="hud-icon" alt="gem"> <span id="gem-display" class="numeric-val">0</span></div>
+      </div>
+
+      <!-- 좌측: 아이템 버프 아이콘 (원형) -->
+      <div id="buff-container">
+        <div id="buff-barrier" class="buff-icon" data-type="barrier"><img src="./assets/images/icons/barrier.png" alt="barrier"></div>
+        <div id="buff-booster" class="buff-icon" data-type="booster"><img src="./assets/images/icons/boost.png" alt="booster"></div>
+        <div id="buff-magnet" class="buff-icon" data-type="magnet"><img src="./assets/images/icons/magnet.png" alt="magnet"></div>
+      </div>
+
+      <!-- 중앙 상단: 색상 패널 -->
+      <div id="target-display">
+        <div id="countdown-text"></div>
+      </div>
+
+      <!-- 중앙: 상태 바 -->
+      <div id="status-bar-container">
+        <div id="phase-bar"><div id="phase-bar-fill"></div></div>
+        <div id="status-msg">READY</div>
+      </div>
+
+      <!-- 우측 상단: 일시정지 버튼 -->
+      <button id="btn-pause" class="hud-pause-btn" onclick="window.togglePause?.()">
+        <span class="pause-icon"></span>
+      </button>
+
+      <!-- 우측: 스테이지 게이지 -->
+      <div id="chase-ui">
+        <div id="chase-bar">
+          <!-- 플레이어 게이지 (하단 레이어) -->
+          <div id="player-gauge" class="chase-gauge player-gauge">
+            <div id="marker-player" class="chase-pin">
+              <img src="./assets/images/ui/Map_Pin_Player.png" alt="player">
+            </div>
+          </div>
+          <!-- 스톰 게이지 (상단 레이어 - 플레이어를 가림) -->
+          <div id="storm-gauge" class="chase-gauge storm-gauge">
+            <div id="marker-storm" class="chase-pin">
+              <img src="./assets/images/ui/Map_Pin_Storm.png" alt="storm">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기존 score-display는 숨김 처리 (호환성 유지) -->
+      <div id="score-display" class="score-display" style="display:none;">SCORE: 0</div>
+    </div>
+
+<div id="toast-msg" aria-live="polite" style="display: none;"></div>
+    <div id="theme-notify">ZONE 1<br>DIGITAL CIRCUIT</div>
+    <div id="storm-warning">DATA STORM APPROACHING!</div>
+
+    <!-- ========== [1] TITLE SCREEN ========== -->
+    <div id="screen-title" class="full-screen active-screen">
+      <div class="title-content">
+        <h1 class="game-logo">RUN <span class="accent">&</span> STOP</h1>
+        <p class="touch-prompt">TOUCH TO START</p>
+      </div>
+    </div>
+
+    <!-- ========== [2] LOBBY SCREEN ========== -->
+    <div id="screen-lobby" class="full-screen">
+      <!-- Header: Currency -->
+      <div class="screen-header">
+        <div class="currency-row lobby-currency">
+          <div class="currency-item"><img src="./assets/images/icons/coin.png" class="currency-icon" alt="coin"> <span id="lobby-coins" class="numeric-val">0</span></div>
+          <div class="currency-item"><img src="./assets/images/icons/gem.png" class="currency-icon" alt="gem"> <span id="lobby-gems" class="numeric-val">0</span></div>
+        </div>
+      </div>
+
+      <!-- Center: Character Preview -->
+      <div class="lobby-center">
+        <div class="lobby-stage">
+          <div id="lobby-char" class="lobby-char-box" onclick="window.interactLobbyChar()"></div>
+          <div class="lobby-ground"></div>
+        </div>
+        <div class="lobby-char-name" id="lobby-skin-name" onclick="window.Navigation.go('shop'); window.switchTab('skin');">Default Runner</div>
+      </div>
+
+      <!-- Loadout: Treasure Slots -->
+      <div class="lobby-loadout">
+        <div class="loadout-label">LOADOUT</div>
+        <div class="loadout-slots">
+          <div class="lobby-slot" id="lobby-slot-0" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+            <span class="slot-icon">+</span>
+          </div>
+          <div class="lobby-slot" id="lobby-slot-1" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+            <span class="slot-icon">+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer: Buttons -->
+      <div class="lobby-footer">
+        <button class="btn-side" onclick="window.Navigation?.go('shop')">SHOP</button>
+        <button class="start-btn lobby-start" onclick="window.startGame(event)">GAME START</button>
+        <button class="btn-side" onclick="window.Navigation?.go('qa')">QA</button>
+      </div>
+    </div>
+
+    <!-- ========== [3] SHOP SCREEN ========== -->
+    <div id="screen-shop" class="full-screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="window.Navigation?.go('lobby')">< Back</button>
+        <span class="header-title">SHOP</span>
+        <div class="currency-row header-currency">
+          <span class="currency-item"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> <span id="shop-coins" class="numeric-val">0</span></span>
+          <span class="currency-item"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> <span id="shop-gems" class="numeric-val">0</span></span>
+        </div>
+      </div>
+
+      <div class="tab-container">
+        <div class="tab-btn active" id="tab-upgrade" onclick="window.switchTab('upgrade')">UPGRADES</div>
+        <div class="tab-btn" id="tab-skin" onclick="window.switchTab('skin')">SKINS</div>
+        <div class="tab-btn" id="tab-treasure" onclick="window.switchTab('treasure')">TREASURES</div>
+      </div>
+
+      <!-- Upgrades Tab -->
+      <div id="shop-upgrade" class="shop-content">
+        <div class="upgrade-item">
+          <div class="upgrade-info"><span class="upgrade-name">⚡ Move Speed</span><span class="upgrade-level" id="lvl-speed">Lv.1</span><span class="stat-preview" id="stat-speed">Max Speed +0</span></div>
+          <button class="btn-common" id="btn-buy-speed">100 🪙</button>
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-info"><span class="upgrade-name">⏳ Dash Cooldown</span><span class="upgrade-level" id="lvl-cool">Lv.1</span><span class="stat-preview" id="stat-cool">Cooldown -0s</span></div>
+          <button class="btn-common" id="btn-buy-cool">100 🪙</button>
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-info"><span class="upgrade-name">💰 Greed (Coin)</span><span class="upgrade-level" id="lvl-greed">Lv.1</span><span class="stat-preview" id="stat-greed">Bonus +0%</span></div>
+          <button class="btn-common" id="btn-buy-greed">100 🪙</button>
+        </div>
+      </div>
+
+      <!-- Skins Tab -->
+      <div id="shop-skin" class="shop-content" style="display:none;">
+        <div id="skin-list-container"></div>
+      </div>
+
+      <!-- Treasures Tab -->
+      <div id="shop-treasure" class="shop-content" style="display:none;">
+        <div id="treasure-list-container"></div>
+      </div>
+    </div>
+
+    <!-- ========== [4] QA SCREEN ========== -->
+    <div id="screen-qa" class="full-screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="window.Navigation?.go('lobby')">< Back</button>
+        <span class="header-title">QA SETTINGS</span>
+        <div style="width:80px;"></div>
+      </div>
+
+      <div class="qa-content qa-group" style="display:block; flex:1;">
+        <!-- Group 1: Economy -->
+        <fieldset class="qa-section" style="border:1px solid #2ecc71; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#2ecc71; font-weight:bold; padding:0 8px;">Economy</legend>
+          <div class="setting-item" style="display:flex; gap:10px; margin-bottom:10px;">
+            <button class="btn-common" onclick="window.addQAData('gold', 10000)" style="flex:1; background:#f1c40f; color:#000;">+10,000 Gold</button>
+            <button class="btn-common" onclick="window.addQAData('gems', 1000)" style="flex:1; background:#00d2d3; color:#000;">+1,000 Gems</button>
+          </div>
+          <div class="setting-item"><div class="vol-row"><span>💰 Coin Rate</span> <span class="val-display" id="qa-val-coin">30%</span></div><input type="range" id="qa-coin" min="0" max="100" step="5" value="30" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🎁 Item Rate</span> <span class="val-display" id="qa-val-item">3%</span></div><input type="range" id="qa-item" min="0" max="20" step="1" value="3" oninput="window.updateQA()"></div>
+<div class="setting-item">
+  <div class="vol-row"><span>📏 Min Coin Run</span> <span class="val-display" id="qa-val-coinlen">5</span></div>
+  <input type="range" id="qa-coinlen" min="3" max="20" step="1" value="5" oninput="window.updateQA()">
+</div>
+        </fieldset>
+
+        <!-- Group 2: Physics -->
+        <fieldset class="qa-section" style="border:1px solid #3498db; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#3498db; font-weight:bold; padding:0 8px;">Physics</legend>
+          <div class="setting-item"><div class="vol-row"><span>🏃 Base Max Speed</span> <span class="val-display" id="qa-val-basespeed">880</span></div><input type="range" id="qa-basespeed" min="300" max="1000" step="20" value="880" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🧊 Move Friction</span> <span class="val-display" id="qa-val-friction">0.90</span></div><input type="range" id="qa-friction" min="80" max="99" step="1" value="90" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🛑 Stop Friction</span> <span class="val-display" id="qa-val-stopfriction">0.92</span></div><input type="range" id="qa-stopfriction" min="80" max="99" step="1" value="92" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🚀 Acceleration</span> <span class="val-display" id="qa-val-accel">2100</span></div><input type="range" id="qa-accel" min="500" max="3000" step="100" value="2100" oninput="window.updateQA()"></div>
+          <div class="setting-item">
+            <div class="vol-row"><span>↩️ Turn Agility</span> <span class="val-display" id="qa-val-turnaccel">2.0x</span></div>
+            <input type="range" id="qa-turnaccel" min="10" max="50" step="5" value="20" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item"><div class="vol-row"><span>⚡ Dash Power (Legacy)</span> <span class="val-display" id="qa-val-dash">1100</span></div><input type="range" id="qa-dash" min="800" max="2000" step="100" value="1100" oninput="window.updateQA()"></div>
+          <!-- [CHARGING SYSTEM] 차징 대쉬 관련 설정 -->
+          <div class="setting-item"><div class="vol-row"><span>🔋 Min Dash Force</span> <span class="val-display" id="qa-val-mindash">600</span></div><input type="range" id="qa-mindash" min="400" max="1200" step="50" value="600" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⚡ Max Dash Force</span> <span class="val-display" id="qa-val-maxdash">4000</span></div><input type="range" id="qa-maxdash" min="1000" max="5000" step="100" value="4000" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⏱️ Max Charge Time</span> <span class="val-display" id="qa-val-chargetime">2.0s</span></div><input type="range" id="qa-chargetime" min="0.2" max="3.0" step="0.1" value="2.0" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⏳ Dash Cooldown</span> <span class="val-display" id="qa-val-dashcool">0.7s</span></div><input type="range" id="qa-dashcool" min="0.3" max="3.0" step="0.1" value="0.7" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🏋️ Charge Slowdown</span> <span class="val-display" id="qa-val-chargeslow">50%</span></div><input type="range" id="qa-chargeslow" min="0" max="100" step="5" value="50" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🕹️ Joy Sensitivity</span> <span class="val-display" id="qa-val-joy">2.0</span></div><input type="range" id="qa-joy" min="10" max="30" step="1" value="20" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🧍 Character Scale</span> <span class="val-display" id="qa-val-scale">1.2x</span></div><input type="range" id="qa-scale" min="0.5" max="3.0" step="0.1" value="1.2" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🚧 Wall Limit Gap</span> <span class="val-display" id="qa-val-wallpadding">25</span></div><input type="range" id="qa-wallpadding" min="0" max="100" step="1" value="25" oninput="window.updateQA()"></div>
+        </fieldset>
+
+        <!-- Group 3: Rules -->
+        <fieldset class="qa-section" style="border:1px solid #e67e22; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#e67e22; font-weight:bold; padding:0 8px;">Rules</legend>
+          <div class="setting-item"><div class="vol-row"><span>🧲 Base Magnet Range</span> <span class="val-display" id="qa-val-basemagnet">50</span></div><input type="range" id="qa-basemagnet" min="0" max="300" step="10" value="50" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🧲 Item Magnet Range</span> <span class="val-display" id="qa-val-magnet">160</span></div><input type="range" id="qa-magnet" min="50" max="400" step="10" value="160" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🌪️ Storm Base Speed</span> <span class="val-display" id="qa-val-storm">150</span></div><input type="range" id="qa-storm" min="50" max="500" step="10" value="150" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🚀 Booster Distance</span> <span class="val-display" id="qa-val-boost">700</span></div><input type="range" id="qa-boost" min="100" max="1000" step="50" value="700" oninput="window.updateQA()"></div>
+          <div class="setting-item">
+            <div class="vol-row"><span>📏 Stage Length</span> <span class="val-display" id="qa-val-stagelen">2000m</span></div>
+            <input type="range" id="qa-stagelen" min="500" max="4000" step="100" value="2000" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item"><div class="vol-row"><span>🦎 Morph Start</span> <span class="val-display" id="qa-val-trigger">1.0s</span></div><input type="range" id="qa-trigger" min="0.5" max="6.0" step="0.5" value="1.0" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⏱️ Morph Duration</span> <span class="val-display" id="qa-val-morph">0.5s</span></div><input type="range" id="qa-morph" min="0.1" max="3.0" step="0.1" value="0.5" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🛡️ Safety Threshold</span> <span class="val-display" id="qa-val-safety">50%</span></div><input type="range" id="qa-safety" min="10" max="90" step="5" value="50" oninput="window.updateQA()"></div>
+<div class="setting-item">
+  <div class="vol-row"><span>🛑 Stop Duration</span> <span class="val-display" id="qa-val-stopphase">1.5s</span></div>
+  <input type="range" id="qa-stopphase" min="0.5" max="5.0" step="0.1" value="1.5" oninput="window.updateQA()">
+</div>
+                    <div class="setting-item"><div class="vol-row"><span>💀 Death Delay</span> <span class="val-display" id="qa-val-death">1.0s</span></div><input type="range" id="qa-death" min="0" max="2.0" step="0.1" value="1.0" oninput="window.updateQA()"></div>
+          <!-- [JFB v2] Just Frame Booster -->
+          <div class="setting-item"><div class="vol-row"><span>⏱️ JFB Delay Min</span> <span class="val-display" id="qa-val-jfb-delay-min">0.00s</span></div><input type="range" id="qa-jfb-delay-min" min="0" max="100" step="5" value="0" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⏱️ JFB Delay Max</span> <span class="val-display" id="qa-val-jfb-delay-max">0.50s</span></div><input type="range" id="qa-jfb-delay-max" min="0" max="100" step="5" value="50" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>⚡ JFB Window</span> <span class="val-display" id="qa-val-jfb-window">0.20s</span></div><input type="range" id="qa-jfb-window" min="5" max="50" step="5" value="20" oninput="window.updateQA()"></div>
+                  </fieldset>
+        <!-- Group 4: Sound -->
+        <fieldset class="qa-section" style="border:1px solid #9b59b6; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#9b59b6; font-weight:bold; padding:0 8px;">Sound</legend>
+          <div class="setting-item"><div class="vol-row"><span>🎵 BGM Volume</span> <span class="val-display" id="qa-val-bgm">60%</span></div><input type="range" id="qa-bgm" min="0" max="100" step="5" value="60" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🔊 SFX Volume</span> <span class="val-display" id="qa-val-sfx">100%</span></div><input type="range" id="qa-sfx" min="0" max="150" step="5" value="100" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>💯 Score SFX Volume</span> <span class="val-display" id="qa-val-score-sfx">25%</span></div><input type="range" id="qa-score-sfx" min="0" max="150" step="5" value="25" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🪙 Coin SFX Volume</span> <span class="val-display" id="qa-val-coin-sfx">10%</span></div><input type="range" id="qa-coin-sfx" min="0" max="150" step="5" value="10" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🎁 Item SFX Volume</span> <span class="val-display" id="qa-val-item-sfx">15%</span></div><input type="range" id="qa-item-sfx" min="0" max="150" step="5" value="15" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>💨 Dash SFX Volume</span> <span class="val-display" id="qa-val-dash-sfx">40%</span></div><input type="range" id="qa-dash-sfx" min="0" max="150" step="5" value="40" oninput="window.updateQA()"></div>
+        </fieldset>
+
+        <!-- Group 5: Visuals -->
+        <fieldset class="qa-section" style="border:1px solid #1abc9c; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#1abc9c; font-weight:bold; padding:0 8px;">Visuals</legend>
+          <div class="setting-item"><div class="vol-row"><span>✨ Trail Length</span> <span class="val-display" id="qa-val-traillength">40</span></div><input type="range" id="qa-traillength" min="0" max="100" step="5" value="40" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>💧 Trail Opacity</span> <span class="val-display" id="qa-val-trailopacity">90%</span></div><input type="range" id="qa-trailopacity" min="0" max="100" step="5" value="90" oninput="window.updateQA()"></div>
+<div class="setting-item">
+  <div class="vol-row"><span>📷 Camera Offset</span> <span class="val-display" id="qa-val-camoffset">60%</span></div>
+  <input type="range" id="qa-camoffset" min="20" max="80" step="5" value="60" oninput="window.updateQA()">
+</div>
+<div class="setting-item">
+  <div class="vol-row"><span>🎨 Color Mode</span>
+    <select id="qa-visualmode" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px; font-weight:bold;">
+      <option value="B">Mode B (Memory)</option>
+      <option value="A">Mode A (Dark)</option>
+    </select>
+  </div>
+</div>
+        </fieldset>
+
+        <!-- Group 6: Dynamic Camera -->
+        <fieldset class="qa-section" style="border:1px solid #e74c3c; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#e74c3c; font-weight:bold; padding:0 8px;">Dynamic Camera</legend>
+          <div class="setting-item">
+            <div class="vol-row"><span>🏃 Zoom RUN</span> <span class="val-display" id="qa-val-zoom-run">1.00x</span></div>
+            <input type="range" id="qa-zoom-run" min="80" max="120" step="5" value="100" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⚠️ Zoom WARNING</span> <span class="val-display" id="qa-val-zoom-warning">1.15x</span></div>
+            <input type="range" id="qa-zoom-warning" min="100" max="150" step="5" value="115" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🛑 Zoom STOP</span> <span class="val-display" id="qa-val-zoom-stop">1.35x</span></div>
+            <input type="range" id="qa-zoom-stop" min="100" max="180" step="5" value="135" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🚀 Zoom BOOST</span> <span class="val-display" id="qa-val-zoom-boost">0.85x</span></div>
+            <input type="range" id="qa-zoom-boost" min="50" max="100" step="5" value="85" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⏱️ Zoom Lerp (Speed)</span> <span class="val-display" id="qa-val-zoom-lerp">0.15</span></div>
+            <input type="range" id="qa-zoom-lerp" min="1" max="20" step="1" value="15" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>↔️ X-Axis Tracking</span> <span class="val-display" id="qa-val-pan-ratio">0.35</span></div>
+            <input type="range" id="qa-pan-ratio" min="0" max="100" step="5" value="35" oninput="window.updateQA()">
+          </div>
+        </fieldset>
+
+        <!-- Group 7: Stage Warp (Debug) -->
+        <fieldset class="qa-section" style="border:1px solid #f39c12; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#f39c12; font-weight:bold; padding:0 8px;">Stage Warp (Debug)</legend>
+          <div class="setting-item">
+            <div class="vol-row">
+              <span>Target Stage</span>
+              <select id="qa-warp-stage" onchange="window.updateWarpPreview?.()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:4px 8px; min-width:180px;">
+                <option value="1">Stage 1 - BOOT SEQUENCE</option>
+                <option value="2">Stage 2 - DIGITAL CIRCUIT</option>
+                <option value="3">Stage 3 - NEON ALLEY</option>
+                <option value="4">Stage 4 - GLITCH CITY</option>
+                <option value="5">Stage 5 - DATA HIGHWAY</option>
+                <option value="6">Stage 6 - VOID ENTRANCE</option>
+                <option value="7">Stage 7 - CYBER STORM</option>
+                <option value="8">Stage 8 - THE VOID</option>
+                <option value="9">Stage 9 - SYSTEM REBOOT</option>
+                <option value="10">Stage 10 - INFINITE HORIZON</option>
+                <option value="11">Stage 11 - LOOP: ALPHA</option>
+                <option value="12">Stage 12 - LOOP: BETA</option>
+                <option value="13">Stage 13 - LOOP: OMEGA</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>Loop Count (0=first)</span> <span class="val-display" id="qa-val-loopcount">0</span></div>
+            <input type="range" id="qa-loopcount" min="0" max="10" step="1" value="0" oninput="document.getElementById('qa-val-loopcount').innerText = this.value; window.updateWarpPreview?.()">
+          </div>
+          <div class="setting-item" style="margin-top:10px;">
+            <button class="btn-common" onclick="window.warpToStage?.()" style="width:100%; background:#f39c12; color:#000; font-weight:bold;">WARP TO STAGE</button>
+          </div>
+          <div class="setting-item" style="margin-top:5px;">
+            <div id="qa-warp-preview" style="color:#888; font-size:12px; text-align:center;">Distance: 0m</div>
+          </div>
+        </fieldset>
+
+        <div class="setting-item"><button class="btn-common" onclick="window.resetSaveData()" style="width:100%; background:#e74c3c; color:#fff;">Reset Data</button></div>
+      </div>
+    </div>
+
+    <!-- ========== [5] RESULT SCREEN ========== -->
+    <div id="screen-result" class="full-screen">
+      <div class="result-header">GAME OVER</div>
+
+      <div class="result-card">
+        <div class="result-total-row">
+          <div class="result-title">TOTAL SCORE</div>
+          <div id="result-total-score" class="numeric-val">0</div>
+        </div>
+        <div class="result-high-row">
+          <span>HIGH SCORE</span>
+          <span id="result-high-score" class="numeric-val">0</span>
+          <span id="result-new-record" class="badge-new" style="display:none;">NEW RECORD</span>
+        </div>
+        <div class="result-detail">
+          <div class="detail-row"><span>Map Items Score</span><span id="result-items-score" class="numeric-val">0</span></div>
+          <div class="detail-row"><span>Distance Bonus</span><span id="result-distance-score" class="numeric-val">0</span></div>
+        </div>
+        <div class="result-currency-row">
+          <span class="result-stat"><span id="last-dist" class="numeric-val">0</span>m</span>
+          <span class="result-stat"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> <span id="last-coins" class="numeric-val">0</span></span>
+          <span class="result-stat"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> <span id="last-gems" class="numeric-val">0</span></span>
+        </div>
+      </div>
+
+      <div class="result-footer">
+        <button class="btn-common result-btn" onclick="window.startGame(event)">RESTART</button>
+        <button class="btn-common result-btn" style="background:#7f8c8d;" onclick="window.Navigation?.go('lobby')">LOBBY</button>
+      </div>
+    </div>
+
+    <!-- ========== [6] PAUSE OVERLAY ========== -->
+    <div id="overlay-pause" class="overlay-popup" style="display:none;">
+      <div class="pause-box">
+        <div class="pause-title">PAUSED</div>
+        <button class="btn-common pause-btn" onclick="window.togglePause?.()">RESUME</button>
+        <button class="btn-common pause-btn" onclick="window.restartFromPause?.()">RESTART</button>
+        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.quitGame?.()">QUIT</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/core/state.js"></script>
+  <script src="./assets/js/core/config.js"></script>
+  <script src="./assets/js/core/storage.js"></script>
+  <script src="./assets/js/core/canvas.js"></script>
+  <script src="./assets/js/core/particles.js"></script>
+  <script src="./assets/js/data/skins.js"></script>
+  <script src="./assets/js/data/themes.js"></script>
+  <script src="./assets/js/data/stages.js"></script>
+  <script src="./assets/js/data/treasures.js"></script>
+  <script src="./assets/js/audio/sound.js"></script>
+  <script src="./assets/js/input/controls.js"></script>
+  <script src="./assets/js/ui/tabs.js"></script>
+  <script src="./assets/js/ui/shop.js"></script>
+  <script src="./assets/js/ui/navigation.js"></script>
+  <script src="./assets/js/ui/uiManager.js"></script>
+  <script src="./assets/js/entities/player.js"></script>
+  <script src="./assets/js/core/levelManager.js"></script>
+  <script src="./assets/js/core/physics.js"></script>
+  <script src="./assets/js/core/renderer.js"></script>
+  <script src="./assets/js/main.js"></script>
+</body>
+</html>
