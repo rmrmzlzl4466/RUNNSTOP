@@ -265,6 +265,10 @@
     </select>
   </div>
 </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎬 Result Anim Speed</span> <span class="val-display" id="qa-val-resultspeed">1.0x</span></div>
+            <input type="range" id="qa-resultspeed" min="25" max="200" step="25" value="100" oninput="window.updateQA()">
+          </div>
         </fieldset>
 
         <!-- Group 6: Dynamic Camera -->
@@ -386,8 +390,10 @@
       <div class="result-header">GAME OVER</div>
 
       <div class="result-card">
-        <!-- Skip Button -->
-        <button id="btn-result-skip" class="result-skip-btn" onclick="window.Game?.UI?.skipResultAnimation?.()">SKIP ></button>
+        <!-- Skip Button (larger with icon) -->
+        <button id="btn-result-skip" class="result-skip-btn" onclick="window.Game?.UI?.skipResultAnimation?.()">
+          <span class="skip-icon">⏩</span> SKIP
+        </button>
 
         <!-- Score Breakdown Table -->
         <div class="result-breakdown">
@@ -428,10 +434,16 @@
         <!-- Divider -->
         <div class="result-divider"></div>
 
-        <!-- Total Score -->
-        <div class="result-total-row">
-          <div class="result-title">TOTAL SCORE</div>
-          <div id="result-total-score" class="numeric-val result-total-value">0</div>
+        <!-- Total Score with Rank -->
+        <div class="result-total-section">
+          <div class="result-rank-container">
+            <div id="result-rank-badge" class="rank-badge" style="display:none;">D</div>
+            <div id="result-rank-label" class="rank-label">KEEP GOING</div>
+          </div>
+          <div class="result-total-row">
+            <div class="result-title">TOTAL SCORE</div>
+            <div id="result-total-score" class="numeric-val result-total-value">0</div>
+          </div>
         </div>
 
         <!-- High Score Comparison -->

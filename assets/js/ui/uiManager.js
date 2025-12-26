@@ -409,8 +409,10 @@
         elements.btnResultSkip.classList.remove('hidden');
       }
 
-      // Hide new record badge initially
+      // Hide new record badge and rank badge initially
       if (elements.resultNewRecord) elements.resultNewRecord.style.display = 'none';
+      const rankBadge = document.getElementById('result-rank-badge');
+      if (rankBadge) rankBadge.style.display = 'none';
 
       // Reset high score bar
       if (elements.highscoreBarFill) elements.highscoreBarFill.style.width = '0%';
@@ -493,14 +495,31 @@
       const gemsScore = gems * scorePerGem;
       const distScore = dist * scorePerMeter;
 
-      // Animation config
-      const rowDuration = 600; // ms per row
-      const countSteps = 20;
-      const delayBetweenRows = 200;
+      // Animation speed multiplier from QA settings (1.0 = normal, 0.5 = fast, 2.0 = slow)
+      const speedMult = qaConfig.resultAnimSpeed ?? 1.0;
+
+      // Animation config - adaptive based on count size
+      const getAnimConfig = (count) => {
+        if (count === 0) return { steps: 1, duration: 50 };
+        if (count <= 5) return { steps: 5, duration: 200 * speedMult };
+        if (count <= 20) return { steps: 10, duration: 350 * speedMult };
+        return { steps: 20, duration: 500 * speedMult };
+      };
+
+      const delayBetweenRows = Math.max(50, 150 * speedMult);
+
+      // Sound pitch configs for each item type
+      const soundConfigs = {
+        bits: { type: 'bit', pitchMult: 1.0 },
+        coins: { type: 'coin', pitchMult: 1.2 },
+        gems: { type: 'gem', pitchMult: 1.5 },
+        dist: { type: 'bit', pitchMult: 0.8 }
+      };
 
       // Helper function for counting animation
-      const animateCount = async (countEl, scoreEl, targetCount, targetScore, rowEl, sfxType) => {
-        if (resultAnimState.skipRequested) {
+      const animateCount = async (countEl, scoreEl, targetCount, targetScore, rowEl, soundKey) => {
+        // Skip immediately if count is 0
+        if (targetCount === 0 || resultAnimState.skipRequested) {
           if (countEl) countEl.innerText = targetCount;
           if (scoreEl) scoreEl.innerText = formatNumber(targetScore);
           if (rowEl) {
@@ -510,25 +529,28 @@
           return;
         }
 
+        const config = getAnimConfig(targetCount);
+        const soundConfig = soundConfigs[soundKey] || soundConfigs.bits;
+
         if (rowEl) {
           rowEl.setAttribute('data-status', 'active');
           rowEl.classList.add('counting');
         }
 
-        const stepTime = rowDuration / countSteps;
-        for (let i = 1; i <= countSteps; i++) {
+        const stepTime = config.duration / config.steps;
+        for (let i = 1; i <= config.steps; i++) {
           if (resultAnimState.skipRequested) break;
 
-          const progress = this.easeOutQuad(i / countSteps);
+          const progress = this.easeOutQuad(i / config.steps);
           const currentCount = Math.floor(targetCount * progress);
           const currentScore = Math.floor(targetScore * progress);
 
           if (countEl) countEl.innerText = currentCount;
           if (scoreEl) scoreEl.innerText = formatNumber(currentScore);
 
-          // Play tick sound occasionally
-          if (i % 5 === 0 && targetScore > 0) {
-            window.Sound?.sfx?.('bit');
+          // Play tick sound with varied pitch
+          if (i % Math.max(1, Math.floor(config.steps / 4)) === 0) {
+            window.Sound?.sfx?.(soundConfig.type);
           }
 
           await this.delay(stepTime);
@@ -543,10 +565,8 @@
           rowEl.classList.remove('counting');
         }
 
-        // Play completion sound if score > 0
-        if (targetScore > 0) {
-          window.Sound?.sfx?.(sfxType || 'coin', 0.5);
-        }
+        // Play completion sound
+        window.Sound?.sfx?.(soundConfig.type);
       };
 
       // Step 1: Animate Bits
@@ -556,9 +576,9 @@
         bits,
         bitsScore,
         elements.rowBits,
-        'bit'
+        'bits'
       );
-      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+      if (!resultAnimState.skipRequested && bits > 0) await this.delay(delayBetweenRows);
 
       // Step 2: Animate Coins
       await animateCount(
@@ -567,9 +587,9 @@
         coins,
         coinsScore,
         elements.rowCoins,
-        'coin'
+        'coins'
       );
-      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+      if (!resultAnimState.skipRequested && coins > 0) await this.delay(delayBetweenRows);
 
       // Step 3: Animate Gems
       await animateCount(
@@ -578,9 +598,9 @@
         gems,
         gemsScore,
         elements.rowGems,
-        'gem'
+        'gems'
       );
-      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+      if (!resultAnimState.skipRequested && gems > 0) await this.delay(delayBetweenRows);
 
       // Step 4: Animate Distance
       await animateCount(
@@ -589,17 +609,17 @@
         dist,
         distScore,
         elements.rowDistance,
-        'bit'
+        'dist'
       );
-      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows * 2);
+      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows * 1.5);
 
-      // Step 5: Animate Total Score
+      // Step 5: Animate Total Score with fanfare
       if (elements.resultTotalScore) {
         elements.resultTotalScore.classList.add('counting');
 
         if (!resultAnimState.skipRequested) {
-          const totalSteps = 30;
-          const totalStepTime = 800 / totalSteps;
+          const totalSteps = Math.floor(25 * speedMult);
+          const totalStepTime = (600 * speedMult) / totalSteps;
           for (let i = 1; i <= totalSteps; i++) {
             if (resultAnimState.skipRequested) break;
             const progress = this.easeOutQuad(i / totalSteps);
@@ -610,12 +630,18 @@
 
         elements.resultTotalScore.innerText = formatNumber(totalScore);
         elements.resultTotalScore.classList.remove('counting');
+
+        // Play total score fanfare
+        window.Sound?.sfx?.('boost_ready');
       }
 
-      // Step 6: Animate High Score Bar
-      if (!resultAnimState.skipRequested) await this.delay(300);
+      // Step 6: Show Score Rank
+      const rank = this.calculateRank(totalScore);
+      this.showRankBadge(rank);
+      if (!resultAnimState.skipRequested) await this.delay(200 * speedMult);
 
-      const maxBarScore = Math.max(highScore, totalScore);
+      // Step 7: Animate High Score Bar
+      const maxBarScore = Math.max(highScore, totalScore, 1);
       const currentPct = Math.min(100, (totalScore / maxBarScore) * 100);
       const highPct = Math.min(100, (highScore / maxBarScore) * 100);
 
@@ -626,12 +652,13 @@
         elements.highscoreBarCurrent.style.left = `${currentPct}%`;
       }
 
-      // Step 7: Show NEW RECORD badge if applicable
+      // Step 8: Show NEW RECORD badge if applicable
       if (isNewRecord) {
-        if (!resultAnimState.skipRequested) await this.delay(500);
+        if (!resultAnimState.skipRequested) await this.delay(300 * speedMult);
         if (elements.resultNewRecord) {
           elements.resultNewRecord.style.display = 'inline-block';
-          window.Sound?.sfx?.('item'); // Fanfare sound
+          // Play fanfare for new record
+          window.Sound?.sfx?.('boost_perfect');
         }
       }
 
@@ -639,6 +666,45 @@
       resultAnimState.isAnimating = false;
       if (elements.btnResultSkip) {
         elements.btnResultSkip.classList.add('hidden');
+      }
+    },
+
+    /**
+     * Calculate score rank based on total score
+     * @param {number} score - Total score
+     * @returns {Object} Rank info {grade, color, label}
+     */
+    calculateRank: function(score) {
+      const thresholds = window.qaConfig?.rankThresholds ?? {
+        S: 100000,
+        A: 50000,
+        B: 25000,
+        C: 10000
+      };
+
+      if (score >= thresholds.S) return { grade: 'S', color: '#f1c40f', label: 'LEGENDARY!' };
+      if (score >= thresholds.A) return { grade: 'A', color: '#2ecc71', label: 'EXCELLENT!' };
+      if (score >= thresholds.B) return { grade: 'B', color: '#3498db', label: 'GREAT!' };
+      if (score >= thresholds.C) return { grade: 'C', color: '#9b59b6', label: 'GOOD' };
+      return { grade: 'D', color: '#95a5a6', label: 'KEEP GOING' };
+    },
+
+    /**
+     * Show rank badge in result screen
+     * @param {Object} rank - Rank info from calculateRank
+     */
+    showRankBadge: function(rank) {
+      const rankEl = document.getElementById('result-rank-badge');
+      const rankLabel = document.getElementById('result-rank-label');
+      if (rankEl) {
+        rankEl.innerText = rank.grade;
+        rankEl.style.borderColor = rank.color;
+        rankEl.style.color = rank.color;
+        rankEl.style.display = 'flex';
+      }
+      if (rankLabel) {
+        rankLabel.innerText = rank.label;
+        rankLabel.style.color = rank.color;
       }
     },
 

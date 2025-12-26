@@ -98,6 +98,7 @@ window.initQASliders = function() {
   setValue('qa-trailopacity', activeConfig.trailOpacity * 100);
   setValue('qa-camoffset', (activeConfig.cameraOffsetPct ?? 0.6) * 100);
   document.getElementById('qa-visualmode').value = activeConfig.visualMode || 'B';
+  setValue('qa-resultspeed', (activeConfig.resultAnimSpeed ?? 1.0) * 100);
 
   // Dynamic Camera
   const camConfig = activeConfig.camera ?? {};
@@ -185,6 +186,7 @@ window.updateQA = function() {
   const trailOpacityPct = parseInt(document.getElementById('qa-trailopacity').value, 10);
   const camOffsetPctRaw = parseInt(document.getElementById('qa-camoffset').value, 10);
   const visualMode = document.getElementById('qa-visualmode').value;
+  const resultSpeedRaw = parseInt(document.getElementById('qa-resultspeed')?.value ?? 100, 10);
 
   // Dynamic Camera
   const zoomRunRaw = parseInt(document.getElementById('qa-zoom-run')?.value ?? 100, 10);
@@ -241,6 +243,7 @@ window.updateQA = function() {
   window.qaConfig.trailOpacity = trailOpacityPct / 100;
   window.qaConfig.cameraOffsetPct = camOffsetPctRaw / 100;
   window.qaConfig.visualMode = visualMode;
+  window.qaConfig.resultAnimSpeed = resultSpeedRaw / 100;
 
   // Dynamic Camera 저장
   window.qaConfig.camera = window.qaConfig.camera ?? {};
@@ -340,6 +343,7 @@ window.updateQA = function() {
   setText('qa-val-traillength', `${trailLength}`);
   setText('qa-val-trailopacity', `${trailOpacityPct}%`);
   setText('qa-val-camoffset', `${camOffsetPctRaw}%`);
+  setText('qa-val-resultspeed', `${(resultSpeedRaw / 100).toFixed(1)}x`);
 
   // Dynamic Camera
   setText('qa-val-zoom-run', `${(zoomRunRaw / 100).toFixed(2)}x`);
