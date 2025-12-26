@@ -17,8 +17,6 @@ window.GameModules = window.GameModules || {};
   let rafId = null;
   let lastTime = 0;
   const slowMoCfg = qaConfig.slowMo || {};
-  window.Game = window.Game || {};
-  window.Game.SlowMo = { start: startSlowMo, cancel: cancelSlowMo };
 
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
@@ -290,6 +288,10 @@ window.GameModules = window.GameModules || {};
     isRunning: () => !!rafId
   };
   }
+
+  // Expose minimal slow-mo controls for other modules (e.g., input cancelling)
+  window.Game = window.Game || {};
+  window.Game.SlowMo = { start: startSlowMo, cancel: cancelSlowMo };
 
   window.GameModules.Loop = { createGameLoop };
 })();

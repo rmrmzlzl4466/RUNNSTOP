@@ -8,8 +8,9 @@
   const TARGET_ASPECT = 9 / 16; // Portrait aspect (width / height)
 
   function resize() {
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+    // Fallback to viewport if the container hasn't been laid out yet (prevent zero-sized canvas)
+    const containerWidth = container.clientWidth || window.innerWidth || 1;
+    const containerHeight = container.clientHeight || window.innerHeight || 1;
 
     // Fit the target aspect ratio within the container (letterbox/pillarbox)
     let surfaceWidth = containerWidth;
