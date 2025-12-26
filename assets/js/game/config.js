@@ -21,6 +21,12 @@ window.GameModules = window.GameModules || {};
     bigGemGems: 50
   };
 
+  const FALLBACK_SLOWMO = {
+    slowMoScale: 0.55,       // Time scale during slow motion (0.1~1.0)
+    slowMoDuration: 1.35,    // Duration in seconds
+    slowMoEaseOut: 0.25      // Final segment eased back to normal (seconds)
+  };
+
   const FALLBACK_QA_CONFIG = {
     trailLength: 40,
     trailOpacity: 0.9,
@@ -49,6 +55,7 @@ window.GameModules = window.GameModules || {};
     const merged = { ...FALLBACK_QA_CONFIG, ...(window.GameConfig?.defaultQAConfig ?? {}) };
     merged.camera = { ...FALLBACK_CAMERA, ...(merged.camera || {}) };
     merged.item = { ...FALLBACK_ITEM, ...(merged.item || {}) };
+    merged.slowMo = { ...FALLBACK_SLOWMO, ...(merged.slowMo || {}) };
     // expose camera offset both inside camera.* and top-level for legacy reads
     merged.cameraOffsetPct = merged.cameraOffsetPct ?? merged.camera.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct;
     return merged;
@@ -123,6 +130,7 @@ window.GameModules = window.GameModules || {};
     applyLoadoutStats,
     FALLBACK_CAMERA,
     FALLBACK_ITEM,
+    FALLBACK_SLOWMO,
     getCameraOffsetPct: (qaConfig = {}) => qaConfig.cameraOffsetPct ?? qaConfig.camera?.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct
   };
 })();

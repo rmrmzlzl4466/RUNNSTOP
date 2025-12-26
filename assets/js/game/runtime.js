@@ -23,6 +23,8 @@ window.GameModules = window.GameModules || {};
       currentZoomLerp: 3.0,
       storm: { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 },
       items: [],
+      slowMoTimeRemaining: 0,
+      slowMoScale: qaConfig?.slowMo?.slowMoScale ?? 1.0,
       stage: {
         currentStageId: 1,
         previousStageId: 1,
@@ -72,6 +74,8 @@ window.GameModules = window.GameModules || {};
     runtime.currentZoomLerp = 3.0;
     runtime.storm = { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 };
     runtime.items = [];
+    runtime.slowMoTimeRemaining = 0;
+    runtime.slowMoScale = qaConfig?.slowMo?.slowMoScale ?? 1.0;
     runtime.stage = {
       currentStageId: 1,
       previousStageId: 1,

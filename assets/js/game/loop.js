@@ -16,6 +16,7 @@ window.GameModules = window.GameModules || {};
   function createGameLoop(runtime, player, qaConfig, handlers) {
   let rafId = null;
   let lastTime = 0;
+  const slowMoCfg = qaConfig.slowMo || {};
 
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
@@ -51,6 +52,10 @@ window.GameModules = window.GameModules || {};
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     if (result.isSafe) {
       player.grantSurvivalBooster();
+      // Trigger slow motion on perfect survival to emphasize the moment
+      if (slowMoCfg.slowMoDuration > 0) {
+        runtime.slowMoTimeRemaining = Math.max(runtime.slowMoTimeRemaining, slowMoCfg.slowMoDuration);
+      }
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
     } else if (result.action === 'barrier_save') {
@@ -89,11 +94,15 @@ window.GameModules = window.GameModules || {};
   }
 
   function update(dt) {
-    window.Game.UI.updateFloatingTexts(dt);
+    // Apply slow motion scaling for gameplay systems
+    const timeScale = runtime.slowMoTimeRemaining > 0 ? (slowMoCfg.slowMoScale ?? 1.0) : 1.0;
+    const effectiveDt = dt * timeScale;
+
+    window.Game.UI.updateFloatingTexts(effectiveDt);
     window.Game.UI.updateBuffs(player);
     window.Game.UI.updateDash(player);
-    player.update(dt, { input: window.Input, qaConfig, canvasWidth: runtime.canvasSize.width });
-    player.sessionScore += (qaConfig.scorePerSecond ?? 0) * dt;
+    player.update(effectiveDt, { input: window.Input, qaConfig, canvasWidth: runtime.canvasSize.width });
+    player.sessionScore += (qaConfig.scorePerSecond ?? 0) * effectiveDt;
     window.Game.UI.updateScore(player.sessionScore, formatNumber);
     if (player.isDying) return;
 
@@ -104,7 +113,7 @@ window.GameModules = window.GameModules || {};
     }
 
     const stormSpeed = window.Game.Physics.getStormSpeed(player.dist, qaConfig.stormBaseSpeed);
-    runtime.storm.y -= stormSpeed * dt;
+    runtime.storm.y -= stormSpeed * effectiveDt;
     if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
       handlers.onDie?.('STORM');
       return;
@@ -116,14 +125,17 @@ window.GameModules = window.GameModules || {};
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
     const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
-    runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * dt;
+    runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * effectiveDt;
 
-    updateCameraZoom(runtime, player, qaConfig, dt);
+    updateCameraZoom(runtime, player, qaConfig, effectiveDt);
     ensureRowsAroundPlayer();
     window.Game.Physics.filterItemsBehindStorm(runtime.items, runtime.storm);
     handleItems();
 
-    runtime.cycleTimer -= dt;
+    runtime.cycleTimer -= effectiveDt;
+    if (runtime.slowMoTimeRemaining > 0) {
+      runtime.slowMoTimeRemaining = Math.max(0, runtime.slowMoTimeRemaining - dt);
+    }
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
     if (runtime.gameState === STATE.RUN) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, 3.0, STATE);
