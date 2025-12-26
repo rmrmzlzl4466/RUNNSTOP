@@ -386,23 +386,89 @@
       <div class="result-header">GAME OVER</div>
 
       <div class="result-card">
+        <!-- Skip Button -->
+        <button id="btn-result-skip" class="result-skip-btn" onclick="window.Game?.UI?.skipResultAnimation?.()">SKIP ></button>
+
+        <!-- Score Breakdown Table -->
+        <div class="result-breakdown">
+          <!-- Bits Row -->
+          <div class="breakdown-row" id="row-bits" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/bit.png" alt="bit"></div>
+            <div class="breakdown-label">BITS</div>
+            <div class="breakdown-count"><span id="result-bits-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-bits-mult">50</span></div>
+            <div class="breakdown-score score-green"><span id="result-bits-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Coins Row -->
+          <div class="breakdown-row" id="row-coins" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/coin.png" alt="coin"></div>
+            <div class="breakdown-label">COINS</div>
+            <div class="breakdown-count"><span id="result-coins-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-coins-mult">200</span></div>
+            <div class="breakdown-score score-gold"><span id="result-coins-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Gems Row -->
+          <div class="breakdown-row" id="row-gems" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/gem.png" alt="gem"></div>
+            <div class="breakdown-label">GEMS</div>
+            <div class="breakdown-count"><span id="result-gems-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-gems-mult">1000</span></div>
+            <div class="breakdown-score score-cyan"><span id="result-gems-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Distance Row -->
+          <div class="breakdown-row" id="row-distance" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/distance.png" alt="distance" onerror="this.outerHTML='<span style=font-size:20px>📏</span>'"></div>
+            <div class="breakdown-label">DISTANCE</div>
+            <div class="breakdown-count"><span id="result-dist-count" class="numeric-val">0</span>m</div>
+            <div class="breakdown-mult">x<span id="result-dist-mult">10</span></div>
+            <div class="breakdown-score score-white"><span id="result-distance-score" class="numeric-val">0</span></div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="result-divider"></div>
+
+        <!-- Total Score -->
         <div class="result-total-row">
           <div class="result-title">TOTAL SCORE</div>
-          <div id="result-total-score" class="numeric-val">0</div>
+          <div id="result-total-score" class="numeric-val result-total-value">0</div>
         </div>
-        <div class="result-high-row">
-          <span>HIGH SCORE</span>
-          <span id="result-high-score" class="numeric-val">0</span>
-          <span id="result-new-record" class="badge-new" style="display:none;">NEW RECORD</span>
+
+        <!-- High Score Comparison -->
+        <div class="result-highscore-section">
+          <div class="highscore-bar-container">
+            <div class="highscore-bar-bg">
+              <div id="highscore-bar-fill" class="highscore-bar-fill"></div>
+              <div id="highscore-bar-current" class="highscore-bar-current"></div>
+            </div>
+            <div class="highscore-labels">
+              <span>0</span>
+              <span id="result-high-score" class="numeric-val">0</span>
+            </div>
+          </div>
+          <span id="result-new-record" class="badge-new" style="display:none;">NEW RECORD!</span>
         </div>
-        <div class="result-detail">
-          <div class="detail-row"><span>Map Items Score</span><span id="result-items-score" class="numeric-val">0</span></div>
-          <div class="detail-row"><span>Distance Bonus</span><span id="result-distance-score" class="numeric-val">0</span></div>
-        </div>
+
+        <!-- Currency Earned -->
         <div class="result-currency-row">
           <span class="result-stat"><span id="last-dist" class="numeric-val">0</span>m</span>
-          <span class="result-stat"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> <span id="last-coins" class="numeric-val">0</span></span>
-          <span class="result-stat"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> <span id="last-gems" class="numeric-val">0</span></span>
+          <span class="result-stat"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> +<span id="last-coins" class="numeric-val">0</span></span>
+          <span class="result-stat"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> +<span id="last-gems" class="numeric-val">0</span></span>
+        </div>
+
+        <!-- Score Guide Button -->
+        <button id="btn-score-guide" class="score-guide-btn" onclick="window.Game?.UI?.toggleScoreGuide?.()">?</button>
+      </div>
+
+      <!-- Score Guide Popup -->
+      <div id="score-guide-popup" class="score-guide-popup" style="display:none;">
+        <div class="score-guide-content">
+          <div class="score-guide-header">Score Guide</div>
+          <div class="score-guide-item"><img src="./assets/images/icons/bit.png" class="guide-icon" alt="bit"> <span>Bit</span> <span class="guide-value">+<span id="guide-bit-score">50</span> pts</span></div>
+          <div class="score-guide-item"><img src="./assets/images/icons/coin.png" class="guide-icon" alt="coin"> <span>Coin</span> <span class="guide-value">+<span id="guide-coin-score">200</span> pts</span></div>
+          <div class="score-guide-item"><img src="./assets/images/icons/gem.png" class="guide-icon" alt="gem"> <span>Gem</span> <span class="guide-value">+<span id="guide-gem-score">1000</span> pts</span></div>
+          <div class="score-guide-item"><span class="guide-icon">📏</span> <span>1 Meter</span> <span class="guide-value">+<span id="guide-meter-score">10</span> pts</span></div>
+          <button class="btn-common" onclick="window.Game?.UI?.toggleScoreGuide?.()">Close</button>
         </div>
       </div>
 

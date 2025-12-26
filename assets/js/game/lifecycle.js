@@ -74,6 +74,7 @@ window.GameModules = window.GameModules || {};
 
     window.Game.UI.updateResult({
       dist: player.dist,
+      bits: player.sessionBits,
       coins: player.sessionCoins,
       gems: player.sessionGems,
       totalScore,

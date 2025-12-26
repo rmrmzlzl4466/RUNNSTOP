@@ -32,7 +32,32 @@
     resultHighScore: null,
     resultNewRecord: null,
     resultItemsScore: null,
-    resultDistanceScore: null
+    resultDistanceScore: null,
+    // New result breakdown elements
+    resultBitsCount: null,
+    resultBitsScore: null,
+    resultCoinsCount: null,
+    resultCoinsScore: null,
+    resultGemsCount: null,
+    resultGemsScore: null,
+    resultDistCount: null,
+    rowBits: null,
+    rowCoins: null,
+    rowGems: null,
+    rowDistance: null,
+    btnResultSkip: null,
+    highscoreBarFill: null,
+    highscoreBarCurrent: null,
+    scoreGuidePopup: null
+  };
+
+  // Result animation state
+  let resultAnimState = {
+    isAnimating: false,
+    skipRequested: false,
+    currentStep: 0,
+    animFrameId: null,
+    data: null
   };
 
   let lastScoreDisplay = '';
@@ -71,6 +96,22 @@
       elements.resultNewRecord = document.getElementById('result-new-record');
       elements.resultItemsScore = document.getElementById('result-items-score');
       elements.resultDistanceScore = document.getElementById('result-distance-score');
+      // New result breakdown elements
+      elements.resultBitsCount = document.getElementById('result-bits-count');
+      elements.resultBitsScore = document.getElementById('result-bits-score');
+      elements.resultCoinsCount = document.getElementById('result-coins-count');
+      elements.resultCoinsScore = document.getElementById('result-coins-score');
+      elements.resultGemsCount = document.getElementById('result-gems-count');
+      elements.resultGemsScore = document.getElementById('result-gems-score');
+      elements.resultDistCount = document.getElementById('result-dist-count');
+      elements.rowBits = document.getElementById('row-bits');
+      elements.rowCoins = document.getElementById('row-coins');
+      elements.rowGems = document.getElementById('row-gems');
+      elements.rowDistance = document.getElementById('row-distance');
+      elements.btnResultSkip = document.getElementById('btn-result-skip');
+      elements.highscoreBarFill = document.getElementById('highscore-bar-fill');
+      elements.highscoreBarCurrent = document.getElementById('highscore-bar-current');
+      elements.scoreGuidePopup = document.getElementById('score-guide-popup');
     },
 
     /**
@@ -345,20 +386,278 @@
     },
 
     /**
-     * Update result screen with game over data
+     * Update result screen with game over data (immediate, no animation)
      * @param {Object} data - Result data
      */
     updateResult: function(data) {
-      const { dist, coins, gems, totalScore, highScore, isNewRecord, itemScore, distanceBonus, formatNumber } = data;
+      // Store data and start animation
+      resultAnimState.data = data;
+      resultAnimState.isAnimating = true;
+      resultAnimState.skipRequested = false;
+      resultAnimState.currentStep = 0;
 
-      if (elements.lastDist) elements.lastDist.innerText = dist;
-      if (elements.lastCoins) elements.lastCoins.innerText = coins;
-      if (elements.lastGems) elements.lastGems.innerText = gems;
-      if (elements.resultTotalScore) elements.resultTotalScore.innerText = formatNumber(totalScore);
-      if (elements.resultHighScore) elements.resultHighScore.innerText = formatNumber(highScore);
-      if (elements.resultNewRecord) elements.resultNewRecord.style.display = isNewRecord ? 'inline-block' : 'none';
-      if (elements.resultItemsScore) elements.resultItemsScore.innerText = formatNumber(itemScore);
-      if (elements.resultDistanceScore) elements.resultDistanceScore.innerText = formatNumber(distanceBonus);
+      // Reset all rows to pending state
+      [elements.rowBits, elements.rowCoins, elements.rowGems, elements.rowDistance].forEach(row => {
+        if (row) {
+          row.setAttribute('data-status', 'pending');
+          row.classList.remove('counting');
+        }
+      });
+
+      // Show skip button
+      if (elements.btnResultSkip) {
+        elements.btnResultSkip.classList.remove('hidden');
+      }
+
+      // Hide new record badge initially
+      if (elements.resultNewRecord) elements.resultNewRecord.style.display = 'none';
+
+      // Reset high score bar
+      if (elements.highscoreBarFill) elements.highscoreBarFill.style.width = '0%';
+      if (elements.highscoreBarCurrent) elements.highscoreBarCurrent.style.left = '0%';
+
+      // Set currency earned (instant)
+      if (elements.lastDist) elements.lastDist.innerText = data.dist;
+      if (elements.lastCoins) elements.lastCoins.innerText = data.coins;
+      if (elements.lastGems) elements.lastGems.innerText = data.gems;
+      if (elements.resultHighScore) elements.resultHighScore.innerText = data.formatNumber(data.highScore);
+
+      // Update score guide with current multipliers
+      this.updateScoreGuide();
+
+      // Start animation sequence
+      this.animateResultSequence(data);
+    },
+
+    /**
+     * Update score guide popup with current multiplier values
+     */
+    updateScoreGuide: function() {
+      const qaConfig = window.qaConfig || {};
+      const setBit = document.getElementById('guide-bit-score');
+      const setCoin = document.getElementById('guide-coin-score');
+      const setGem = document.getElementById('guide-gem-score');
+      const setMeter = document.getElementById('guide-meter-score');
+      const setMults = {
+        bits: document.getElementById('result-bits-mult'),
+        coins: document.getElementById('result-coins-mult'),
+        gems: document.getElementById('result-gems-mult'),
+        dist: document.getElementById('result-dist-mult')
+      };
+
+      if (setBit) setBit.innerText = qaConfig.scorePerBit ?? 50;
+      if (setCoin) setCoin.innerText = qaConfig.scorePerCoin ?? 200;
+      if (setGem) setGem.innerText = qaConfig.scorePerGem ?? 1000;
+      if (setMeter) setMeter.innerText = qaConfig.scorePerMeter ?? 10;
+      if (setMults.bits) setMults.bits.innerText = qaConfig.scorePerBit ?? 50;
+      if (setMults.coins) setMults.coins.innerText = qaConfig.scorePerCoin ?? 200;
+      if (setMults.gems) setMults.gems.innerText = qaConfig.scorePerGem ?? 1000;
+      if (setMults.dist) setMults.dist.innerText = qaConfig.scorePerMeter ?? 10;
+    },
+
+    /**
+     * Toggle score guide popup visibility
+     */
+    toggleScoreGuide: function() {
+      if (elements.scoreGuidePopup) {
+        const isVisible = elements.scoreGuidePopup.style.display !== 'none';
+        elements.scoreGuidePopup.style.display = isVisible ? 'none' : 'flex';
+        window.Sound?.sfx?.('btn');
+      }
+    },
+
+    /**
+     * Skip result animation
+     */
+    skipResultAnimation: function() {
+      if (!resultAnimState.isAnimating) return;
+      resultAnimState.skipRequested = true;
+      window.Sound?.sfx?.('btn');
+    },
+
+    /**
+     * Animate result screen sequence (slot machine style)
+     * @param {Object} data - Result data
+     */
+    animateResultSequence: async function(data) {
+      const { bits, coins, gems, dist, totalScore, highScore, isNewRecord, formatNumber } = data;
+      const qaConfig = window.qaConfig || {};
+
+      const scorePerBit = qaConfig.scorePerBit ?? 50;
+      const scorePerCoin = qaConfig.scorePerCoin ?? 200;
+      const scorePerGem = qaConfig.scorePerGem ?? 1000;
+      const scorePerMeter = qaConfig.scorePerMeter ?? 10;
+
+      const bitsScore = bits * scorePerBit;
+      const coinsScore = coins * scorePerCoin;
+      const gemsScore = gems * scorePerGem;
+      const distScore = dist * scorePerMeter;
+
+      // Animation config
+      const rowDuration = 600; // ms per row
+      const countSteps = 20;
+      const delayBetweenRows = 200;
+
+      // Helper function for counting animation
+      const animateCount = async (countEl, scoreEl, targetCount, targetScore, rowEl, sfxType) => {
+        if (resultAnimState.skipRequested) {
+          if (countEl) countEl.innerText = targetCount;
+          if (scoreEl) scoreEl.innerText = formatNumber(targetScore);
+          if (rowEl) {
+            rowEl.setAttribute('data-status', 'done');
+            rowEl.classList.remove('counting');
+          }
+          return;
+        }
+
+        if (rowEl) {
+          rowEl.setAttribute('data-status', 'active');
+          rowEl.classList.add('counting');
+        }
+
+        const stepTime = rowDuration / countSteps;
+        for (let i = 1; i <= countSteps; i++) {
+          if (resultAnimState.skipRequested) break;
+
+          const progress = this.easeOutQuad(i / countSteps);
+          const currentCount = Math.floor(targetCount * progress);
+          const currentScore = Math.floor(targetScore * progress);
+
+          if (countEl) countEl.innerText = currentCount;
+          if (scoreEl) scoreEl.innerText = formatNumber(currentScore);
+
+          // Play tick sound occasionally
+          if (i % 5 === 0 && targetScore > 0) {
+            window.Sound?.sfx?.('bit');
+          }
+
+          await this.delay(stepTime);
+        }
+
+        // Final values
+        if (countEl) countEl.innerText = targetCount;
+        if (scoreEl) scoreEl.innerText = formatNumber(targetScore);
+
+        if (rowEl) {
+          rowEl.setAttribute('data-status', 'done');
+          rowEl.classList.remove('counting');
+        }
+
+        // Play completion sound if score > 0
+        if (targetScore > 0) {
+          window.Sound?.sfx?.(sfxType || 'coin', 0.5);
+        }
+      };
+
+      // Step 1: Animate Bits
+      await animateCount(
+        elements.resultBitsCount,
+        elements.resultBitsScore,
+        bits,
+        bitsScore,
+        elements.rowBits,
+        'bit'
+      );
+      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+
+      // Step 2: Animate Coins
+      await animateCount(
+        elements.resultCoinsCount,
+        elements.resultCoinsScore,
+        coins,
+        coinsScore,
+        elements.rowCoins,
+        'coin'
+      );
+      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+
+      // Step 3: Animate Gems
+      await animateCount(
+        elements.resultGemsCount,
+        elements.resultGemsScore,
+        gems,
+        gemsScore,
+        elements.rowGems,
+        'gem'
+      );
+      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows);
+
+      // Step 4: Animate Distance
+      await animateCount(
+        elements.resultDistCount,
+        elements.resultDistanceScore,
+        dist,
+        distScore,
+        elements.rowDistance,
+        'bit'
+      );
+      if (!resultAnimState.skipRequested) await this.delay(delayBetweenRows * 2);
+
+      // Step 5: Animate Total Score
+      if (elements.resultTotalScore) {
+        elements.resultTotalScore.classList.add('counting');
+
+        if (!resultAnimState.skipRequested) {
+          const totalSteps = 30;
+          const totalStepTime = 800 / totalSteps;
+          for (let i = 1; i <= totalSteps; i++) {
+            if (resultAnimState.skipRequested) break;
+            const progress = this.easeOutQuad(i / totalSteps);
+            elements.resultTotalScore.innerText = formatNumber(Math.floor(totalScore * progress));
+            await this.delay(totalStepTime);
+          }
+        }
+
+        elements.resultTotalScore.innerText = formatNumber(totalScore);
+        elements.resultTotalScore.classList.remove('counting');
+      }
+
+      // Step 6: Animate High Score Bar
+      if (!resultAnimState.skipRequested) await this.delay(300);
+
+      const maxBarScore = Math.max(highScore, totalScore);
+      const currentPct = Math.min(100, (totalScore / maxBarScore) * 100);
+      const highPct = Math.min(100, (highScore / maxBarScore) * 100);
+
+      if (elements.highscoreBarFill) {
+        elements.highscoreBarFill.style.width = `${highPct}%`;
+      }
+      if (elements.highscoreBarCurrent) {
+        elements.highscoreBarCurrent.style.left = `${currentPct}%`;
+      }
+
+      // Step 7: Show NEW RECORD badge if applicable
+      if (isNewRecord) {
+        if (!resultAnimState.skipRequested) await this.delay(500);
+        if (elements.resultNewRecord) {
+          elements.resultNewRecord.style.display = 'inline-block';
+          window.Sound?.sfx?.('item'); // Fanfare sound
+        }
+      }
+
+      // Animation complete
+      resultAnimState.isAnimating = false;
+      if (elements.btnResultSkip) {
+        elements.btnResultSkip.classList.add('hidden');
+      }
+    },
+
+    /**
+     * EaseOut quadratic function for smooth animation
+     * @param {number} t - Progress (0-1)
+     * @returns {number} Eased progress
+     */
+    easeOutQuad: function(t) {
+      return t * (2 - t);
+    },
+
+    /**
+     * Promise-based delay helper
+     * @param {number} ms - Milliseconds to delay
+     * @returns {Promise}
+     */
+    delay: function(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
 
     /**
