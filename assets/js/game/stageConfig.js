@@ -1,12 +1,12 @@
 /**
  * StageConfig Module
  *
- * Provides stage-specific configuration with QA override support.
- * Priority: QA Override -> StageConfig -> qaConfig -> default
+ * Priority chain for per-stage values:
+ * 1. QA Override (localStorage) - highest
+ * 2. Stage Tuning (stage.tuning)
+ * 3. STAGE_DEFAULTS (core/config.js)
  *
- * [FIX 1] All fields use unified get() chain for proper override support
- * [FIX 2] Hash-based cache validation for qaConfig and localStorage changes
- * [FIX 3] Normalized stageId (always String) for consistent key access
+ * GLOBAL values are always from core/config.js
  */
 window.GameModules = window.GameModules || {};
 
@@ -20,16 +20,10 @@ window.GameModules = window.GameModules || {};
   let cachedQaHash = null;
   let cachedOverrideHash = null;
 
-  /**
-   * [FIX 3] Normalize stageId to string for consistent key access
-   */
   function normalizeStageId(stageId) {
     return String(stageId);
   }
 
-  /**
-   * Generate simple hash for cache validation
-   */
   function hashObject(obj) {
     if (!obj) return 'null';
     try {
@@ -37,24 +31,6 @@ window.GameModules = window.GameModules || {};
     } catch (e) {
       return String(Date.now());
     }
-  }
-
-  /**
-   * Get relevant qaConfig fields for cache hash
-   */
-  function getQaHashSource(qaConfig) {
-    if (!qaConfig) return null;
-    return {
-      coinRate: qaConfig.coinRate,
-      itemRate: qaConfig.itemRate,
-      minCoinRunLength: qaConfig.minCoinRunLength,
-      stormBaseSpeed: qaConfig.stormBaseSpeed,
-      itemWeights: qaConfig.itemWeights,
-      runPhaseDuration: qaConfig.runPhaseDuration,
-      warningTimeBase: qaConfig.warningTimeBase,
-      warningTimeMin: qaConfig.warningTimeMin,
-      stopPhaseDuration: qaConfig.stopPhaseDuration
-    };
   }
 
   /**
@@ -71,7 +47,7 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * [FIX 3] Normalize and sanitize itemWeights
+   * Normalize itemWeights
    */
   function normalizeWeights(weights) {
     const DEFAULT = { barrier: 0.2, booster: 0.4, magnet: 0.4 };
@@ -98,40 +74,35 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * [FIX 1] Unified get() function with proper fallback chain
-   * Priority: QA Override -> StageConfig -> qaConfig -> default
+   * Get value with priority chain:
+   * QA Override → Stage Tuning → STAGE_DEFAULTS
    */
-  function getValue(key, stageConfig, qaConfig, qaOverrides, stageIdStr, defaultVal) {
-    // 1. Check QA overrides for this stage (highest priority)
-    const stageOverride = qaOverrides[stageIdStr];
-    if (stageOverride && stageOverride[key] !== undefined && stageOverride[key] !== null) {
-      return stageOverride[key];
+  function getValue(key, stageTuning, qaOverride, defaults) {
+    // 1. QA Override (highest priority)
+    if (qaOverride && qaOverride[key] !== undefined && qaOverride[key] !== null) {
+      return qaOverride[key];
     }
 
-    // 2. Check stage config (null means "use default", so skip null)
-    if (stageConfig && stageConfig[key] !== undefined && stageConfig[key] !== null) {
-      return stageConfig[key];
+    // 2. Stage Tuning
+    if (stageTuning && stageTuning[key] !== undefined && stageTuning[key] !== null) {
+      return stageTuning[key];
     }
 
-    // 3. Check global qaConfig
-    if (qaConfig && qaConfig[key] !== undefined && qaConfig[key] !== null) {
-      return qaConfig[key];
+    // 3. STAGE_DEFAULTS
+    if (defaults && defaults[key] !== undefined) {
+      return defaults[key];
     }
 
-    // 4. Return default
-    return defaultVal;
+    return null;
   }
 
   /**
-   * [FIX 2] Check if cache is still valid
+   * Check cache validity
    */
-  function isCacheValid(stageId, loopCount, qaConfig, qaOverrides) {
+  function isCacheValid(stageId, loopCount, qaOverrides) {
     if (!cachedEffective) return false;
     if (cachedStageId !== stageId) return false;
     if (cachedLoopCount !== loopCount) return false;
-
-    const currentQaHash = hashObject(getQaHashSource(qaConfig));
-    if (cachedQaHash !== currentQaHash) return false;
 
     const currentOverrideHash = hashObject(qaOverrides);
     if (cachedOverrideHash !== currentOverrideHash) return false;
@@ -148,57 +119,88 @@ window.GameModules = window.GameModules || {};
     const loopCount = runtime?.stage?.loopCount ?? 0;
     const qaOverrides = getQAOverrides();
 
-    // [FIX 2] Enhanced cache check
-    if (!forceRecalc && isCacheValid(stageId, loopCount, qaConfig, qaOverrides)) {
+    if (!forceRecalc && isCacheValid(stageId, loopCount, qaOverrides)) {
       return cachedEffective;
     }
 
+    // Get stage config and tuning
     const stageConfig = runtime?.stage?.currentConfig;
+    const stageTuning = stageConfig?.tuning ?? {};
+    const stageOverride = qaOverrides[stageIdStr] ?? {};
+
+    // Get defaults from core/config.js
+    const DEFAULTS = window.GameConfig?.STAGE_DEFAULTS ?? {};
+    const GLOBAL = window.GameConfig?.GLOBAL ?? {};
+
+    // Loop difficulty scaling
     const loopScale = runtime?.stage?.loopDifficultyScale ?? 1.0;
 
-    // [FIX 1] Unified get() helper
-    const get = (key, def) => getValue(key, stageConfig, qaConfig, qaOverrides, stageIdStr, def);
+    // Helper function
+    const get = (key) => getValue(key, stageTuning, stageOverride, DEFAULTS);
 
-    // [FIX 1] ALL fields now use get() for proper override support
-    const stormSpeedMult = get('stormSpeedMult', 1.0);
-    const baseSpeedMult = get('baseSpeedMult', 1.0);
-    const scoreMult = get('scoreMult', 1.0);
-    const warningTimeMult = get('warningTimeMult', 1.0);
+    // Build effective config
+    const stormSpeedMult = get('stormSpeedMult') ?? 1.0;
+    const baseSpeedMult = get('baseSpeedMult') ?? 1.0;
+    const scoreMult = get('scoreMult') ?? 1.0;
+    const warningTimeMult = get('warningTimeMult') ?? 1.0;
 
     const effective = {
-      // Spawn rates
-      coinRate: get('coinRate', 0.3),
-      minCoinRunLength: get('minCoinRunLength', 5),
-      itemRate: get('itemRate', 0.03),
-      itemWeights: normalizeWeights(get('itemWeights', null)),
+      // === 물리 (Per-Stage) ===
+      baseSpeed: get('baseSpeed') ?? 960,
+      friction: get('friction') ?? 0.93,
+      stopFriction: get('stopFriction') ?? 0.81,
+      baseAccel: get('baseAccel') ?? 3000,
+      turnAccelMult: get('turnAccelMult') ?? 4.5,
 
-      // Speed (with multipliers)
+      // === 대쉬 (Per-Stage) ===
+      dashForce: get('dashForce') ?? 1000,
+      minDashForce: get('minDashForce') ?? 600,
+      maxDashForce: get('maxDashForce') ?? 4000,
+      maxChargeTime: get('maxChargeTime') ?? 1.2,
+      dashCooldown: get('dashCooldown') ?? 0.7,
+      chargeSlowdown: get('chargeSlowdown') ?? 1.0,
+
+      // === 마그넷 (Per-Stage) ===
+      baseMagnet: get('baseMagnet') ?? 50,
+      magnetRange: get('magnetRange') ?? 160,
+
+      // === 스폰 (Per-Stage) ===
+      coinRate: get('coinRate') ?? 0.3,
+      minCoinRunLength: get('minCoinRunLength') ?? 13,
+      itemRate: get('itemRate') ?? 0.03,
+      itemWeights: normalizeWeights(get('itemWeights')),
+
+      // === 속도 (Per-Stage with multipliers) ===
       stormSpeedMult: stormSpeedMult,
-      stormSpeed: (qaConfig?.stormBaseSpeed ?? 150) * stormSpeedMult * loopScale,
+      stormSpeed: (get('stormBaseSpeed') ?? 150) * stormSpeedMult * loopScale,
       baseSpeedMult: baseSpeedMult,
 
-      // Score
+      // === 타이밍 (Per-Stage) ===
+      firstWarningTimeBase: get('firstWarningTimeBase') ?? 12.0,
+      runPhaseDuration: get('runPhaseDuration') ?? 3.0,
+      warningTimeBase: get('warningTimeBase') ?? 7.0,
+      warningTimeMin: get('warningTimeMin') ?? 3.0,
+      warningTimeMult: warningTimeMult,
+      stopPhaseDuration: get('stopPhaseDuration') ?? 0.5,
+
+      // === 점수 (Per-Stage with loop scaling) ===
       scoreMult: scoreMult * loopScale,
 
-      // Cycle timing
-      runPhaseDuration: get('runPhaseDuration', 3.0),
-      warningTimeBase: get('warningTimeBase', 7.0),
-      warningTimeMin: get('warningTimeMin', 3.0),
-      warningTimeMult: warningTimeMult,
-      stopPhaseDuration: get('stopPhaseDuration', 1.5),
+      // === 모프 (Per-Stage) ===
+      morphTrigger: get('morphTrigger') ?? 3.5,
+      morphDuration: get('morphDuration') ?? 0.5,
 
-      // Meta info
+      // === Meta ===
       _stageId: stageId,
       _stageIdStr: stageIdStr,
       _loopCount: loopCount,
       _loopScale: loopScale
     };
 
-    // [FIX 2] Update cache with hashes
+    // Update cache
     cachedEffective = effective;
     cachedStageId = stageId;
     cachedLoopCount = loopCount;
-    cachedQaHash = hashObject(getQaHashSource(qaConfig));
     cachedOverrideHash = hashObject(qaOverrides);
 
     return effective;
@@ -216,7 +218,7 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * Get current effective config (convenience method)
+   * Get current effective config (convenience)
    */
   function getEffective() {
     const runtime = window.runtime ?? window.Game?.runtime;
@@ -225,7 +227,7 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * Update stage config in runtime when stage changes
+   * Update stage config when stage changes
    */
   function updateCurrentConfig(runtime, stageId) {
     const stageIdNum = parseInt(stageId, 10);
@@ -237,7 +239,7 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * [FIX 3] Save QA override for a specific stage
+   * Save QA override for a specific stage
    */
   function setQAOverride(stageId, key, value) {
     try {
@@ -263,7 +265,16 @@ window.GameModules = window.GameModules || {};
   }
 
   /**
-   * [FIX 3] Reset QA overrides for a specific stage
+   * Get QA override for a single stage
+   */
+  function getQAOverride(stageId) {
+    const stageIdStr = normalizeStageId(stageId);
+    const overrides = getQAOverrides();
+    return overrides[stageIdStr] || null;
+  }
+
+  /**
+   * Reset QA overrides for a specific stage
    */
   function resetStageOverrides(stageId) {
     try {
@@ -289,20 +300,7 @@ window.GameModules = window.GameModules || {};
     }
   }
 
-  /**
-   * Get QA override for a single stage
-   */
-  function getQAOverride(stageId) {
-    const stageIdStr = normalizeStageId(stageId);
-    const overrides = getQAOverrides();
-    return overrides[stageIdStr] || null;
-  }
-
-  // Aliases for UI consistency
-  const clearQAOverride = resetStageOverrides;
-  const clearAllQAOverrides = resetAllOverrides;
-
-  // Export module
+  // Export
   window.GameModules.StageConfig = {
     getEffectiveConfig,
     getEffective,
@@ -312,8 +310,8 @@ window.GameModules = window.GameModules || {};
     getQAOverride,
     resetStageOverrides,
     resetAllOverrides,
-    clearQAOverride,       // alias
-    clearAllQAOverrides,   // alias
+    clearQAOverride: resetStageOverrides,
+    clearAllQAOverrides: resetAllOverrides,
     getQAOverrides,
     normalizeWeights,
     normalizeStageId

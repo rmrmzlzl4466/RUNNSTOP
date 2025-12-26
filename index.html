@@ -219,6 +219,7 @@
           <div class="setting-item"><div class="vol-row"><span>🧲 Item Magnet Range</span> <span class="val-display" id="qa-val-magnet">160</span></div><input type="range" id="qa-magnet" min="50" max="400" step="10" value="160" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>🌪️ Storm Base Speed</span> <span class="val-display" id="qa-val-storm">150</span></div><input type="range" id="qa-storm" min="50" max="500" step="10" value="150" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>🚀 Booster Distance</span> <span class="val-display" id="qa-val-boost">700</span></div><input type="range" id="qa-boost" min="100" max="1000" step="50" value="700" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🛡️ Boost Invincible</span> <span class="val-display" id="qa-val-boostinvinc">1.0s</span></div><input type="range" id="qa-boostinvinc" min="0" max="30" step="1" value="10" oninput="window.updateQA()"></div>
           <div class="setting-item">
             <div class="vol-row"><span>📏 Stage Length</span> <span class="val-display" id="qa-val-stagelen">2000m</span></div>
             <input type="range" id="qa-stagelen" min="500" max="4000" step="100" value="2000" oninput="window.updateQA()">
@@ -374,15 +375,36 @@
           </div>
           <div class="setting-item">
             <div class="vol-row"><span>📦 Item Rate</span> <span class="val-display" id="qa-val-stage-itemrate">0.03</span></div>
-            <input type="range" id="qa-stage-itemrate" min="0" max="20" step="1" value="3" oninput="window.updateStageParam?.('itemRate', this.value/100)">
+            <input type="range" id="qa-stage-itemrate" min="0" max="40" step="1" value="3" oninput="window.updateStageParam?.('itemRate', this.value/100)">
           </div>
           <div class="setting-item">
             <div class="vol-row"><span>🌪️ Storm Speed Mult</span> <span class="val-display" id="qa-val-stage-stormmult">1.00x</span></div>
-            <input type="range" id="qa-stage-stormmult" min="50" max="200" step="10" value="100" oninput="window.updateStageParam?.('stormSpeedMult', this.value/100)">
+            <input type="range" id="qa-stage-stormmult" min="10" max="400" step="10" value="100" oninput="window.updateStageParam?.('stormSpeedMult', this.value/100)">
           </div>
           <div class="setting-item">
             <div class="vol-row"><span>🏃 Base Speed Mult</span> <span class="val-display" id="qa-val-stage-speedmult">1.00x</span></div>
-            <input type="range" id="qa-stage-speedmult" min="50" max="200" step="10" value="100" oninput="window.updateStageParam?.('baseSpeedMult', this.value/100)">
+            <input type="range" id="qa-stage-speedmult" min="10" max="400" step="10" value="100" oninput="window.updateStageParam?.('baseSpeedMult', this.value/100)">
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
+            <div class="vol-row" style="margin-bottom:5px;"><span>Cycle Timing</span></div>
+            <div style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+              <div class="vol-row"><span>RUN Duration</span> <span class="val-display" id="qa-val-stage-runduration">3.0s</span></div>
+              <input type="range" id="qa-stage-runduration" min="5" max="120" step="5" value="30" oninput="window.updateStageParam?.('runPhaseDuration', this.value/10)">
+              <div class="vol-row"><span>1st Warning Time</span> <span class="val-display" id="qa-val-stage-firstwarning">12.0s</span></div>
+              <input type="range" id="qa-stage-firstwarning" min="20" max="400" step="10" value="120" oninput="window.updateStageParam?.('firstWarningTimeBase', this.value/10)">
+              <div class="vol-row"><span>Warning Base</span> <span class="val-display" id="qa-val-stage-warningbase">7.0s</span></div>
+              <input type="range" id="qa-stage-warningbase" min="10" max="300" step="5" value="70" oninput="window.updateStageParam?.('warningTimeBase', this.value/10)">
+              <div class="vol-row"><span>Warning Min</span> <span class="val-display" id="qa-val-stage-warningmin">3.0s</span></div>
+              <input type="range" id="qa-stage-warningmin" min="5" max="200" step="5" value="30" oninput="window.updateStageParam?.('warningTimeMin', this.value/10)">
+              <div class="vol-row"><span>Warning Mult</span> <span class="val-display" id="qa-val-stage-warningmult">1.0x</span></div>
+              <input type="range" id="qa-stage-warningmult" min="10" max="400" step="10" value="100" oninput="window.updateStageParam?.('warningTimeMult', this.value/100)">
+              <div class="vol-row"><span>STOP Duration</span> <span class="val-display" id="qa-val-stage-stopduration">1.5s</span></div>
+              <input type="range" id="qa-stage-stopduration" min="3" max="100" step="2" value="15" oninput="window.updateStageParam?.('stopPhaseDuration', this.value/10)">
+            </div>
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
+            <div class="vol-row"><span>Score Mult</span> <span class="val-display" id="qa-val-stage-scoremult">1.0x</span></div>
+            <input type="range" id="qa-stage-scoremult" min="5" max="1000" step="5" value="100" oninput="window.updateStageParam?.('scoreMult', this.value/100)">
           </div>
           <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
             <div class="vol-row" style="margin-bottom:5px;"><span>⚖️ Item Weights</span></div>
@@ -403,6 +425,18 @@
             <button class="btn-common" onclick="window.applyStagePreset?.('easy')" style="flex:1; background:#00b894; color:#fff; font-size:11px; padding:5px;">Easy</button>
             <button class="btn-common" onclick="window.applyStagePreset?.('normal')" style="flex:1; background:#0984e3; color:#fff; font-size:11px; padding:5px;">Normal</button>
             <button class="btn-common" onclick="window.applyStagePreset?.('hard')" style="flex:1; background:#e17055; color:#fff; font-size:11px; padding:5px;">Hard</button>
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:10px; margin-top:10px;">
+            <div class="vol-row" style="margin-bottom:8px;"><span style="font-weight:bold;">Apply Preset to All Stages</span></div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <input type="checkbox" id="qa-skip-loop-stages" onchange="window.toggleSkipLoopStages?.(this.checked)" style="width:16px; height:16px;">
+              <label for="qa-skip-loop-stages" style="font-size:12px; color:#aaa;">Skip loop stages (11-13)</label>
+            </div>
+            <div style="display:flex; gap:5px;">
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('casual')" style="flex:1; background:#74b9ff; color:#000; font-size:10px; padding:5px;">Casual</button>
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('balanced')" style="flex:1; background:#55efc4; color:#000; font-size:10px; padding:5px;">Balanced</button>
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('aggressive')" style="flex:1; background:#ff7675; color:#000; font-size:10px; padding:5px;">Aggressive</button>
+            </div>
           </div>
         </fieldset>
 

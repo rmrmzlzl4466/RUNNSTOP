@@ -88,7 +88,13 @@ window.GameModules = window.GameModules || {};
 
   function ensureRowsAroundPlayer() {
     const pRow = Math.floor(player.y / runtime.grid.CELL_H);
-    for (let i = pRow - 15; i < pRow + 5; i++) {
+    // Calculate rows needed ahead based on boost distance (boostDist / CELL_H + buffer)
+    const boostDist = qaConfig.boostDist ?? 700;
+    const survivalBoostDist = player.survivalBoostDistPerfect ?? 2000;
+    const maxBoostRows = Math.ceil(Math.max(boostDist, survivalBoostDist) / runtime.grid.CELL_H) + 5;
+    const rowsAhead = Math.max(25, maxBoostRows); // At least 25 rows ahead (2500 units)
+
+    for (let i = pRow - rowsAhead; i < pRow + 5; i++) {
       window.Game.LevelManager.generateRow(i, (type, col) => spawnItemAtCol(runtime, i, type, col));
     }
   }
@@ -118,8 +124,10 @@ window.GameModules = window.GameModules || {};
     window.Game.UI.updateFloatingTexts(uiDt);
     window.Game.UI.updateBuffs(player);
     window.Game.UI.updateDash(player);
-    player.update(worldDt, { input: window.Input, qaConfig, canvasWidth: runtime.canvasSize.width });
-    player.sessionScore += (qaConfig.scorePerSecond ?? 0) * worldDt;
+    // Pass effective config for per-stage physics (friction, baseSpeed, etc.)
+    player.update(worldDt, { input: window.Input, qaConfig, effective, canvasWidth: runtime.canvasSize.width });
+    // Apply scoreMult from effective config (includes loopScale)
+    player.sessionScore += (qaConfig.scorePerSecond ?? 0) * worldDt * effective.scoreMult;
     window.Game.UI.updateScore(player.sessionScore, formatNumber);
     if (player.isDying) return;
 
@@ -179,9 +187,9 @@ window.GameModules = window.GameModules || {};
     if (runtime.gameState === STATE.RUN) {
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.WARNING;
-        // Use effective warning time values
+        // Use effective warning time values (firstWarningTimeBase for first warning, warningTimeBase with distance scaling for subsequent)
         const baseWarning = runtime.isFirstWarning
-          ? 12.0 * effective.warningTimeMult
+          ? effective.firstWarningTimeBase * effective.warningTimeMult
           : Math.max(effective.warningTimeBase - Math.min(player.dist / 5000, 1.0) * 4.0, effective.warningTimeMin) * effective.warningTimeMult;
         runtime.cycleTimer = baseWarning;
         runtime.isFirstWarning = false;

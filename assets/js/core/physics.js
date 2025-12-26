@@ -104,7 +104,8 @@
      * @returns {Object} { isSafe, action: 'none'|'barrier_save'|'die' }
      */
     checkSafeZone: function(player, targetColorIndex) {
-      if (player.invincibleTimer > 0) {
+      // 무적 상태 체크: invincibleTimer 또는 부스트 무적
+      if (player.invincibleTimer > 0 || player.isBoostInvincible?.()) {
         return { isSafe: true, action: 'none' };
       }
 
@@ -139,7 +140,8 @@
      * @returns {boolean} True if player hit by storm
      */
     checkStormCollision: function(player, storm) {
-      if (player.isBoosting) return false;
+      // 부스트 중이거나 부스트 무적 상태면 폭풍 충돌 무시
+      if (player.isBoosting || player.isBoostInvincible?.()) return false;
       return storm.y < player.y + player.radius;
     },
 

@@ -4,100 +4,199 @@
  * - Stages 1-10: Main progression (unique experiences)
  * - Stages 11-13: Loop section (repeats infinitely after completion)
  *
- * To customize stage lengths, simply modify the 'length' values below.
- * All calculations (cumulative distances, loop boundaries) update automatically.
+ * Per-Stage Tuning:
+ * 스테이지별로 오버라이드할 값만 tuning 객체에 추가
+ * null = STAGE_DEFAULTS 사용 (core/config.js)
  *
- * Tuning Fields (null = use qaConfig default):
- * - coinRate: Coin pattern start probability (0.0~1.0)
- * - minCoinRunLength: Minimum coin pattern length
- * - itemRate: Item spawn probability (0.0~1.0)
- * - itemWeights: { barrier, booster, magnet } distribution
- * - stormSpeedMult: Storm speed multiplier (1.0 = normal)
- * - baseSpeedMult: Player/scroll speed multiplier (1.0 = normal)
- * - scoreMult: Score multiplier (1.0 = normal)
- * - runPhaseDuration: RUN state duration (seconds)
- * - warningTimeMult: WARNING time multiplier (1.0 = normal)
- * - stopPhaseDuration: STOP state duration (seconds)
+ * 사용 가능한 tuning 필드:
+ * - 물리: baseSpeed, friction, stopFriction, baseAccel, turnAccelMult
+ * - 대쉬: dashForce, minDashForce, maxDashForce, maxChargeTime, dashCooldown, chargeSlowdown
+ * - 마그넷: baseMagnet, magnetRange
+ * - 스폰: coinRate, minCoinRunLength, itemRate, itemWeights
+ * - 속도: stormBaseSpeed, stormSpeedMult, baseSpeedMult
+ * - 타이밍: firstWarningTimeBase, runPhaseDuration, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration
+ * - 점수: scoreMult
+ * - 모프: morphTrigger, morphDuration
  */
 
-// Default tuning values (used when stage value is null)
-const STAGE_TUNING_DEFAULTS = {
-  coinRate: null,
-  minCoinRunLength: null,
-  itemRate: null,
-  itemWeights: null,
-  stormSpeedMult: 1.0,
-  baseSpeedMult: 1.0,
-  scoreMult: 1.0,
-  runPhaseDuration: null,
-  warningTimeMult: 1.0,
-  stopPhaseDuration: null
-};
-
 window.STAGE_CONFIG = [
-  // Main Progression (1-10) - Gradually increasing length
+  // ============================================
+  // Main Progression (1-10)
+  // ============================================
   {
-    id: 1, themeIdx: 0, length: 2000, name: "BOOT SEQUENCE",
-    ...STAGE_TUNING_DEFAULTS
+    id: 1,
+    themeIdx: 0,
+    length: 2000,
+    name: "BOOT SEQUENCE",
+    tuning: {
+      // 튜토리얼 느낌 - 기본값 사용
+    }
   },
   {
-    id: 2, themeIdx: 0, length: 2300, name: "DIGITAL CIRCUIT",
-    ...STAGE_TUNING_DEFAULTS
+    id: 2,
+    themeIdx: 0,
+    length: 2300,
+    name: "DIGITAL CIRCUIT",
+    tuning: {
+      // 약간 빨라지기 시작
+      stormSpeedMult: 1.05
+    }
   },
   {
-    id: 3, themeIdx: 1, length: 2600, name: "NEON ALLEY",
-    ...STAGE_TUNING_DEFAULTS
+    id: 3,
+    themeIdx: 1,
+    length: 2600,
+    name: "NEON ALLEY",
+    tuning: {
+      // 네온 거리 - 미끄러운 바닥
+      friction: 0.96,
+      stopFriction: 0.88,
+      stormSpeedMult: 1.1
+    }
   },
   {
-    id: 4, themeIdx: 1, length: 2900, name: "GLITCH CITY",
-    ...STAGE_TUNING_DEFAULTS
+    id: 4,
+    themeIdx: 1,
+    length: 2900,
+    name: "GLITCH CITY",
+    tuning: {
+      // 글리치 - 예측 불가능한 물리
+      friction: 0.90,
+      turnAccelMult: 5.5,
+      stormSpeedMult: 1.15
+    }
   },
   {
-    id: 5, themeIdx: 0, length: 3200, name: "DATA HIGHWAY",
-    ...STAGE_TUNING_DEFAULTS
+    id: 5,
+    themeIdx: 0,
+    length: 3200,
+    name: "DATA HIGHWAY",
+    tuning: {
+      // 고속도로 - 빠른 속도
+      baseSpeed: 1100,
+      stormSpeedMult: 1.2,
+      warningTimeBase: 6.0
+    }
   },
   {
-    id: 6, themeIdx: 2, length: 3500, name: "VOID ENTRANCE",
-    ...STAGE_TUNING_DEFAULTS
+    id: 6,
+    themeIdx: 2,
+    length: 3500,
+    name: "VOID ENTRANCE",
+    tuning: {
+      // 보이드 입구 - 무거운 느낌
+      friction: 0.85,
+      stopFriction: 0.75,
+      baseAccel: 2500,
+      stormSpeedMult: 1.25
+    }
   },
   {
-    id: 7, themeIdx: 1, length: 3800, name: "CYBER STORM",
-    ...STAGE_TUNING_DEFAULTS
+    id: 7,
+    themeIdx: 1,
+    length: 3800,
+    name: "CYBER STORM",
+    tuning: {
+      // 사이버 폭풍 - 빠르고 위험
+      stormSpeedMult: 1.35,
+      warningTimeBase: 5.5,
+      stopPhaseDuration: 0.4
+    }
   },
   {
-    id: 8, themeIdx: 2, length: 4100, name: "THE VOID",
-    ...STAGE_TUNING_DEFAULTS
+    id: 8,
+    themeIdx: 2,
+    length: 4100,
+    name: "THE VOID",
+    tuning: {
+      // 보이드 본체 - 극한 환경
+      friction: 0.80,
+      stopFriction: 0.70,
+      stormSpeedMult: 1.4,
+      scoreMult: 1.5
+    }
   },
   {
-    id: 9, themeIdx: 0, length: 4400, name: "SYSTEM REBOOT",
-    ...STAGE_TUNING_DEFAULTS
+    id: 9,
+    themeIdx: 0,
+    length: 4400,
+    name: "SYSTEM REBOOT",
+    tuning: {
+      // 재부팅 - 정상화되는 느낌
+      stormSpeedMult: 1.3,
+      warningTimeBase: 5.0
+    }
   },
   {
-    id: 10, themeIdx: 2, length: 4500, name: "INFINITE HORIZON",
-    ...STAGE_TUNING_DEFAULTS
+    id: 10,
+    themeIdx: 2,
+    length: 4500,
+    name: "INFINITE HORIZON",
+    tuning: {
+      // 마지막 스테이지 - 최고 난이도
+      stormSpeedMult: 1.5,
+      warningTimeBase: 4.5,
+      stopPhaseDuration: 0.35,
+      scoreMult: 2.0
+    }
   },
-  // Loop Section (11-13) - These repeat forever after stage 10
+
+  // ============================================
+  // Loop Section (11-13) - Repeats forever
+  // ============================================
   {
-    id: 11, themeIdx: 0, length: 3500, name: "LOOP: ALPHA", isLoop: true,
-    ...STAGE_TUNING_DEFAULTS
+    id: 11,
+    themeIdx: 0,
+    length: 3500,
+    name: "LOOP: ALPHA",
+    isLoop: true,
+    tuning: {
+      stormSpeedMult: 1.4,
+      warningTimeBase: 4.0,
+      scoreMult: 2.5
+    }
   },
   {
-    id: 12, themeIdx: 1, length: 4000, name: "LOOP: BETA", isLoop: true,
-    ...STAGE_TUNING_DEFAULTS
+    id: 12,
+    themeIdx: 1,
+    length: 4000,
+    name: "LOOP: BETA",
+    isLoop: true,
+    tuning: {
+      // 빙판 루프
+      friction: 0.97,
+      stopFriction: 0.92,
+      stormSpeedMult: 1.5,
+      warningTimeBase: 3.5,
+      scoreMult: 3.0
+    }
   },
   {
-    id: 13, themeIdx: 2, length: 4500, name: "LOOP: OMEGA", isLoop: true,
-    ...STAGE_TUNING_DEFAULTS
+    id: 13,
+    themeIdx: 2,
+    length: 4500,
+    name: "LOOP: OMEGA",
+    isLoop: true,
+    tuning: {
+      // 최종 루프 - 극한
+      friction: 0.78,
+      stopFriction: 0.68,
+      stormSpeedMult: 1.6,
+      warningTimeBase: 3.0,
+      stopPhaseDuration: 0.3,
+      scoreMult: 4.0
+    }
   }
 ];
 
+// ============================================
 // Precomputed values for performance
-window.STAGE_CUMULATIVE = [];    // Cumulative distance at start of each stage
-window.LOOP_START_DISTANCE = 0;  // Distance where loop section begins (stage 11)
-window.LOOP_SECTION_LENGTH = 0;  // Total length of one loop cycle (11+12+13)
-window.LOOP_START_INDEX = 10;    // Array index where loop stages begin
+// ============================================
+window.STAGE_CUMULATIVE = [];
+window.LOOP_START_DISTANCE = 0;
+window.LOOP_SECTION_LENGTH = 0;
+window.LOOP_START_INDEX = 10;
 
-// Initialize computed values
 (function() {
   let cumulative = 0;
 
@@ -105,18 +204,15 @@ window.LOOP_START_INDEX = 10;    // Array index where loop stages begin
     window.STAGE_CUMULATIVE[idx] = cumulative;
     cumulative += stage.length;
 
-    // Mark where loop section begins (first stage with isLoop=true)
     if (stage.isLoop && window.LOOP_START_DISTANCE === 0) {
       window.LOOP_START_DISTANCE = window.STAGE_CUMULATIVE[idx];
       window.LOOP_START_INDEX = idx;
     }
   });
 
-  // Calculate total length of loop section
   const loopStages = window.STAGE_CONFIG.filter(s => s.isLoop);
   window.LOOP_SECTION_LENGTH = loopStages.reduce((sum, s) => sum + s.length, 0);
 
-  // Debug output
   console.log('[STAGES] Configuration loaded:');
   console.log('  - Total stages:', window.STAGE_CONFIG.length);
   console.log('  - Loop starts at:', window.LOOP_START_DISTANCE + 'm (Stage ' + (window.LOOP_START_INDEX + 1) + ')');

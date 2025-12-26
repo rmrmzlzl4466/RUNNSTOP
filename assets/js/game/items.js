@@ -60,29 +60,36 @@ window.GameModules = window.GameModules || {};
 
   function applyItem(runtime, player, qaConfig, item) {
     const itemCfg = qaConfig.item || {};
+    // Get scoreMult from effective config (includes loopScale)
+    const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {};
+    const scoreMult = effective.scoreMult ?? 1.0;
+
     if (item.type === 'bit') {
       player.sessionBits += 1;
-      player.sessionScore += qaConfig.scorePerBit ?? 0;
+      const bitScore = Math.floor((qaConfig.scorePerBit ?? 0) * scoreMult);
+      player.sessionScore += bitScore;
       window.Game.UI.updateScore(player.sessionScore, formatNumber);
       window.Sound?.sfx('bit');
-      window.Game.UI.showToast(player, `+${qaConfig.scorePerBit ?? 0}`, '#79F566', 650);
+      window.Game.UI.showToast(player, `+${bitScore}`, '#79F566', 650);
     } else if (item.type === 'coin') {
       const val = Math.floor(1 * player.coinMult);
       player.sessionCoins += val;
-      player.sessionScore += (qaConfig.scorePerCoin ?? 0) * val;
+      const coinScore = Math.floor((qaConfig.scorePerCoin ?? 0) * val * scoreMult);
+      player.sessionScore += coinScore;
       window.Game.UI.setCoinDisplay(player.sessionCoins);
       window.Sound?.sfx('coin');
       window.Game.UI.showToast(player, `+${val}`, '#f1c40f', 650);
       window.Game.UI.updateScore(player.sessionScore, formatNumber);
     } else if (item.type === 'gem') {
       player.sessionGems++;
-      player.sessionScore += qaConfig.scorePerGem ?? 0;
+      const gemScore = Math.floor((qaConfig.scorePerGem ?? 0) * scoreMult);
+      player.sessionScore += gemScore;
       window.Game.UI.setGemDisplay(player.sessionGems);
       window.Sound?.sfx('gem');
       window.Game.UI.showToast(player, '+1', '#00d2d3', 650);
       window.Game.UI.updateScore(player.sessionScore, formatNumber);
     } else if (item.type === 'big_gem') {
-      const bigGemScore = itemCfg.bigGemScore ?? 50000;
+      const bigGemScore = Math.floor((itemCfg.bigGemScore ?? 50000) * scoreMult);
       const bigGemReward = itemCfg.bigGemGems ?? 50;
       player.sessionGems += bigGemReward;
       player.sessionScore += bigGemScore;

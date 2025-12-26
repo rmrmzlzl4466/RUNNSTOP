@@ -1,76 +1,49 @@
 window.GameModules = window.GameModules || {};
 
 (function() {
-  const FALLBACK_CAMERA = {
-    zoomRun: 1.0,
-    zoomWarning: 1.15,
-    zoomStop: 1.35,
-    zoomBoost: 0.85,
-    lerpRunToWarning: 0.15,
-    lerpWarningToStop: 8.0,
-    lerpStopToBoost: 15.0,
-    lerpBoostToRun: 1.5,
-    lerpDefault: 3.0,
-    panRatioX: 0.35,
-    cameraOffsetPct: 0.75
-  };
+  'use strict';
 
+  /**
+   * 아이템 관련 설정 (GLOBAL)
+   */
   const FALLBACK_ITEM = {
     magnetDurationSec: 10,
     bigGemScore: 50000,
     bigGemGems: 50
   };
 
+  /**
+   * 슬로우모션 설정 (GLOBAL)
+   */
   const FALLBACK_SLOWMO = {
     enabled: true,
-    scale: 0.7,                  // Time scale during slow motion (0.1~1.0)
-    durationSec: 0.22,           // Duration in seconds (short for emphasis)
-    easeOutSec: 0.08,            // Final segment eased back to normal (seconds)
-    cancelPolicy: 'on_boost_press', // 'on_boost_press' | 'on_boost_start' | 'never'
-    blockWhileBoosting: true,    // Never apply slowmo during boosting
-    blockWindowAfterBoostSec: 0.22, // Block window after boost ends
-    applyMask: 'world_only',     // 'world_only' | 'everything'
-    minIntervalSec: 0.4          // Minimum interval between slowmo triggers
+    scale: 0.7,
+    durationSec: 0.22,
+    easeOutSec: 0.08,
+    cancelPolicy: 'on_boost_press',
+    blockWhileBoosting: true,
+    blockWindowAfterBoostSec: 0.22,
+    applyMask: 'world_only',
+    minIntervalSec: 0.4
   };
 
-  const FALLBACK_QA_CONFIG = {
-    trailLength: 40,
-    trailOpacity: 0.9,
-    coinRate: 0.3,
-    minCoinRunLength: 5,
-    itemRate: 0.03,
-    itemWeights: { barrier: 0.2, booster: 0.4, magnet: 0.4 },
-    deathDelay: 1.0,
-    morphTrigger: 3.0,
-    morphDuration: 2.0,
-    boostDist: 400,
-    magnetRange: 170,
-    stormBaseSpeed: 150,
-    cycleSpeedMult: 1.0,
-    dashForce: 1200,
-    baseAccel: 1500,
-    sfxVol: 1.0,
-    bgmVol: 0.15,
-    scorePerSecond: 50,
-    scorePerMeter: 10,
-    scorePerBit: 50,
-    scorePerCoin: 200,
-    scorePerGem: 1000,
-    stageLength: 2000,
-    // Cycle timing defaults
-    runPhaseDuration: 3.0,
-    warningTimeBase: 7.0,
-    warningTimeMin: 3.0,
-    stopPhaseDuration: 1.5
-  };
-
+  /**
+   * createQAConfig - core/config.js의 GLOBAL + STAGE_DEFAULTS 사용
+   * FALLBACK_QA_CONFIG 제거됨
+   */
   function createQAConfig() {
-    const merged = { ...FALLBACK_QA_CONFIG, ...(window.GameConfig?.defaultQAConfig ?? {}) };
-    merged.camera = { ...FALLBACK_CAMERA, ...(merged.camera || {}) };
-    merged.item = { ...FALLBACK_ITEM, ...(merged.item || {}) };
-    merged.slowMo = { ...FALLBACK_SLOWMO, ...(merged.slowMo || {}) };
-    // expose camera offset both inside camera.* and top-level for legacy reads
-    merged.cameraOffsetPct = merged.cameraOffsetPct ?? merged.camera.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct;
+    // core/config.js에서 전체 설정 가져오기
+    const baseConfig = window.GameConfig?.createFullConfig?.() ?? {};
+
+    // camera, item, slowMo 병합
+    const merged = { ...baseConfig };
+    merged.camera = { ...baseConfig.camera };
+    merged.item = { ...FALLBACK_ITEM };
+    merged.slowMo = { ...FALLBACK_SLOWMO };
+
+    // cameraOffsetPct 레거시 지원
+    merged.cameraOffsetPct = merged.cameraOffsetPct ?? merged.camera?.cameraOffsetPct ?? 0.75;
+
     return merged;
   }
 
@@ -86,30 +59,33 @@ window.GameModules = window.GameModules || {};
   const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
 
   const defaultSaveData = window.SaveManager?.defaultSave ?? {
-  coins: 0,
-  gems: 1000,
-  lvlSpeed: 1,
-  lvlCool: 1,
-  lvlMagnet: 1,
-  lvlGreed: 1,
-  unlockedSkins: [0],
-  equippedSkin: 0,
-  unlockedTreasures: [],
-  equippedTreasures: [null, null],
-  stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
+    coins: 0,
+    gems: 1000,
+    lvlSpeed: 1,
+    lvlCool: 1,
+    lvlMagnet: 1,
+    lvlGreed: 1,
+    unlockedSkins: [0],
+    equippedSkin: 0,
+    unlockedTreasures: [],
+    equippedTreasures: [null, null],
+    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
   };
 
   function applyLoadoutStats(player, qaConfig, gameData) {
     const F = window.GameConfig?.Formulas;
     if (!F) return;
 
-    player.accel = qaConfig.baseAccel;
-    player.maxSpeed = F.getSpeed(gameData.lvlSpeed, qaConfig.baseSpeed ?? 400);
+    // STAGE_DEFAULTS에서 기본값 사용
+    const DEFAULTS = window.GameConfig?.STAGE_DEFAULTS ?? {};
+
+    player.accel = qaConfig.baseAccel ?? DEFAULTS.baseAccel ?? 3000;
+    player.maxSpeed = F.getSpeed(gameData.lvlSpeed, qaConfig.baseSpeed ?? DEFAULTS.baseSpeed ?? 960);
     player.cooldownMax = F.getCool(gameData.lvlCool);
-    player.baseMagnetRange = (qaConfig.baseMagnet ?? 100) + F.getMagnetBonus(gameData.lvlMagnet);
+    player.baseMagnetRange = (qaConfig.baseMagnet ?? DEFAULTS.baseMagnet ?? 50) + F.getMagnetBonus(gameData.lvlMagnet);
     player.coinMult = F.getGreed(gameData.lvlGreed);
-    player.dashForce = qaConfig.dashForce;
-    player.friction = qaConfig.friction ?? 0.9;
+    player.dashForce = qaConfig.dashForce ?? DEFAULTS.dashForce ?? 1000;
+    player.friction = qaConfig.friction ?? DEFAULTS.friction ?? 0.93;
 
     const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
     if (skin) {
@@ -141,9 +117,11 @@ window.GameModules = window.GameModules || {};
     getThemes,
     defaultSaveData,
     applyLoadoutStats,
-    FALLBACK_CAMERA,
     FALLBACK_ITEM,
     FALLBACK_SLOWMO,
-    getCameraOffsetPct: (qaConfig = {}) => qaConfig.cameraOffsetPct ?? qaConfig.camera?.cameraOffsetPct ?? FALLBACK_CAMERA.cameraOffsetPct
+    getCameraOffsetPct: (qaConfig = {}) => {
+      const GLOBAL = window.GameConfig?.GLOBAL ?? {};
+      return qaConfig.cameraOffsetPct ?? qaConfig.camera?.cameraOffsetPct ?? GLOBAL.cameraOffsetPct ?? 0.75;
+    }
   };
 })();

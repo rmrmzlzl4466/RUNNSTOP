@@ -71,6 +71,7 @@ window.initQASliders = function() {
   setValue('qa-magnet', activeConfig.magnetRange);
   setValue('qa-storm', activeConfig.stormBaseSpeed);
   setValue('qa-boost', activeConfig.boostDist);
+  setValue('qa-boostinvinc', (activeConfig.boostInvincibleDuration ?? 1.0) * 10);
   setValue('qa-stagelen', activeConfig.stageLength);
   setValue('qa-safety', (activeConfig.safetyThreshold ?? 0.5) * 100);
   setValue('qa-trigger', activeConfig.morphTrigger);
@@ -157,6 +158,7 @@ window.updateQA = function() {
   const magnetRange = parseInt(document.getElementById('qa-magnet').value, 10);
   const stormBaseSpeed = parseInt(document.getElementById('qa-storm').value, 10);
   const boostDist = parseInt(document.getElementById('qa-boost').value, 10);
+  const boostInvincRaw = parseInt(document.getElementById('qa-boostinvinc')?.value ?? 10, 10);
   const stageLength = parseInt(document.getElementById('qa-stagelen')?.value ?? 2000, 10);
   const safetyPct = parseInt(document.getElementById('qa-safety').value, 10);
   const morphTrigger = parseFloat(document.getElementById('qa-trigger').value);
@@ -213,6 +215,7 @@ window.updateQA = function() {
   window.qaConfig.magnetRange = magnetRange;
   window.qaConfig.stormBaseSpeed = stormBaseSpeed;
   window.qaConfig.boostDist = boostDist;
+  window.qaConfig.boostInvincibleDuration = boostInvincRaw / 10;  // 0~3.0 초
   window.qaConfig.stageLength = stageLength;
   window.qaConfig.safetyThreshold = safetyPct / 100;
   window.qaConfig.morphTrigger = morphTrigger;
@@ -311,6 +314,7 @@ window.updateQA = function() {
   setText('qa-val-magnet', `${magnetRange}`);
   setText('qa-val-storm', `${stormBaseSpeed}`);
   setText('qa-val-boost', `${boostDist}`);
+  setText('qa-val-boostinvinc', `${(boostInvincRaw / 10).toFixed(1)}s`);
   setText('qa-val-stagelen', `${stageLength}m`);
   setText('qa-val-safety', `${safetyPct}%`);
   setText('qa-val-trigger', `${morphTrigger.toFixed(1)}s`);
@@ -435,12 +439,14 @@ window.refreshStageTuningUI = function() {
   const stageId = _currentEditStageId;
   const override = StageConfig.getQAOverride?.(stageId) ?? {};
   const stageData = window.STAGE_CONFIG?.[parseInt(stageId, 10) - 1] ?? {};
-  const defaults = window.qaConfig ?? {};
+  const stageTuning = stageData.tuning ?? {};  // 새 구조: stage.tuning
+  const defaults = window.GameConfig?.STAGE_DEFAULTS ?? {};  // core/config.js 기본값
 
   // Helper: get value with fallback chain
+  // QA Override → Stage Tuning → STAGE_DEFAULTS
   const getValue = (key, defaultVal) => {
     if (override[key] !== undefined && override[key] !== null) return override[key];
-    if (stageData[key] !== undefined && stageData[key] !== null) return stageData[key];
+    if (stageTuning[key] !== undefined && stageTuning[key] !== null) return stageTuning[key];
     return defaults[key] ?? defaultVal;
   };
 
@@ -449,7 +455,16 @@ window.refreshStageTuningUI = function() {
   const itemRate = getValue('itemRate', 0.03);
   const stormSpeedMult = getValue('stormSpeedMult', 1.0);
   const baseSpeedMult = getValue('baseSpeedMult', 1.0);
-  const weights = override.itemWeights ?? stageData.itemWeights ?? defaults.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
+  const weights = override.itemWeights ?? stageTuning.itemWeights ?? defaults.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
+
+  // Cycle timing values (defaults from STAGE_DEFAULTS)
+  const runPhaseDuration = getValue('runPhaseDuration', 3.0);
+  const firstWarningTimeBase = getValue('firstWarningTimeBase', 12.0);
+  const warningTimeBase = getValue('warningTimeBase', 7.0);
+  const warningTimeMin = getValue('warningTimeMin', 3.0);
+  const warningTimeMult = getValue('warningTimeMult', 1.0);
+  const stopPhaseDuration = getValue('stopPhaseDuration', 0.5);
+  const scoreMult = getValue('scoreMult', 1.0);
 
   // Set slider values
   const setSlider = (id, value) => {
@@ -473,6 +488,29 @@ window.refreshStageTuningUI = function() {
   setSlider('qa-stage-speedmult', baseSpeedMult * 100);
   setText('qa-val-stage-speedmult', baseSpeedMult.toFixed(2) + 'x');
 
+  // Cycle timing sliders
+  setSlider('qa-stage-runduration', runPhaseDuration * 10);
+  setText('qa-val-stage-runduration', runPhaseDuration.toFixed(1) + 's');
+
+  setSlider('qa-stage-firstwarning', firstWarningTimeBase * 10);
+  setText('qa-val-stage-firstwarning', firstWarningTimeBase.toFixed(1) + 's');
+
+  setSlider('qa-stage-warningbase', warningTimeBase * 10);
+  setText('qa-val-stage-warningbase', warningTimeBase.toFixed(1) + 's');
+
+  setSlider('qa-stage-warningmin', warningTimeMin * 10);
+  setText('qa-val-stage-warningmin', warningTimeMin.toFixed(1) + 's');
+
+  setSlider('qa-stage-warningmult', warningTimeMult * 100);
+  setText('qa-val-stage-warningmult', warningTimeMult.toFixed(1) + 'x');
+
+  setSlider('qa-stage-stopduration', stopPhaseDuration * 10);
+  setText('qa-val-stage-stopduration', stopPhaseDuration.toFixed(1) + 's');
+
+  setSlider('qa-stage-scoremult', scoreMult * 100);
+  setText('qa-val-stage-scoremult', scoreMult.toFixed(1) + 'x');
+
+  // Item weights
   setSlider('qa-stage-wbarrier', (weights.barrier ?? 0.2) * 100);
   setText('qa-val-stage-wbarrier', (weights.barrier ?? 0.2).toFixed(2));
 
@@ -502,6 +540,13 @@ window.updateStageParam = function(key, value) {
   if (key === 'itemRate') setText('qa-val-stage-itemrate', value.toFixed(2));
   if (key === 'stormSpeedMult') setText('qa-val-stage-stormmult', value.toFixed(2) + 'x');
   if (key === 'baseSpeedMult') setText('qa-val-stage-speedmult', value.toFixed(2) + 'x');
+  if (key === 'runPhaseDuration') setText('qa-val-stage-runduration', value.toFixed(1) + 's');
+  if (key === 'firstWarningTimeBase') setText('qa-val-stage-firstwarning', value.toFixed(1) + 's');
+  if (key === 'warningTimeBase') setText('qa-val-stage-warningbase', value.toFixed(1) + 's');
+  if (key === 'warningTimeMin') setText('qa-val-stage-warningmin', value.toFixed(1) + 's');
+  if (key === 'warningTimeMult') setText('qa-val-stage-warningmult', value.toFixed(1) + 'x');
+  if (key === 'stopPhaseDuration') setText('qa-val-stage-stopduration', value.toFixed(1) + 's');
+  if (key === 'scoreMult') setText('qa-val-stage-scoremult', value.toFixed(1) + 'x');
 };
 
 /**
@@ -595,4 +640,253 @@ window.applyStagePreset = function(presetName) {
   window.refreshStageTuningUI?.();
   window.showToast?.(`Applied ${presetName} preset to Stage ${_currentEditStageId}`, 'info', 1000);
   window.Sound?.sfx?.('btn');
+};
+
+// === [PRESET CURVES FOR ALL STAGES] ===
+
+/**
+ * Clamp ranges matching UI slider real value ranges
+ */
+const PRESET_CLAMP_RANGES = {
+  stormSpeedMult:       { min: 0.10, max: 4.00 },
+  baseSpeedMult:        { min: 0.10, max: 4.00 },
+  runPhaseDuration:     { min: 0.50, max: 12.00 },
+  firstWarningTimeBase: { min: 2.00, max: 40.00 },
+  warningTimeBase:      { min: 1.00, max: 30.00 },
+  warningTimeMin:       { min: 0.50, max: 20.00 },
+  warningTimeMult:      { min: 0.10, max: 4.00 },
+  stopPhaseDuration:    { min: 0.30, max: 10.00 },
+  scoreMult:            { min: 0.05, max: 10.00 },
+  coinRate:             { min: 0.00, max: 1.00 },
+  itemRate:             { min: 0.00, max: 0.40 }
+};
+
+/**
+ * Round value based on key type
+ * - seconds (run/stop/warn/firstWarn): 1 decimal
+ * - mult (storm/warnMult/scoreMult/baseSpeed): 2 decimals
+ */
+function roundPresetValue(key, value) {
+  const secondsKeys = ['runPhaseDuration', 'stopPhaseDuration', 'warningTimeBase', 'warningTimeMin', 'firstWarningTimeBase'];
+  if (secondsKeys.includes(key)) {
+    return Math.round(value * 10) / 10;
+  }
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Clamp value to defined range
+ */
+function clampPresetValue(key, value) {
+  const range = PRESET_CLAMP_RANGES[key];
+  if (!range) return value;
+  return Math.max(range.min, Math.min(range.max, value));
+}
+
+/**
+ * Presets containing curves for all 13 stages (REAL VALUES)
+ * Index i=0 → Stage 1, i=12 → Stage 13
+ *
+ * Balanced: 기획 기준 베이스라인
+ * Casual: Balanced에서 완화 (storm↓, warning↑, run↑, stop↑, score↓)
+ * Aggressive: Balanced에서 압박 (storm↑, warning↓, run↓, stop↓, score↑)
+ */
+const STAGE_PRESETS = {
+  // ===== BALANCED: 기획 기준 베이스라인 =====
+  balanced: {
+    stormSpeedMult:       [0.85, 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.50],
+    warningTimeBase:      [7.0, 6.8, 6.5, 6.0, 5.5, 5.0, 4.8, 4.5, 4.2, 4.0, 3.8, 3.6, 3.4],
+    warningTimeMin:       [3.0, 3.0, 2.8, 2.6, 2.5, 2.3, 2.2, 2.0, 1.8, 1.7, 1.6, 1.5, 1.4],
+    runPhaseDuration:     [3.0, 3.0, 3.0, 2.8, 2.8, 2.6, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0],
+    stopPhaseDuration:    [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+    warningTimeMult:      [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    firstWarningTimeBase: [12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0],
+    scoreMult:            [1.00, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.50, 1.60, 1.70]
+  },
+
+  // ===== CASUAL: Balanced * 완화계수 =====
+  // stormSpeedMult = Balanced * 0.85
+  // warningTimeBase/Min = Balanced * 1.20
+  // runPhaseDuration = Balanced * 1.10
+  // stopPhaseDuration = 1.7 fixed
+  // warningTimeMult = 1.05 fixed
+  // firstWarningTimeBase = 13.2 fixed
+  // scoreMult = Balanced * 0.90
+  casual: {
+    stormSpeedMult:       [0.72, 0.77, 0.81, 0.85, 0.89, 0.94, 0.98, 1.02, 1.06, 1.11, 1.15, 1.19, 1.28],
+    warningTimeBase:      [8.4, 8.2, 7.8, 7.2, 6.6, 6.0, 5.8, 5.4, 5.0, 4.8, 4.6, 4.3, 4.1],
+    warningTimeMin:       [3.6, 3.6, 3.4, 3.1, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.9, 1.8, 1.7],
+    runPhaseDuration:     [3.3, 3.3, 3.3, 3.1, 3.1, 2.9, 2.9, 2.8, 2.6, 2.5, 2.4, 2.3, 2.2],
+    stopPhaseDuration:    [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7],
+    warningTimeMult:      [1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05],
+    firstWarningTimeBase: [13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2],
+    scoreMult:            [0.90, 0.90, 0.95, 0.99, 1.04, 1.08, 1.13, 1.17, 1.22, 1.26, 1.35, 1.44, 1.53]
+  },
+
+  // ===== AGGRESSIVE: Balanced * 압박계수 =====
+  // stormSpeedMult = Balanced * 1.15
+  // warningTimeBase/Min = Balanced * 0.85
+  // runPhaseDuration = Balanced * 0.90
+  // stopPhaseDuration = 1.3 fixed
+  // warningTimeMult = 0.95 fixed
+  // firstWarningTimeBase = 10.8 fixed
+  // scoreMult = Balanced * 1.25
+  aggressive: {
+    stormSpeedMult:       [0.98, 1.04, 1.09, 1.15, 1.21, 1.27, 1.32, 1.38, 1.44, 1.50, 1.55, 1.61, 1.73],
+    warningTimeBase:      [6.0, 5.8, 5.5, 5.1, 4.7, 4.3, 4.1, 3.8, 3.6, 3.4, 3.2, 3.1, 2.9],
+    warningTimeMin:       [2.6, 2.6, 2.4, 2.2, 2.1, 2.0, 1.9, 1.7, 1.5, 1.4, 1.4, 1.3, 1.2],
+    runPhaseDuration:     [2.7, 2.7, 2.7, 2.5, 2.5, 2.3, 2.3, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8],
+    stopPhaseDuration:    [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3],
+    warningTimeMult:      [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
+    firstWarningTimeBase: [10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8, 10.8],
+    scoreMult:            [1.25, 1.25, 1.31, 1.38, 1.44, 1.50, 1.56, 1.63, 1.69, 1.75, 1.88, 2.00, 2.13]
+  }
+};
+
+/**
+ * Whether to skip loop stages (11-13) when applying presets
+ */
+let _skipLoopStages = false;
+
+/**
+ * Validate preset structure before applying
+ * Returns { valid: boolean, error?: string }
+ */
+function validatePreset(preset, presetName) {
+  const requiredKeys = [
+    'stormSpeedMult', 'runPhaseDuration', 'firstWarningTimeBase',
+    'warningTimeBase', 'warningTimeMin', 'warningTimeMult',
+    'stopPhaseDuration', 'scoreMult'
+  ];
+
+  // Check all required keys exist and have length 13
+  for (const key of requiredKeys) {
+    if (!preset[key]) {
+      return { valid: false, error: `Missing key: ${key}` };
+    }
+    if (!Array.isArray(preset[key])) {
+      return { valid: false, error: `${key} is not an array` };
+    }
+    if (preset[key].length !== 13) {
+      return { valid: false, error: `${key} length is ${preset[key].length}, expected 13` };
+    }
+
+    // Check for NaN/Infinity
+    for (let i = 0; i < preset[key].length; i++) {
+      const val = preset[key][i];
+      if (typeof val !== 'number' || !isFinite(val)) {
+        return { valid: false, error: `${key}[${i}] is invalid: ${val}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Apply preset to all stages (1-13) with validation and safety checks
+ */
+window.applyPresetToAllStages = function(presetName, overwriteKeysOnly = true) {
+  const StageConfig = window.GameModules?.StageConfig;
+  if (!StageConfig) {
+    console.error('[Preset] StageConfig module not found');
+    return;
+  }
+
+  const preset = STAGE_PRESETS[presetName];
+  if (!preset) {
+    console.error(`[Preset] Unknown preset: ${presetName}`);
+    window.showToast?.(`Unknown preset: ${presetName}`, 'error', 1000);
+    return;
+  }
+
+  // STEP 4: Validate preset structure
+  const validation = validatePreset(preset, presetName);
+  if (!validation.valid) {
+    console.error(`[Preset] Validation failed for "${presetName}": ${validation.error}`);
+    window.showToast?.(`Preset error: ${validation.error}`, 'error', 2000);
+    return;
+  }
+
+  // Confirm with user
+  const skipLoopText = _skipLoopStages ? ' (excluding loop stages 11-13)' : '';
+  const confirmed = confirm(`Apply "${presetName}" preset to all stages${skipLoopText}?\n\nThis will overwrite existing stage configurations.`);
+  if (!confirmed) return;
+
+  const stageCount = window.STAGE_CONFIG?.length ?? 13;
+  let appliedCount = 0;
+  let warningCount = 0;
+
+  for (let i = 0; i < stageCount; i++) {
+    const stageId = i + 1;
+    const stageData = window.STAGE_CONFIG?.[i];
+
+    // Skip loop stages if toggle is enabled
+    if (_skipLoopStages && stageData?.isLoop) {
+      continue;
+    }
+
+    // Build override object from preset curves with clamping and rounding
+    const override = {};
+    for (const [key, curve] of Object.entries(preset)) {
+      if (Array.isArray(curve) && curve.length > i) {
+        let value = curve[i];
+
+        // Round value based on key type
+        value = roundPresetValue(key, value);
+
+        // Clamp value to valid range
+        value = clampPresetValue(key, value);
+
+        override[key] = value;
+      }
+    }
+
+    // STEP 4: Ensure warningTimeMin <= warningTimeBase
+    if (override.warningTimeMin !== undefined && override.warningTimeBase !== undefined) {
+      if (override.warningTimeMin > override.warningTimeBase) {
+        console.warn(`[Preset] Stage ${stageId}: warningTimeMin (${override.warningTimeMin}) > warningTimeBase (${override.warningTimeBase}), correcting...`);
+        override.warningTimeMin = override.warningTimeBase;
+        warningCount++;
+      }
+    }
+
+    // Apply overrides with try/catch for localStorage safety
+    try {
+      for (const [key, value] of Object.entries(override)) {
+        StageConfig.setQAOverride?.(String(stageId), key, value);
+      }
+      appliedCount++;
+    } catch (e) {
+      console.error(`[Preset] Failed to save override for stage ${stageId}:`, e);
+    }
+  }
+
+  // Invalidate cache and refresh UI
+  StageConfig.invalidateCache?.();
+  window.refreshStageTuningUI?.();
+
+  // Show result
+  let message = `Applied "${presetName}" to ${appliedCount} stages`;
+  if (warningCount > 0) {
+    message += ` (${warningCount} corrections)`;
+  }
+  window.showToast?.(message, 'info', 1500);
+  window.Sound?.sfx?.('btn');
+
+  console.log(`[Preset] Applied "${presetName}" to ${appliedCount} stages, ${warningCount} corrections made`);
+};
+
+/**
+ * Toggle skip loop stages setting
+ */
+window.toggleSkipLoopStages = function(checked) {
+  _skipLoopStages = checked;
+};
+
+/**
+ * Get current skip loop stages setting
+ */
+window.getSkipLoopStages = function() {
+  return _skipLoopStages;
 };
