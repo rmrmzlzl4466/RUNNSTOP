@@ -262,6 +262,7 @@ function startCharging() {
   // [JFB v2] 판정 결과에 따른 피드백 (Reflex Mode)
   if (result === 'perfect') {
     window.Game?.UI?.showToast?.(window.player, 'PERFECT!!', '#00ffff', 1500);
+    window.Game?.SlowMo?.cancel?.('boost_press', { setBlockWindow: true });
   } else if (result === 'false_start') {
     window.Game?.UI?.showToast?.(window.player, 'FALSE START!', '#e74c3c', 1000);
   }

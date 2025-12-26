@@ -22,9 +22,15 @@ window.GameModules = window.GameModules || {};
   };
 
   const FALLBACK_SLOWMO = {
-    slowMoScale: 0.55,       // Time scale during slow motion (0.1~1.0)
-    slowMoDuration: 1.35,    // Duration in seconds
-    slowMoEaseOut: 0.25      // Final segment eased back to normal (seconds)
+    enabled: true,
+    scale: 0.55,                 // Time scale during slow motion (0.1~1.0)
+    durationSec: 1.35,           // Duration in seconds
+    easeOutSec: 0.25,            // Final segment eased back to normal (seconds)
+    cancelPolicy: 'on_boost_press', // or 'on_boost_start' | 'never'
+    blockWhileBoosting: true,
+    blockWindowAfterBoostSec: 0.2,
+    applyMask: 'world_only',     // 'world_only' | 'everything'
+    minIntervalSec: 0
   };
 
   const FALLBACK_QA_CONFIG = {
