@@ -26,24 +26,32 @@
   }
 
   function load() {
-    const stored = localStorage.getItem(SAVE_KEY);
-    if (!stored) return normalizeSave();
     try {
+      const stored = localStorage.getItem(SAVE_KEY);
+      if (!stored) return normalizeSave();
       const parsed = JSON.parse(stored);
       return normalizeSave(parsed);
-    } catch (_) {
+    } catch (err) {
+      console.warn('[SaveManager] Failed to load save data, falling back to defaults', err);
       return normalizeSave();
     }
   }
 
   function persist(data = window.GameData) {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(normalizeSave(data)));
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(normalizeSave(data)));
+    } catch (err) {
+      console.error('[SaveManager] Failed to persist save data', err);
+    }
   }
 
   function reset() {
-    if (confirm('Reset data?')) {
+    if (!confirm('Reset data?')) return;
+    try {
       localStorage.removeItem(SAVE_KEY);
       location.reload();
+    } catch (err) {
+      console.error('[SaveManager] Failed to reset save data', err);
     }
   }
 
