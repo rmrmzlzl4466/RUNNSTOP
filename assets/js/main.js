@@ -1,9 +1,8 @@
-import { attachQAConfig, createQAConfig } from './game/config.js';
-import { createLifecycle } from './game/lifecycle.js';
-import { STATE, createRuntimeState, syncCanvasSize } from './game/runtime.js';
-import { loadGameData, persistGameData, resetGameData } from './game/storage.js';
-
 (function() {
+  const { attachQAConfig, createQAConfig } = window.GameModules.Config;
+  const { createLifecycle } = window.GameModules.Lifecycle;
+  const { STATE, createRuntimeState, syncCanvasSize } = window.GameModules.Runtime;
+  const { loadGameData, persistGameData, resetGameData } = window.GameModules.Storage;
   const canvas = document.getElementById('gameCanvas');
   const ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
 

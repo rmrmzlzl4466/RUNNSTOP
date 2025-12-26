@@ -1,10 +1,19 @@
-import { applyItem, pruneItemsBehindPlayer, spawnBigGem, spawnItemAtCol, spawnWarningGem } from './items.js';
-import { resetCamera, updateCameraZoom } from './camera.js';
-import { STATE, syncCanvasSize } from './runtime.js';
-import { getTargetColor, updateStageProgress } from './stage.js';
-import { formatNumber } from './config.js';
+window.GameModules = window.GameModules || {};
 
-export function createGameLoop(runtime, player, qaConfig, handlers) {
+(function() {
+  const { STATE, syncCanvasSize } = window.GameModules.Runtime;
+  const { resetCamera, updateCameraZoom } = window.GameModules.Camera;
+  const { getTargetColor, updateStageProgress } = window.GameModules.Stage;
+  const { formatNumber } = window.GameModules.Config;
+  const {
+    applyItem,
+    pruneItemsBehindPlayer,
+    spawnBigGem,
+    spawnItemAtCol,
+    spawnWarningGem
+  } = window.GameModules.Items;
+
+  function createGameLoop(runtime, player, qaConfig, handlers) {
   let rafId = null;
   let lastTime = 0;
 
@@ -214,4 +223,7 @@ export function createGameLoop(runtime, player, qaConfig, handlers) {
     },
     isRunning: () => !!rafId
   };
-}
+  }
+
+  window.GameModules.Loop = { createGameLoop };
+})();

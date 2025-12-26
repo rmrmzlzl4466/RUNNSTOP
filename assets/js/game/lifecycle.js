@@ -1,14 +1,17 @@
-import { applyLoadoutStats, formatNumber, getSkins } from './config.js';
-import { resetRuntime, STATE, syncCanvasSize } from './runtime.js';
-import { createGameLoop } from './loop.js';
-import { spawnItemAtCol, pruneItemsBehindPlayer } from './items.js';
-import { applyLoopDifficultyScaling, showStageNotification } from './stage.js';
+window.GameModules = window.GameModules || {};
 
-export function createLifecycle(canvas, player, qaConfig, gameData, saveGameData, runtime) {
-  const loop = createGameLoop(runtime, player, qaConfig, {
-    onDie: handleDeath,
-    onGameOver: handleGameOver
-  });
+(function() {
+  const { applyLoadoutStats, formatNumber, getSkins } = window.GameModules.Config;
+  const { resetRuntime, STATE, syncCanvasSize } = window.GameModules.Runtime;
+  const { createGameLoop } = window.GameModules.Loop;
+  const { spawnItemAtCol, pruneItemsBehindPlayer } = window.GameModules.Items;
+  const { applyLoopDifficultyScaling, showStageNotification } = window.GameModules.Stage;
+
+  function createLifecycle(canvas, player, qaConfig, gameData, saveGameData, runtime) {
+    const loop = createGameLoop(runtime, player, qaConfig, {
+      onDie: handleDeath,
+      onGameOver: handleGameOver
+    });
 
   function prepareLevel() {
     window.Game.LevelManager.reset();
@@ -208,4 +211,7 @@ export function createLifecycle(canvas, player, qaConfig, gameData, saveGameData
     quitGame,
     warpToDistance
   };
-}
+  }
+
+  window.GameModules.Lifecycle = { createLifecycle };
+})();

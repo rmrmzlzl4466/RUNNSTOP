@@ -1,4 +1,7 @@
-const FALLBACK_QA_CONFIG = {
+window.GameModules = window.GameModules || {};
+
+(function() {
+  const FALLBACK_QA_CONFIG = {
   trailLength: 40,
   trailOpacity: 0.9,
   coinRate: 0.3,
@@ -20,24 +23,24 @@ const FALLBACK_QA_CONFIG = {
   scorePerCoin: 200,
   scorePerGem: 1000,
   stageLength: 2000
-};
+  };
 
-export function createQAConfig() {
-  return { ...(window.GameConfig?.defaultQAConfig ?? FALLBACK_QA_CONFIG) };
-}
+  function createQAConfig() {
+    return { ...(window.GameConfig?.defaultQAConfig ?? FALLBACK_QA_CONFIG) };
+  }
 
-export function attachQAConfig(config) {
-  window.Game = window.Game || {};
-  window.qaConfig = config;
-  window.Game.config = config;
-}
+  function attachQAConfig(config) {
+    window.Game = window.Game || {};
+    window.qaConfig = config;
+    window.Game.config = config;
+  }
 
-export const formatNumber = (num) => Math.floor(num).toLocaleString('en-US');
+  const formatNumber = (num) => Math.floor(num).toLocaleString('en-US');
 
-export const getSkins = () => window.SKINS ?? window.GameConfig?.SKINS ?? [];
-export const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
+  const getSkins = () => window.SKINS ?? window.GameConfig?.SKINS ?? [];
+  const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
 
-export const defaultSaveData = window.SaveManager?.defaultSave ?? {
+  const defaultSaveData = window.SaveManager?.defaultSave ?? {
   coins: 0,
   gems: 1000,
   lvlSpeed: 1,
@@ -49,38 +52,49 @@ export const defaultSaveData = window.SaveManager?.defaultSave ?? {
   unlockedTreasures: [],
   equippedTreasures: [null, null],
   stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
-};
+  };
 
-export function applyLoadoutStats(player, qaConfig, gameData) {
-  const F = window.GameConfig?.Formulas;
-  if (!F) return;
+  function applyLoadoutStats(player, qaConfig, gameData) {
+    const F = window.GameConfig?.Formulas;
+    if (!F) return;
 
-  player.accel = qaConfig.baseAccel;
-  player.maxSpeed = F.getSpeed(gameData.lvlSpeed, qaConfig.baseSpeed ?? 400);
-  player.cooldownMax = F.getCool(gameData.lvlCool);
-  player.baseMagnetRange = (qaConfig.baseMagnet ?? 100) + F.getMagnetBonus(gameData.lvlMagnet);
-  player.coinMult = F.getGreed(gameData.lvlGreed);
-  player.dashForce = qaConfig.dashForce;
-  player.friction = qaConfig.friction ?? 0.9;
+    player.accel = qaConfig.baseAccel;
+    player.maxSpeed = F.getSpeed(gameData.lvlSpeed, qaConfig.baseSpeed ?? 400);
+    player.cooldownMax = F.getCool(gameData.lvlCool);
+    player.baseMagnetRange = (qaConfig.baseMagnet ?? 100) + F.getMagnetBonus(gameData.lvlMagnet);
+    player.coinMult = F.getGreed(gameData.lvlGreed);
+    player.dashForce = qaConfig.dashForce;
+    player.friction = qaConfig.friction ?? 0.9;
 
-  const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
-  if (skin) {
-    if (skin.statType === 'speed') player.maxSpeed += skin.statVal;
-    if (skin.statType === 'cool') player.cooldownMax = Math.max(0.2, player.cooldownMax - skin.statVal);
-    if (skin.statType === 'greed') player.coinMult += skin.statVal;
-    if (skin.statType === 'magnet') player.baseMagnetRange += skin.statVal;
-    if (skin.statType === 'barrier' && skin.statVal > 0) player.hasBarrier = true;
+    const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
+    if (skin) {
+      if (skin.statType === 'speed') player.maxSpeed += skin.statVal;
+      if (skin.statType === 'cool') player.cooldownMax = Math.max(0.2, player.cooldownMax - skin.statVal);
+      if (skin.statType === 'greed') player.coinMult += skin.statVal;
+      if (skin.statType === 'magnet') player.baseMagnetRange += skin.statVal;
+      if (skin.statType === 'barrier' && skin.statVal > 0) player.hasBarrier = true;
+    }
+
+    const equippedTreasures = gameData.equippedTreasures || [null, null];
+    equippedTreasures.forEach((tid) => {
+      if (!tid) return;
+      const treasure = window.getTreasureById?.(tid);
+      if (!treasure) return;
+      if (treasure.effect === 'speed') player.maxSpeed += treasure.val;
+      if (treasure.effect === 'magnet') player.baseMagnetRange += treasure.val;
+      if (treasure.effect === 'barrier_start') player.hasBarrier = true;
+      if (treasure.effect === 'revive') player.hasRevive = true;
+      if (treasure.effect === 'coin_bonus') player.treasureCoinBonus = treasure.val;
+    });
   }
 
-  const equippedTreasures = gameData.equippedTreasures || [null, null];
-  equippedTreasures.forEach((tid) => {
-    if (!tid) return;
-    const treasure = window.getTreasureById?.(tid);
-    if (!treasure) return;
-    if (treasure.effect === 'speed') player.maxSpeed += treasure.val;
-    if (treasure.effect === 'magnet') player.baseMagnetRange += treasure.val;
-    if (treasure.effect === 'barrier_start') player.hasBarrier = true;
-    if (treasure.effect === 'revive') player.hasRevive = true;
-    if (treasure.effect === 'coin_bonus') player.treasureCoinBonus = treasure.val;
-  });
-}
+  window.GameModules.Config = {
+    createQAConfig,
+    attachQAConfig,
+    formatNumber,
+    getSkins,
+    getThemes,
+    defaultSaveData,
+    applyLoadoutStats
+  };
+})();
