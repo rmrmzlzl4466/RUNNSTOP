@@ -51,12 +51,25 @@ window.GameModules = window.GameModules || {};
   }
 
   function checkStopJudgment(nowSec) {
-    if (player.isBoosting) return;
+    // [DEBUG] 디버그 정보 저장
+    runtime._stopJudgmentDebug = `isBoosting: ${player.isBoosting}`;
+
+    if (player.isBoosting) {
+      runtime._stopJudgmentDebug = 'SKIPPED: Player is boosting';
+      return;
+    }
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
+    runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Action: ${result.action}`;
+
     if (result.isSafe) {
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
-      getSlowMo()?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
+      const slowMoModule = getSlowMo();
+      runtime._stopJudgmentDebug = `SlowMo module: ${slowMoModule ? 'OK' : 'NULL'}`;
+      const started = slowMoModule?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
+      runtime._stopJudgmentDebug = `SlowMo started: ${started}`;
+      console.log('[Loop] SlowMo start result:', started, 'module:', !!slowMoModule);
+
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
     } else if (result.action === 'barrier_save') {

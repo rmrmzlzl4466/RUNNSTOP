@@ -54,24 +54,35 @@ window.GameModules = window.GameModules || {};
    * @returns {boolean} Whether slowmo was started
    */
   function start(runtime, qaConfig, nowSec, reason) {
+    // [DEBUG] 모바일 디버깅용 - 모든 차단 조건 로깅
+    const debugLog = (msg) => {
+      console.log('[SlowMo]', msg);
+      // 화면에도 표시 (디버그용)
+      if (runtime) {
+        runtime._slowMoDebug = msg;
+      }
+    };
+
     if (!runtime?.slowMo) {
-      console.warn('[SlowMo] No runtime.slowMo object');
+      debugLog('BLOCKED: No runtime.slowMo');
       return false;
     }
 
     const cfg = qaConfig?.slowMo || {};
     if (!cfg.enabled) {
-      console.warn('[SlowMo] Disabled in config');
+      debugLog('BLOCKED: Disabled in config');
       return false;
     }
 
     // Block if player is boosting
     if (cfg.blockWhileBoosting !== false && window.player?.isBoosting) {
+      debugLog('BLOCKED: Player is boosting');
       return false;
     }
 
     // Block if within block window
     if (nowSec < (runtime.slowMo.blockUntil ?? 0)) {
+      debugLog(`BLOCKED: Block window (${(runtime.slowMo.blockUntil - nowSec).toFixed(2)}s remaining)`);
       return false;
     }
 
@@ -79,6 +90,7 @@ window.GameModules = window.GameModules || {};
     const minInterval = cfg.minIntervalSec ?? 0;
     if (minInterval > 0 && runtime.slowMo.lastTriggerTime) {
       if ((nowSec - runtime.slowMo.lastTriggerTime) < minInterval) {
+        debugLog('BLOCKED: Min interval');
         return false;
       }
     }
@@ -112,6 +124,7 @@ window.GameModules = window.GameModules || {};
     // Play slowmo enter sound
     window.Sound?.sfx?.('slowmo_enter');
 
+    debugLog(`STARTED! (${reason})`);
     console.log('[SlowMo] Started:', reason, 'scale:', targetScale, 'hold:', holdDuration);
     return true;
   }

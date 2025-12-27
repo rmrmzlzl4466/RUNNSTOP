@@ -290,14 +290,31 @@ function lerpColorToBlack(hex, t) {
       const intensity = SlowMo?.getVisualIntensity?.(runtime) ?? 0;
 
       // Debug: Always show slowmo status (can remove later)
-      const slowMoEnabled = window.qaConfig?.slowMo?.enabled;
-      const slowMoActive = runtime?.slowMo?.active;
+      const slowMoEnabled = window.qaConfig?.slowMo?.enabled ?? false;
+      const slowMoActive = runtime?.slowMo?.active ?? false;
       const phase = runtime?.slowMo?.phase ?? 0;
+      const debugMsg = runtime?._slowMoDebug || '(no msg)';
+      const stopDebug = runtime?._stopJudgmentDebug || '(waiting)';
+      const intensityVal = typeof intensity === 'number' ? (intensity * 100).toFixed(0) : '?';
+
       ctx.save();
       ctx.font = '12px monospace';
-      ctx.fillStyle = slowMoActive ? '#0f0' : '#888';
       ctx.textAlign = 'left';
-      ctx.fillText(`SM: ${slowMoEnabled ? 'ON' : 'OFF'} | Active: ${slowMoActive ? 'Y' : 'N'} | Phase: ${phase} | Int: ${(intensity*100).toFixed(0)}%`, 10, canvasHeight - 30);
+
+      // 첫 줄: 기본 상태 체크
+      ctx.fillStyle = '#fff';
+      const runtimeOK = runtime ? 'Y' : 'N';
+      const moduleOK = SlowMo ? 'Y' : 'N';
+      ctx.fillText(`RT:${runtimeOK} MOD:${moduleOK} | SM:${slowMoEnabled?'ON':'OFF'} Act:${slowMoActive?'Y':'N'} Ph:${phase} Int:${intensityVal}%`, 10, canvasHeight - 65);
+
+      // 둘째 줄: SlowMo 디버그 메시지
+      ctx.fillStyle = '#ff0';
+      ctx.fillText(`SM: ${debugMsg}`, 10, canvasHeight - 50);
+
+      // 셋째 줄: StopJudgment 디버그
+      ctx.fillStyle = '#0ff';
+      ctx.fillText(`STOP: ${stopDebug}`, 10, canvasHeight - 35);
+
       ctx.restore();
 
       if (intensity <= 0) return;
