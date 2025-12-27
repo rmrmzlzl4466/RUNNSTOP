@@ -19,6 +19,7 @@ window.GameModules = window.GameModules || {};
 
   // Get SlowMo module (may not be loaded yet, so use optional chaining)
   const SlowMo = window.GameModules.SlowMo;
+  const Gimmick = window.GameModules.Gimmick;
 
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
@@ -137,8 +138,13 @@ window.GameModules = window.GameModules || {};
       updateStageProgress(runtime, player.dist, qaConfig);
     }
 
-    // Use effective stormSpeed (includes stage multiplier and loop scaling)
-    const stormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
+    // Update gimmicks
+    Gimmick?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
+    const stormPulseMult = Gimmick?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
+
+    // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
+    const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
+    const stormSpeed = baseStormSpeed * stormPulseMult;
     runtime.storm.y -= stormSpeed * worldDt;
     if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
       handlers.onDie?.('STORM');

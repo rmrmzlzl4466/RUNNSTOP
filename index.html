@@ -175,6 +175,15 @@
       </div>
 
       <div class="qa-content qa-group" style="display:block; flex:1;">
+        <!-- Debug Tools -->
+        <fieldset class="qa-section" style="border:1px solid #9b59b6; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#9b59b6; font-weight:bold; padding:0 8px;">Debug</legend>
+          <div class="setting-item" style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="qa-show-overlay" onchange="window.GameModules?.DebugOverlay?.toggle?.(); this.checked = window.GameModules?.DebugOverlay?.isVisible?.() ?? false;">
+            <label for="qa-show-overlay">Show Effective Config Overlay (F2)</label>
+          </div>
+        </fieldset>
+
         <!-- Group 1: Economy -->
         <fieldset class="qa-section" style="border:1px solid #2ecc71; border-radius:8px; padding:10px; margin-bottom:15px;">
           <legend style="color:#2ecc71; font-weight:bold; padding:0 8px;">Economy</legend>
@@ -200,7 +209,6 @@
             <div class="vol-row"><span>↩️ Turn Agility</span> <span class="val-display" id="qa-val-turnaccel">2.0x</span></div>
             <input type="range" id="qa-turnaccel" min="10" max="50" step="5" value="20" oninput="window.updateQA()">
           </div>
-          <div class="setting-item"><div class="vol-row"><span>⚡ Dash Power (Legacy)</span> <span class="val-display" id="qa-val-dash">1100</span></div><input type="range" id="qa-dash" min="800" max="2000" step="100" value="1100" oninput="window.updateQA()"></div>
           <!-- [CHARGING SYSTEM] 차징 대쉬 관련 설정 -->
           <div class="setting-item"><div class="vol-row"><span>🔋 Min Dash Force</span> <span class="val-display" id="qa-val-mindash">600</span></div><input type="range" id="qa-mindash" min="400" max="1200" step="50" value="600" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>⚡ Max Dash Force</span> <span class="val-display" id="qa-val-maxdash">4000</span></div><input type="range" id="qa-maxdash" min="1000" max="5000" step="100" value="4000" oninput="window.updateQA()"></div>
@@ -603,6 +611,8 @@
   <script src="./assets/js/game/items.js"></script>
   <script src="./assets/js/game/stage.js"></script>
   <script src="./assets/js/game/stageConfig.js"></script>
+  <script src="./assets/js/game/gimmick.js"></script>
+  <script src="./assets/js/ui/debugOverlay.js"></script>
   <script src="./assets/js/game/slowmo.js"></script>
   <script src="./assets/js/game/loop.js"></script>
   <script src="./assets/js/game/storage.js"></script>

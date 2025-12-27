@@ -1,46 +1,159 @@
 /**
  * Stage Configuration Data
  *
+ * ====================================
+ * STAGE STRUCTURE
+ * ====================================
+ *
  * - Stages 1-10: Main progression (unique experiences)
  * - Stages 11-13: Loop section (repeats infinitely after completion)
  *
- * Per-Stage Tuning:
- * 스테이지별로 오버라이드할 값만 tuning 객체에 추가
- * null = STAGE_DEFAULTS 사용 (core/config.js)
+ * ====================================
+ * FIELD CLASSIFICATION (POLICY-B)
+ * ====================================
  *
- * 사용 가능한 tuning 필드:
- * - 물리: baseSpeed, friction, stopFriction, baseAccel, turnAccelMult
- * - 대쉬: dashForce, minDashForce, maxDashForce, maxChargeTime, dashCooldown, chargeSlowdown
- * - 마그넷: baseMagnet, magnetRange
- * - 스폰: coinRate, minCoinRunLength, itemRate, itemWeights
- * - 속도: stormBaseSpeed, stormSpeedMult, baseSpeedMult
- * - 타이밍: firstWarningTimeBase, runPhaseDuration, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration (기본적으로 전역 제어)
- * - 점수: scoreMult
- * - 모프: morphTrigger, morphDuration
+ * GLOBAL-ONLY KEYS (QA 탭에서만 조절, Stage tuning 무시):
+ * - runPhaseDuration, stopPhaseDuration
+ * - firstWarningTimeBase, warningTimeBase, warningTimeMin, warningTimeMult
+ * - friction, stopFriction, baseAccel, turnAccelMult
+ * - minDashForce, maxDashForce, maxChargeTime, dashCooldown, chargeSlowdown
+ * - baseMagnet, magnetRange, morphTrigger, morphDuration
  *
- * Global-only vs Stage-tunable:
- * - Global-only (qaConfig): runPhaseDuration, firstWarningTimeBase, warningTimeBase, warningTimeMin, warningTimeMult, stopPhaseDuration, stormBaseSpeed
- * - Stage-tunable: coinRate, itemRate, stormSpeedMult, baseSpeedMult, scoreMult, itemWeights, physics values (friction 등)
+ * STAGE-ONLY KEYS (Stage Tuning에서만 조절):
+ * - coinRate, minCoinRunLength, itemRate, itemWeights
+ * - stormSpeedMult, baseSpeedMult
+ * - scoreMult
+ * - theme, gimmick
+ *
+ * ====================================
+ * THEME/GIMMICK SCHEMA (Section C)
+ * ====================================
+ *
+ * theme: {
+ *   paletteId: 'NEON_CITY' | 'CIRCUIT' | 'GLITCH' | 'VOID' | 'SUNSET' | 'STORM' | 'DEFAULT',
+ *   safeColorBias?: number (0-1, optional emphasis on safe color)
+ * }
+ *
+ * gimmick: {
+ *   id: 'NONE' | 'SAFE_FADE' | 'GLITCH_SWAP' | 'STORM_PULSE',
+ *   params: { ... gimmick-specific parameters ... }
+ * }
+ *
+ * Gimmick Params:
+ * - SAFE_FADE: { intensity: 0.0-1.0 }
+ * - GLITCH_SWAP: { rate: 0.0-1.0, maxSwapsPerSecond: number }
+ * - STORM_PULSE: { interval: seconds, duration: seconds, mult: 1.0-2.0 }
  */
 
-// Stage tuning defaults (null = use qaConfig/global defaults)
+// ====================================
+// STAGE TUNING DEFAULTS
+// ====================================
+// STAGE-ONLY 키만 포함 (Global-only 키는 제거됨)
 window.STAGE_TUNING_DEFAULTS = {
+  // Economy (STAGE-ONLY)
   coinRate: null,
   minCoinRunLength: null,
   itemRate: null,
   itemWeights: null,
+  // Speed curves (STAGE-ONLY)
   stormSpeedMult: null,
   baseSpeedMult: null,
+  // Score (STAGE-ONLY)
   scoreMult: null,
-  // Global-only timing values intentionally null to enforce qaConfig control
-  firstWarningTimeBase: null,
-  runPhaseDuration: null,
-  warningTimeBase: null,
-  warningTimeMin: null,
-  warningTimeMult: null,
-  stopPhaseDuration: null
+  // Theme/Gimmick (STAGE-ONLY, Section C)
+  theme: null,
+  gimmick: null
+  // NOTE: Global-only timing values are NOT included here
+  // They are always taken from qaConfig (see stageConfig.js POLICY-B)
 };
 
+// ====================================
+// PALETTE DEFINITIONS (Section C)
+// ====================================
+window.STAGE_PALETTES = {
+  DEFAULT: {
+    id: 'DEFAULT',
+    name: 'Default',
+    colors: ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c'],
+    safeColor: '#2ecc71',
+    dangerColor: '#e74c3c'
+  },
+  NEON_CITY: {
+    id: 'NEON_CITY',
+    name: 'Neon City',
+    colors: ['#ff0080', '#00ffff', '#00ff41', '#ffff00', '#ff00ff', '#0080ff'],
+    safeColor: '#00ff41',
+    dangerColor: '#ff0080'
+  },
+  CIRCUIT: {
+    id: 'CIRCUIT',
+    name: 'Circuit Board',
+    colors: ['#00ff00', '#003300', '#00cc00', '#006600', '#00ff66', '#009933'],
+    safeColor: '#00ff00',
+    dangerColor: '#003300'
+  },
+  GLITCH: {
+    id: 'GLITCH',
+    name: 'Glitch',
+    colors: ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#ffff00', '#00ffff'],
+    safeColor: '#00ff00',
+    dangerColor: '#ff0000'
+  },
+  VOID: {
+    id: 'VOID',
+    name: 'Void',
+    colors: ['#1a1a2e', '#16213e', '#0f3460', '#e94560', '#533483', '#000000'],
+    safeColor: '#0f3460',
+    dangerColor: '#e94560'
+  },
+  SUNSET: {
+    id: 'SUNSET',
+    name: 'Sunset',
+    colors: ['#ff6b6b', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd', '#341f97'],
+    safeColor: '#54a0ff',
+    dangerColor: '#ff6b6b'
+  },
+  STORM: {
+    id: 'STORM',
+    name: 'Storm',
+    colors: ['#2c3e50', '#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7', '#1a252f'],
+    safeColor: '#95a5a6',
+    dangerColor: '#2c3e50'
+  }
+};
+
+// ====================================
+// GIMMICK DEFINITIONS (Section C)
+// ====================================
+window.GIMMICK_TYPES = {
+  NONE: {
+    id: 'NONE',
+    name: 'None',
+    description: 'No special gimmick'
+  },
+  SAFE_FADE: {
+    id: 'SAFE_FADE',
+    name: 'Safe Fade',
+    description: 'Safe color panels glow during STOP phase',
+    defaultParams: { intensity: 0.5 }
+  },
+  GLITCH_SWAP: {
+    id: 'GLITCH_SWAP',
+    name: 'Glitch Swap',
+    description: 'Panels randomly swap colors during WARNING',
+    defaultParams: { rate: 0.3, maxSwapsPerSecond: 2 }
+  },
+  STORM_PULSE: {
+    id: 'STORM_PULSE',
+    name: 'Storm Pulse',
+    description: 'Storm speed pulses periodically',
+    defaultParams: { interval: 3.0, duration: 0.5, mult: 1.5 }
+  }
+};
+
+// ====================================
+// STAGE CONFIGURATIONS
+// ====================================
 window.STAGE_CONFIG = [
   // ============================================
   // Main Progression (1-10)
@@ -50,8 +163,10 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 2000,
     name: "BOOT SEQUENCE",
+    theme: { paletteId: 'DEFAULT' },
+    gimmick: { id: 'NONE', params: {} },
     tuning: {
-      // 튜토리얼 느낌 - 기본값 사용
+      // Tutorial - use defaults
     }
   },
   {
@@ -59,8 +174,9 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 2300,
     name: "DIGITAL CIRCUIT",
+    theme: { paletteId: 'CIRCUIT' },
+    gimmick: { id: 'NONE', params: {} },
     tuning: {
-      // 약간 빨라지기 시작
       stormSpeedMult: 1.05
     }
   },
@@ -69,10 +185,9 @@ window.STAGE_CONFIG = [
     themeIdx: 1,
     length: 2600,
     name: "NEON ALLEY",
+    theme: { paletteId: 'NEON_CITY' },
+    gimmick: { id: 'SAFE_FADE', params: { intensity: 0.3 } },
     tuning: {
-      // 네온 거리 - 미끄러운 바닥
-      friction: 0.96,
-      stopFriction: 0.88,
       stormSpeedMult: 1.1
     }
   },
@@ -81,10 +196,9 @@ window.STAGE_CONFIG = [
     themeIdx: 1,
     length: 2900,
     name: "GLITCH CITY",
+    theme: { paletteId: 'GLITCH' },
+    gimmick: { id: 'GLITCH_SWAP', params: { rate: 0.2, maxSwapsPerSecond: 1 } },
     tuning: {
-      // 글리치 - 예측 불가능한 물리
-      friction: 0.90,
-      turnAccelMult: 5.5,
       stormSpeedMult: 1.15
     }
   },
@@ -93,9 +207,10 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 3200,
     name: "DATA HIGHWAY",
+    theme: { paletteId: 'CIRCUIT' },
+    gimmick: { id: 'STORM_PULSE', params: { interval: 4.0, duration: 0.5, mult: 1.3 } },
     tuning: {
-      // 고속도로 - 빠른 속도
-      baseSpeed: 1100,
+      baseSpeedMult: 1.1,
       stormSpeedMult: 1.2
     }
   },
@@ -104,11 +219,9 @@ window.STAGE_CONFIG = [
     themeIdx: 2,
     length: 3500,
     name: "VOID ENTRANCE",
+    theme: { paletteId: 'VOID' },
+    gimmick: { id: 'SAFE_FADE', params: { intensity: 0.5 } },
     tuning: {
-      // 보이드 입구 - 무거운 느낌
-      friction: 0.85,
-      stopFriction: 0.75,
-      baseAccel: 2500,
       stormSpeedMult: 1.25
     }
   },
@@ -117,11 +230,10 @@ window.STAGE_CONFIG = [
     themeIdx: 1,
     length: 3800,
     name: "CYBER STORM",
+    theme: { paletteId: 'STORM' },
+    gimmick: { id: 'STORM_PULSE', params: { interval: 3.0, duration: 0.8, mult: 1.5 } },
     tuning: {
-      // 사이버 폭풍 - 빠르고 위험
-      stormSpeedMult: 1.35,
-      warningTimeBase: null,
-      stopPhaseDuration: null
+      stormSpeedMult: 1.35
     }
   },
   {
@@ -129,10 +241,9 @@ window.STAGE_CONFIG = [
     themeIdx: 2,
     length: 4100,
     name: "THE VOID",
+    theme: { paletteId: 'VOID' },
+    gimmick: { id: 'GLITCH_SWAP', params: { rate: 0.4, maxSwapsPerSecond: 2 } },
     tuning: {
-      // 보이드 본체 - 극한 환경
-      friction: 0.80,
-      stopFriction: 0.70,
       stormSpeedMult: 1.4,
       scoreMult: 1.5
     }
@@ -142,8 +253,9 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 4400,
     name: "SYSTEM REBOOT",
+    theme: { paletteId: 'CIRCUIT' },
+    gimmick: { id: 'SAFE_FADE', params: { intensity: 0.6 } },
     tuning: {
-      // 재부팅 - 정상화되는 느낌
       stormSpeedMult: 1.3
     }
   },
@@ -152,11 +264,10 @@ window.STAGE_CONFIG = [
     themeIdx: 2,
     length: 4500,
     name: "INFINITE HORIZON",
+    theme: { paletteId: 'SUNSET' },
+    gimmick: { id: 'STORM_PULSE', params: { interval: 2.5, duration: 1.0, mult: 1.8 } },
     tuning: {
-      // 마지막 스테이지 - 최고 난이도
       stormSpeedMult: 1.5,
-      warningTimeBase: null,
-      stopPhaseDuration: null,
       scoreMult: 2.0
     }
   },
@@ -170,9 +281,10 @@ window.STAGE_CONFIG = [
     length: 3500,
     name: "LOOP: ALPHA",
     isLoop: true,
+    theme: { paletteId: 'NEON_CITY' },
+    gimmick: { id: 'GLITCH_SWAP', params: { rate: 0.3, maxSwapsPerSecond: 2 } },
     tuning: {
       stormSpeedMult: 1.4,
-      warningTimeBase: null,
       scoreMult: 2.5
     }
   },
@@ -182,12 +294,10 @@ window.STAGE_CONFIG = [
     length: 4000,
     name: "LOOP: BETA",
     isLoop: true,
+    theme: { paletteId: 'GLITCH' },
+    gimmick: { id: 'STORM_PULSE', params: { interval: 2.0, duration: 0.8, mult: 1.6 } },
     tuning: {
-      // 빙판 루프
-      friction: 0.97,
-      stopFriction: 0.92,
       stormSpeedMult: 1.5,
-      warningTimeBase: null,
       scoreMult: 3.0
     }
   },
@@ -197,13 +307,10 @@ window.STAGE_CONFIG = [
     length: 4500,
     name: "LOOP: OMEGA",
     isLoop: true,
+    theme: { paletteId: 'VOID' },
+    gimmick: { id: 'SAFE_FADE', params: { intensity: 0.8 } },
     tuning: {
-      // 최종 루프 - 극한
-      friction: 0.78,
-      stopFriction: 0.68,
       stormSpeedMult: 1.6,
-      warningTimeBase: null,
-      stopPhaseDuration: null,
       scoreMult: 4.0
     }
   }
@@ -237,4 +344,6 @@ window.LOOP_START_INDEX = 10;
   console.log('  - Total stages:', window.STAGE_CONFIG.length);
   console.log('  - Loop starts at:', window.LOOP_START_DISTANCE + 'm (Stage ' + (window.LOOP_START_INDEX + 1) + ')');
   console.log('  - Loop cycle length:', window.LOOP_SECTION_LENGTH + 'm');
+  console.log('  - Palettes available:', Object.keys(window.STAGE_PALETTES).join(', '));
+  console.log('  - Gimmicks available:', Object.keys(window.GIMMICK_TYPES).join(', '));
 })();

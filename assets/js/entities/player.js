@@ -8,6 +8,7 @@ class Player {
     this.vy = 0;
     this.accel = 1500;
     this.maxSpeed = 400;
+    this._baseMaxSpeed = null;  // 스테이지 배수 적용 전 기본값 저장
     this.dashForce = 1200;
     this.dashDuration = 0.15;
     this.isDashing = false;
@@ -95,6 +96,7 @@ class Player {
     this.jfbRandomDelay = 0;
     this.jfbActiveStartTime = 0;
     this.history = [];
+    this._baseMaxSpeed = null;  // 스테이지 배수 리셋
   }
 
   update(dt, options = {}) {
@@ -117,6 +119,13 @@ class Player {
       if (effective.maxChargeTime !== undefined) this.maxChargeTime = effective.maxChargeTime;
       if (effective.dashCooldown !== undefined) this.cooldownMax = effective.dashCooldown;
       if (effective.chargeSlowdown !== undefined) this.chargeSlowdown = effective.chargeSlowdown;
+      // 스테이지별 속도 배수 적용 (업그레이드 보너스 유지)
+      if (effective.baseSpeedMult !== undefined) {
+        if (this._baseMaxSpeed === null) {
+          this._baseMaxSpeed = this.maxSpeed; // applyLoadoutStats에서 설정된 값 캡처
+        }
+        this.maxSpeed = this._baseMaxSpeed * effective.baseSpeedMult;
+      }
     }
 
     // Global 값 적용 (qaConfig에서 가져옴)

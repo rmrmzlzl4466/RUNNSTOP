@@ -71,7 +71,6 @@
     turnAccelMult: 4.5,      // 방향 전환 가속도 배율
 
     // === 대쉬 ===
-    dashForce: 1000,         // Legacy 고정 대쉬
     minDashForce: 600,       // 차징 최소 힘
     maxDashForce: 4000,      // 차징 최대 힘
     maxChargeTime: 1.2,      // 풀 차징 시간

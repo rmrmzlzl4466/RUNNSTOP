@@ -1,49 +1,103 @@
 /**
  * StageConfig Module
  *
- * Priority chain for stage-tunable values:
- * 1. QA Override (localStorage) - highest (per-stage tuning only)
- * 2. Stage Tuning (stage.tuning)
- * 3. qaConfig (global QA sliders)
- * 4. STAGE_DEFAULTS (core/config.js)
+ * ====================================
+ * FIELD CLASSIFICATION (POLICY-B)
+ * ====================================
  *
- * GLOBAL-ONLY values (run/warn/stop cycle, stormBaseSpeed) skip Stage Tuning and come directly from qaConfig/defaults.
+ * GLOBAL_ONLY_KEYS: QA 탭에서만 조절, Stage는 절대 덮어쓰지 못함
+ * - 게임 룰/조작감 관련 필드
+ * - Priority: qaConfig → STAGE_DEFAULTS
+ *
+ * STAGE_ONLY_KEYS: Stage Tuning에서만 조절, Global QA는 관여하지 않음
+ * - 레벨 디자인 관련 필드
+ * - Priority: stageOverride → stageTuning → STAGE_DEFAULTS
+ *
+ * ====================================
+ * SOURCE TRACKING (REQ-A3)
+ * ====================================
+ *
+ * Each value tracks its source:
+ * - 'override': QA Override (localStorage stageOverrides)
+ * - 'stage': Stage Tuning (stage.tuning from stages.js)
+ * - 'qa': qaConfig (global QA sliders)
+ * - 'fallback': STAGE_DEFAULTS (core/config.js)
  */
 window.GameModules = window.GameModules || {};
 
 (function() {
   'use strict';
 
-  // === Priority Rules ===
-  // GLOBAL_ONLY_KEYS: Always come from qaConfig (or STAGE_DEFAULTS fallback). Stage tuning/overrides are ignored.
-  // STAGE_TUNABLE_KEYS: Per-stage knobs. Priority: QA Override → Stage Tuning → qaConfig → STAGE_DEFAULTS.
+  // ====================================
+  // FIELD CLASSIFICATION (POLICY-B)
+  // ====================================
+
+  /**
+   * GLOBAL_ONLY_KEYS: QA 탭에서만 조절
+   * Stage tuning/overrides는 무시됨
+   * 게임 룰/조작감 - 스테이지별로 바꾸면 QA 신뢰성이 깨짐
+   */
   const GLOBAL_ONLY_KEYS = new Set([
+    // 타이밍
     'runPhaseDuration',
+    'stopPhaseDuration',
+    'firstWarningTimeBase',
     'warningTimeBase',
     'warningTimeMin',
     'warningTimeMult',
-    'firstWarningTimeBase',
-    'stopPhaseDuration',
-    'stormBaseSpeed'
+    // 물리/조작감
+    'friction',
+    'stopFriction',
+    'baseAccel',
+    'turnAccelMult',
+    // 대쉬 시스템
+    'minDashForce',
+    'maxDashForce',
+    'maxChargeTime',
+    'dashCooldown',
+    'chargeSlowdown',
+    // 기타 글로벌
+    'baseMagnet',
+    'magnetRange',
+    'morphTrigger',
+    'morphDuration'
   ]);
 
-  const STAGE_TUNABLE_KEYS = new Set([
-    'baseSpeed', 'friction', 'stopFriction', 'baseAccel', 'turnAccelMult',
-    'dashForce', 'minDashForce', 'maxDashForce', 'maxChargeTime', 'dashCooldown', 'chargeSlowdown',
-    'baseMagnet', 'magnetRange',
-    'coinRate', 'minCoinRunLength', 'itemRate', 'itemWeights',
-    'stormSpeedMult', 'baseSpeedMult',
+  /**
+   * STAGE_ONLY_KEYS: Stage Tuning에서만 조절
+   * qaConfig는 개입하지 않음 (혼동 방지)
+   * 레벨 디자인 핵심 파라미터
+   */
+  const STAGE_ONLY_KEYS = new Set([
+    // 경제
+    'coinRate',
+    'minCoinRunLength',
+    'itemRate',
+    'itemWeights',
+    // 속도 곡선
+    'stormSpeedMult',
+    'baseSpeedMult',
+    // 점수 곡선
     'scoreMult',
-    'morphTrigger', 'morphDuration'
+    // 테마/기믹 (C 섹션)
+    'theme',
+    'gimmick'
   ]);
 
-  // qaConfig fields that affect effective config (used for cache invalidation)
-  const QA_HASH_KEYS = [
-    ...STAGE_TUNABLE_KEYS,
-    ...GLOBAL_ONLY_KEYS
-  ];
+  // stormBaseSpeed는 GLOBAL_ONLY이지만 별도 처리
+  const STORM_BASE_SPEED_KEY = 'stormBaseSpeed';
 
-  // ========== Cache System ==========
+  // ====================================
+  // SOURCE TRACKING
+  // ====================================
+
+  // 마지막 계산된 effective config의 source 정보
+  let lastEffectiveDebugSources = {};
+
+  // ====================================
+  // CACHE SYSTEM
+  // ====================================
+
   let cachedEffective = null;
   let cachedStageId = null;
   let cachedLoopCount = null;
@@ -63,34 +117,69 @@ window.GameModules = window.GameModules || {};
     }
   }
 
-  /**
-   * Get qaConfig subset relevant to effective config
-   */
-  function getQaHashSource(qaConfig) {
-    if (!qaConfig) return null;
-    const source = {};
-    QA_HASH_KEYS.forEach((key) => {
-      source[key] = qaConfig[key];
-    });
-    return source;
-  }
+  // ====================================
+  // STORAGE HELPERS
+  // ====================================
 
   /**
-   * Get QA overrides from localStorage
+   * Get stage overrides from localStorage (Stage-only values per stage)
    */
-  function getQAOverrides() {
+  function getStageOverrides() {
     try {
-      const saved = localStorage.getItem('stageConfigOverrides');
+      const saved = localStorage.getItem('stageOverrides');
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
-      console.warn('[StageConfig] Failed to load QA overrides:', e);
+      console.warn('[StageConfig] Failed to load stage overrides:', e);
       return {};
     }
   }
 
   /**
-   * Normalize itemWeights
+   * Legacy: migrate old stageConfigOverrides to new structure
    */
+  function migrateOldOverrides() {
+    try {
+      const old = localStorage.getItem('stageConfigOverrides');
+      if (!old) return;
+
+      const oldData = JSON.parse(old);
+      const newStageOverrides = getStageOverrides();
+      let migrated = false;
+
+      // Move Stage-only keys to stageOverrides, discard Global-only keys
+      Object.keys(oldData).forEach(stageId => {
+        const stageData = oldData[stageId];
+        if (!stageData || typeof stageData !== 'object') return;
+
+        Object.keys(stageData).forEach(key => {
+          if (STAGE_ONLY_KEYS.has(key)) {
+            if (!newStageOverrides[stageId]) newStageOverrides[stageId] = {};
+            newStageOverrides[stageId][key] = stageData[key];
+            migrated = true;
+          }
+          // Global-only keys are discarded (will use qaConfig)
+        });
+      });
+
+      if (migrated) {
+        localStorage.setItem('stageOverrides', JSON.stringify(newStageOverrides));
+        console.log('[StageConfig] Migrated old overrides to new structure');
+      }
+
+      // Remove old key
+      localStorage.removeItem('stageConfigOverrides');
+    } catch (e) {
+      console.warn('[StageConfig] Migration failed:', e);
+    }
+  }
+
+  // Run migration on load
+  migrateOldOverrides();
+
+  // ====================================
+  // NORMALIZE HELPERS
+  // ====================================
+
   function normalizeWeights(weights) {
     const DEFAULT = { barrier: 0.2, booster: 0.4, magnet: 0.4 };
 
@@ -115,60 +204,75 @@ window.GameModules = window.GameModules || {};
     };
   }
 
+  // ====================================
+  // VALUE GETTERS WITH SOURCE
+  // ====================================
+
   /**
-   * Get value with priority chain:
-   * QA Override → Stage Tuning → qaConfig → STAGE_DEFAULTS
-   * GLOBAL_ONLY_KEYS ignore Stage Tuning / overrides and always use qaConfig/defaults.
+   * Get GLOBAL-ONLY value (qaConfig → defaults)
+   * Stage tuning is IGNORED
    */
-  function getValue(key, stageTuning, qaOverride, qaConfig, defaults) {
-    const isGlobalOnly = GLOBAL_ONLY_KEYS.has(key);
-
-    // Stage-specific path
-    if (!isGlobalOnly && STAGE_TUNABLE_KEYS.has(key)) {
-      if (qaOverride && qaOverride[key] !== undefined && qaOverride[key] !== null) {
-        return qaOverride[key];
-      }
-      if (stageTuning && stageTuning[key] !== undefined && stageTuning[key] !== null) {
-        return stageTuning[key];
-      }
-    }
-
-    // Global (or shared) values come from qaConfig first
+  function getGlobalValue(key, qaConfig, defaults) {
     if (qaConfig && qaConfig[key] !== undefined && qaConfig[key] !== null) {
-      return qaConfig[key];
+      return { value: qaConfig[key], source: 'qa' };
     }
-
     if (defaults && defaults[key] !== undefined) {
-      return defaults[key];
+      return { value: defaults[key], source: 'fallback' };
     }
-
-    return null;
+    return { value: null, source: 'fallback' };
   }
 
   /**
-   * Check cache validity
+   * Get STAGE-ONLY value (stageOverride → stageTuning → defaults)
+   * qaConfig is NOT consulted (to avoid confusion)
    */
+  function getStageValue(key, stageTuning, stageOverride, defaults) {
+    if (stageOverride && stageOverride[key] !== undefined && stageOverride[key] !== null) {
+      return { value: stageOverride[key], source: 'override' };
+    }
+    if (stageTuning && stageTuning[key] !== undefined && stageTuning[key] !== null) {
+      return { value: stageTuning[key], source: 'stage' };
+    }
+    if (defaults && defaults[key] !== undefined) {
+      return { value: defaults[key], source: 'fallback' };
+    }
+    return { value: null, source: 'fallback' };
+  }
+
+  // ====================================
+  // CACHE VALIDATION
+  // ====================================
+
+  function getQaHashSource(qaConfig) {
+    if (!qaConfig) return null;
+    const source = {};
+    GLOBAL_ONLY_KEYS.forEach((key) => {
+      source[key] = qaConfig[key];
+    });
+    source[STORM_BASE_SPEED_KEY] = qaConfig[STORM_BASE_SPEED_KEY];
+    return source;
+  }
+
   function isCacheValid(stageId, loopCount, qaHash, overrideHash) {
     if (!cachedEffective) return false;
     if (cachedStageId !== stageId) return false;
     if (cachedLoopCount !== loopCount) return false;
-
     if (cachedQaHash !== qaHash) return false;
     if (cachedOverrideHash !== overrideHash) return false;
-
     return true;
   }
 
-  /**
-   * Calculate effective config for current stage
-   */
+  // ====================================
+  // MAIN: getEffectiveConfig
+  // ====================================
+
   function getEffectiveConfig(runtime, qaConfig, forceRecalc = false) {
     const stageId = runtime?.stage?.currentStageId ?? 1;
     const stageIdStr = normalizeStageId(stageId);
     const loopCount = runtime?.stage?.loopCount ?? 0;
-    const qaOverrides = getQAOverrides();
+    const stageOverrides = getStageOverrides();
     const qaHash = hashObject(getQaHashSource(qaConfig));
-    const overrideHash = hashObject(qaOverrides);
+    const overrideHash = hashObject(stageOverrides);
 
     if (!forceRecalc && isCacheValid(stageId, loopCount, qaHash, overrideHash)) {
       return cachedEffective;
@@ -178,74 +282,135 @@ window.GameModules = window.GameModules || {};
     const stageConfig = runtime?.stage?.currentConfig;
     const stageTuningDefaults = window.STAGE_TUNING_DEFAULTS ?? {};
     const stageTuning = { ...stageTuningDefaults, ...(stageConfig?.tuning ?? {}) };
-    const stageOverride = qaOverrides[stageIdStr] ?? {};
+    const stageOverride = stageOverrides[stageIdStr] ?? {};
 
     // Get defaults from core/config.js
     const DEFAULTS = window.GameConfig?.STAGE_DEFAULTS ?? {};
-    const GLOBAL = window.GameConfig?.GLOBAL ?? {};
 
     // Loop difficulty scaling
     const loopScale = runtime?.stage?.loopDifficultyScale ?? 1.0;
 
-    // Helper function
-    const get = (key) => getValue(key, stageTuning, stageOverride, qaConfig, DEFAULTS);
+    // Source tracking
+    const sources = {};
 
-    // Build effective config
-    const stormBaseSpeed = get('stormBaseSpeed') ?? 150;
-    const stormSpeedMult = get('stormSpeedMult') ?? 1.0;
-    const baseSpeedMult = get('baseSpeedMult') ?? 1.0;
-    const scoreMult = get('scoreMult') ?? 1.0;
-    const warningTimeMult = get('warningTimeMult') ?? 1.0;
+    // Helper functions
+    const getGlobal = (key) => {
+      const result = getGlobalValue(key, qaConfig, DEFAULTS);
+      sources[key] = result.source;
+      return result.value;
+    };
+
+    const getStage = (key, defaultValue = null) => {
+      const result = getStageValue(key, stageTuning, stageOverride, DEFAULTS);
+      sources[key] = result.source;
+      return result.value ?? defaultValue;
+    };
+
+    // === Build effective config ===
+
+    // GLOBAL-ONLY values (from qaConfig only)
+    const friction = getGlobal('friction') ?? 0.93;
+    const stopFriction = getGlobal('stopFriction') ?? 0.81;
+    const baseAccel = getGlobal('baseAccel') ?? 3000;
+    const turnAccelMult = getGlobal('turnAccelMult') ?? 4.5;
+    const minDashForce = getGlobal('minDashForce') ?? 600;
+    const maxDashForce = getGlobal('maxDashForce') ?? 4000;
+    const maxChargeTime = getGlobal('maxChargeTime') ?? 1.2;
+    const dashCooldown = getGlobal('dashCooldown') ?? 0.7;
+    const chargeSlowdown = getGlobal('chargeSlowdown') ?? 1.0;
+    const baseMagnet = getGlobal('baseMagnet') ?? 50;
+    const magnetRange = getGlobal('magnetRange') ?? 160;
+    const morphTrigger = getGlobal('morphTrigger') ?? 3.5;
+    const morphDuration = getGlobal('morphDuration') ?? 0.5;
+
+    // Timing (GLOBAL-ONLY)
+    const runPhaseDuration = getGlobal('runPhaseDuration') ?? 3.0;
+    const stopPhaseDuration = getGlobal('stopPhaseDuration') ?? 0.5;
+    const firstWarningTimeBase = getGlobal('firstWarningTimeBase') ?? 12.0;
+    const warningTimeBase = getGlobal('warningTimeBase') ?? 7.0;
+    const warningTimeMin = getGlobal('warningTimeMin') ?? 3.0;
+    const warningTimeMult = getGlobal('warningTimeMult') ?? 1.0;
+
+    // stormBaseSpeed is GLOBAL-ONLY
+    const stormBaseSpeedResult = getGlobalValue(STORM_BASE_SPEED_KEY, qaConfig, DEFAULTS);
+    sources[STORM_BASE_SPEED_KEY] = stormBaseSpeedResult.source;
+    const stormBaseSpeed = stormBaseSpeedResult.value ?? 150;
+
+    // STAGE-ONLY values (from stage tuning only)
+    const coinRate = getStage('coinRate', 0.3);
+    const minCoinRunLength = getStage('minCoinRunLength', 13);
+    const itemRate = getStage('itemRate', 0.03);
+    const itemWeightsRaw = getStage('itemWeights', null);
+    const itemWeights = normalizeWeights(itemWeightsRaw);
+    const stormSpeedMult = getStage('stormSpeedMult', 1.0);
+    const baseSpeedMult = getStage('baseSpeedMult', 1.0);
+    const scoreMult = getStage('scoreMult', 1.0);
+
+    // Theme/Gimmick (STAGE-ONLY, C section)
+    const theme = getStage('theme', null) ?? stageConfig?.theme ?? null;
+    const gimmick = getStage('gimmick', null) ?? stageConfig?.gimmick ?? null;
+    sources['theme'] = theme ? (stageOverride?.theme ? 'override' : 'stage') : 'fallback';
+    sources['gimmick'] = gimmick ? (stageOverride?.gimmick ? 'override' : 'stage') : 'fallback';
+
+    // baseSpeed for reference (stage tuning can affect it)
+    const baseSpeedResult = getStageValue('baseSpeed', stageTuning, stageOverride, DEFAULTS);
+    sources['baseSpeed'] = baseSpeedResult.source;
+    const baseSpeed = baseSpeedResult.value ?? 960;
 
     const effective = {
-      // === 물리 (Per-Stage) ===
-      baseSpeed: get('baseSpeed') ?? 960,
-      friction: get('friction') ?? 0.93,
-      stopFriction: get('stopFriction') ?? 0.81,
-      baseAccel: get('baseAccel') ?? 3000,
-      turnAccelMult: get('turnAccelMult') ?? 4.5,
+      // === 물리 (GLOBAL-ONLY) ===
+      friction,
+      stopFriction,
+      baseAccel,
+      turnAccelMult,
 
-      // === 대쉬 (Per-Stage) ===
-      dashForce: get('dashForce') ?? 1000,
-      minDashForce: get('minDashForce') ?? 600,
-      maxDashForce: get('maxDashForce') ?? 4000,
-      maxChargeTime: get('maxChargeTime') ?? 1.2,
-      dashCooldown: get('dashCooldown') ?? 0.7,
-      chargeSlowdown: get('chargeSlowdown') ?? 1.0,
+      // === 대쉬 (GLOBAL-ONLY) ===
+      minDashForce,
+      maxDashForce,
+      maxChargeTime,
+      dashCooldown,
+      chargeSlowdown,
 
-      // === 마그넷 (Per-Stage) ===
-      baseMagnet: get('baseMagnet') ?? 50,
-      magnetRange: get('magnetRange') ?? 160,
+      // === 마그넷 (GLOBAL-ONLY) ===
+      baseMagnet,
+      magnetRange,
 
-      // === 스폰 (Per-Stage) ===
-      coinRate: get('coinRate') ?? 0.3,
-      minCoinRunLength: get('minCoinRunLength') ?? 13,
-      itemRate: get('itemRate') ?? 0.03,
-      itemWeights: normalizeWeights(get('itemWeights')),
+      // === 모프 (GLOBAL-ONLY) ===
+      morphTrigger,
+      morphDuration,
 
-      // === 속도 (Per-Stage with multipliers) ===
-      stormSpeedMult: stormSpeedMult,
+      // === 타이밍 (GLOBAL-ONLY) ===
+      runPhaseDuration,
+      stopPhaseDuration,
+      firstWarningTimeBase,
+      warningTimeBase,
+      warningTimeMin,
+      warningTimeMult,
+
+      // === 스폰 (STAGE-ONLY) ===
+      coinRate,
+      minCoinRunLength,
+      itemRate,
+      itemWeights,
+
+      // === 속도 곡선 (STAGE-ONLY with multipliers) ===
+      stormSpeedMult,
       stormSpeed: stormBaseSpeed * stormSpeedMult * loopScale,
-      baseSpeedMult: baseSpeedMult,
+      baseSpeedMult,
+      baseSpeed,
 
-      // === 타이밍 (Global-only; qaConfig-driven) ===
-      firstWarningTimeBase: get('firstWarningTimeBase') ?? 12.0,
-      runPhaseDuration: get('runPhaseDuration') ?? 3.0,
-      warningTimeBase: get('warningTimeBase') ?? 7.0,
-      warningTimeMin: get('warningTimeMin') ?? 3.0,
-      warningTimeMult: warningTimeMult,
-      stopPhaseDuration: get('stopPhaseDuration') ?? 0.5,
-
-      // === 점수 (Per-Stage with loop scaling) ===
+      // === 점수 (STAGE-ONLY with loop scaling) ===
       scoreMult: scoreMult * loopScale,
 
-      // === 모프 (Per-Stage) ===
-      morphTrigger: get('morphTrigger') ?? 3.5,
-      morphDuration: get('morphDuration') ?? 0.5,
+      // === 테마/기믹 (STAGE-ONLY, C section) ===
+      theme,
+      gimmick,
 
       // === Meta ===
       _stageId: stageId,
       _stageIdStr: stageIdStr,
+      _stageName: stageConfig?.name ?? `Stage ${stageId}`,
+      _isLoop: stageConfig?.isLoop ?? false,
       _loopCount: loopCount,
       _loopScale: loopScale
     };
@@ -257,12 +422,16 @@ window.GameModules = window.GameModules || {};
     cachedQaHash = qaHash;
     cachedOverrideHash = overrideHash;
 
+    // Store sources for debug overlay
+    lastEffectiveDebugSources = { ...sources };
+
     return effective;
   }
 
-  /**
-   * Invalidate cache
-   */
+  // ====================================
+  // CACHE INVALIDATION
+  // ====================================
+
   function invalidateCache() {
     cachedEffective = null;
     cachedStageId = null;
@@ -271,18 +440,24 @@ window.GameModules = window.GameModules || {};
     cachedOverrideHash = null;
   }
 
-  /**
-   * Get current effective config (convenience)
-   */
+  // ====================================
+  // CONVENIENCE GETTERS
+  // ====================================
+
   function getEffective() {
     const runtime = window.runtime ?? window.Game?.runtime;
     const qaConfig = window.qaConfig;
     return getEffectiveConfig(runtime, qaConfig);
   }
 
-  /**
-   * Update stage config when stage changes
-   */
+  function getEffectiveSources() {
+    return { ...lastEffectiveDebugSources };
+  }
+
+  // ====================================
+  // STAGE CONFIG MANAGEMENT
+  // ====================================
+
   function updateCurrentConfig(runtime, stageId) {
     const stageIdNum = parseInt(stageId, 10);
     const stageConfig = window.STAGE_CONFIG?.find(s => s.id === stageIdNum);
@@ -292,13 +467,20 @@ window.GameModules = window.GameModules || {};
     invalidateCache();
   }
 
-  /**
-   * Save QA override for a specific stage
-   */
-  function setQAOverride(stageId, key, value) {
+  // ====================================
+  // OVERRIDE MANAGEMENT (Stage-only)
+  // ====================================
+
+  function setStageOverride(stageId, key, value) {
+    // Only allow Stage-only keys
+    if (!STAGE_ONLY_KEYS.has(key) && key !== 'baseSpeed') {
+      console.warn(`[StageConfig] Cannot set stage override for Global-only key: ${key}`);
+      return false;
+    }
+
     try {
       const stageIdStr = normalizeStageId(stageId);
-      const overrides = getQAOverrides();
+      const overrides = getStageOverrides();
 
       if (!overrides[stageIdStr]) overrides[stageIdStr] = {};
 
@@ -311,63 +493,135 @@ window.GameModules = window.GameModules || {};
         overrides[stageIdStr][key] = value;
       }
 
-      localStorage.setItem('stageConfigOverrides', JSON.stringify(overrides));
+      localStorage.setItem('stageOverrides', JSON.stringify(overrides));
       invalidateCache();
+      return true;
     } catch (e) {
-      console.error('[StageConfig] Failed to save QA override:', e);
+      console.error('[StageConfig] Failed to save stage override:', e);
+      return false;
     }
   }
 
-  /**
-   * Get QA override for a single stage
-   */
-  function getQAOverride(stageId) {
+  function getStageOverride(stageId) {
     const stageIdStr = normalizeStageId(stageId);
-    const overrides = getQAOverrides();
+    const overrides = getStageOverrides();
     return overrides[stageIdStr] || null;
   }
 
-  /**
-   * Reset QA overrides for a specific stage
-   */
   function resetStageOverrides(stageId) {
     try {
       const stageIdStr = normalizeStageId(stageId);
-      const overrides = getQAOverrides();
+      const overrides = getStageOverrides();
       delete overrides[stageIdStr];
-      localStorage.setItem('stageConfigOverrides', JSON.stringify(overrides));
+      localStorage.setItem('stageOverrides', JSON.stringify(overrides));
       invalidateCache();
     } catch (e) {
       console.error('[StageConfig] Failed to reset stage overrides:', e);
     }
   }
 
-  /**
-   * Reset all QA overrides
-   */
-  function resetAllOverrides() {
+  function resetAllStageOverrides() {
     try {
-      localStorage.removeItem('stageConfigOverrides');
+      localStorage.removeItem('stageOverrides');
       invalidateCache();
     } catch (e) {
-      console.error('[StageConfig] Failed to reset all overrides:', e);
+      console.error('[StageConfig] Failed to reset all stage overrides:', e);
     }
   }
 
-  // Export
+  // ====================================
+  // DEBUG HELPERS (REQ-A)
+  // ====================================
+
+  /**
+   * Console helper: window.debugEffectiveConfig()
+   * Outputs current effective config + sources as console.table
+   */
+  function debugEffectiveConfig() {
+    const effective = getEffective();
+    const sources = getEffectiveSources();
+
+    const tableData = {};
+
+    // Build table with value and source
+    Object.keys(effective).forEach(key => {
+      if (key.startsWith('_')) {
+        // Meta fields
+        tableData[key] = { value: effective[key], source: 'meta' };
+      } else {
+        const source = sources[key] || 'unknown';
+        tableData[key] = { value: effective[key], source };
+      }
+    });
+
+    console.log('=== Effective Config Debug ===');
+    console.log(`Stage: ${effective._stageId} (${effective._stageName})`);
+    console.log(`Loop: ${effective._loopCount}, Scale: ${effective._loopScale}`);
+    console.table(tableData);
+
+    return { effective, sources };
+  }
+
+  // Attach to window for console access
+  window.debugEffectiveConfig = debugEffectiveConfig;
+
+  // ====================================
+  // FIELD CLASSIFICATION GETTERS
+  // ====================================
+
+  function isGlobalOnlyKey(key) {
+    return GLOBAL_ONLY_KEYS.has(key) || key === STORM_BASE_SPEED_KEY;
+  }
+
+  function isStageOnlyKey(key) {
+    return STAGE_ONLY_KEYS.has(key);
+  }
+
+  function getGlobalOnlyKeys() {
+    return [...GLOBAL_ONLY_KEYS, STORM_BASE_SPEED_KEY];
+  }
+
+  function getStageOnlyKeys() {
+    return [...STAGE_ONLY_KEYS];
+  }
+
+  // ====================================
+  // EXPORT
+  // ====================================
+
   window.GameModules.StageConfig = {
+    // Main functions
     getEffectiveConfig,
     getEffective,
+    getEffectiveSources,
     invalidateCache,
     updateCurrentConfig,
-    setQAOverride,
-    getQAOverride,
+
+    // Override management (Stage-only)
+    setStageOverride,
+    getStageOverride,
     resetStageOverrides,
-    resetAllOverrides,
+    resetAllStageOverrides,
+    getStageOverrides,
+
+    // Legacy compatibility
+    setQAOverride: setStageOverride,
+    getQAOverride: getStageOverride,
     clearQAOverride: resetStageOverrides,
-    clearAllQAOverrides: resetAllOverrides,
-    getQAOverrides,
+    clearAllQAOverrides: resetAllStageOverrides,
+    getQAOverrides: getStageOverrides,
+
+    // Field classification
+    isGlobalOnlyKey,
+    isStageOnlyKey,
+    getGlobalOnlyKeys,
+    getStageOnlyKeys,
+    GLOBAL_ONLY_KEYS,
+    STAGE_ONLY_KEYS,
+
+    // Helpers
     normalizeWeights,
-    normalizeStageId
+    normalizeStageId,
+    debugEffectiveConfig
   };
 })();

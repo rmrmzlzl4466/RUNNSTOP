@@ -56,7 +56,6 @@ window.initQASliders = function() {
   setValue('qa-stopfriction', activeConfig.stopFriction * 100);
   setValue('qa-accel', activeConfig.baseAccel);
   setValue('qa-turnaccel', activeConfig.turnAccelMult * 10);
-  setValue('qa-dash', activeConfig.dashForce);
   setValue('qa-mindash', activeConfig.minDashForce);
   setValue('qa-maxdash', activeConfig.maxDashForce);
   setValue('qa-chargetime', activeConfig.maxChargeTime);
@@ -140,7 +139,6 @@ window.updateQA = function() {
   const turnAccelMult = turnAccelRaw / 10;
 
   const baseAccel = parseInt(document.getElementById('qa-accel').value, 10);
-  const dashForce = parseInt(document.getElementById('qa-dash').value, 10);
   // [CHARGING SYSTEM] 차징 대쉬 설정
   const minDashForce = parseInt(document.getElementById('qa-mindash')?.value ?? 800, 10);
   const maxDashForce = parseInt(document.getElementById('qa-maxdash')?.value ?? 1600, 10);
@@ -201,7 +199,6 @@ window.updateQA = function() {
   window.qaConfig.stopFriction = stopFriction;
   window.qaConfig.turnAccelMult = turnAccelMult; // [추가]
   window.qaConfig.baseAccel = baseAccel;
-  window.qaConfig.dashForce = dashForce;
   // [CHARGING SYSTEM] 차징 대쉬 설정
   window.qaConfig.minDashForce = minDashForce;
   window.qaConfig.maxDashForce = maxDashForce;
@@ -298,7 +295,6 @@ window.updateQA = function() {
   setText('qa-val-stopfriction', stopFriction.toFixed(2));
   setText('qa-val-accel', `${baseAccel}`);
   setText('qa-val-turnaccel', `${turnAccelMult.toFixed(1)}x`); // [추가]
-  setText('qa-val-dash', `${dashForce}`);
   // [CHARGING SYSTEM] 차징 대쉬 설정 UI 표시
   setText('qa-val-mindash', `${minDashForce}`);
   setText('qa-val-maxdash', `${maxDashForce}`);

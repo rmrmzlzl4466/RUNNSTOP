@@ -187,6 +187,11 @@ function lerpColorToBlack(hex, t) {
         targetColor = getThemes()[currentThemeIdx]?.colors?.[targetColorIndex];
       }
 
+      // Get gimmick module for effects
+      const Gimmick = window.GameModules?.Gimmick;
+      const safeFadeIntensity = Gimmick?.getSafeFadeIntensity?.(gameState, cycleTimer, qaConfig.stopPhaseDuration) ?? 0;
+      const safeFadeGlowColor = Gimmick?.getSafeFadeGlowColor?.() ?? '#00ff00';
+
       for (let r = startRow; r <= endRow; r++) {
         const rowData = window.Game.LevelManager.getRow(r);
         if (!rowData) continue;
@@ -195,7 +200,9 @@ function lerpColorToBlack(hex, t) {
         const y = r * CELL_H;
 
         for (let c = 0; c < COLS; c++) {
-          const colorIdx = rowData.colors[c];
+          // Check for GLITCH_SWAP color override
+          const swappedColor = Gimmick?.getSwappedColor?.(r, c);
+          const colorIdx = swappedColor !== null ? swappedColor : rowData.colors[c];
           const x = c * CELL_W;
 
           ctx.fillStyle = palette[colorIdx];
@@ -203,6 +210,30 @@ function lerpColorToBlack(hex, t) {
             ctx.fillStyle = '#111';
           }
           ctx.fillRect(x, y, CELL_W, CELL_H);
+
+          // SAFE_FADE: Glow effect on safe tiles during STOP phase
+          if (gameState === STATE.STOP && colorIdx === targetColorIndex && safeFadeIntensity > 0) {
+            ctx.save();
+            ctx.globalAlpha = safeFadeIntensity * 0.6;
+            ctx.fillStyle = safeFadeGlowColor;
+            ctx.fillRect(x, y, CELL_W, CELL_H);
+            // Add border glow
+            ctx.strokeStyle = safeFadeGlowColor;
+            ctx.lineWidth = 2 + safeFadeIntensity * 4;
+            ctx.shadowBlur = 10 + safeFadeIntensity * 15;
+            ctx.shadowColor = safeFadeGlowColor;
+            ctx.strokeRect(x + 2, y + 2, CELL_W - 4, CELL_H - 4);
+            ctx.restore();
+          }
+
+          // GLITCH_SWAP: Visual glitch effect on swapped tiles
+          if (swappedColor !== null) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x, y, CELL_W, CELL_H);
+            ctx.restore();
+          }
 
           if (gameState === STATE.WARNING && colorIdx !== targetColorIndex && morphAlpha > 0 && targetColor) {
             if (qaConfig.visualMode === 'A') {
@@ -327,17 +358,34 @@ function lerpColorToBlack(hex, t) {
     },
 
     drawStorm: function(ctx, storm, canvasWidth, canvasHeight) {
+      // Check if storm is pulsing (STORM_PULSE gimmick)
+      const Gimmick = window.GameModules?.Gimmick;
+      const isPulsing = Gimmick?.isStormPulsing?.() ?? false;
+      const pulseMult = Gimmick?.getStormPulseMult?.() ?? 1.0;
+
+      // Storm line - brighter when pulsing
+      if (isPulsing) {
+        ctx.fillStyle = "#ff4444";
+        ctx.fillRect(0, storm.y - 2, canvasWidth, 9);
+        // Add glow effect
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0000';
+      }
       ctx.fillStyle = "#ff0000";
       ctx.fillRect(0, storm.y, canvasWidth, 5);
+      ctx.shadowBlur = 0;
 
       ctx.fillStyle = "rgba(20, 0, 0, 0.9)";
       ctx.fillRect(0, storm.y + 5, canvasWidth, canvasHeight * 2);
 
-      for (let i = 0; i < 15; i++) {
-        const h = Math.random() * 100 + 20;
+      // More intense flames when pulsing
+      const flameCount = isPulsing ? 25 : 15;
+      const flameIntensity = isPulsing ? 0.7 : 0.5;
+      for (let i = 0; i < flameCount; i++) {
+        const h = Math.random() * (isPulsing ? 150 : 100) + 20;
         const w = Math.random() * 20 + 5;
         const x = Math.random() * canvasWidth;
-        ctx.fillStyle = `rgba(255, 0, 0, ${Math.random() * 0.5})`;
+        ctx.fillStyle = `rgba(255, ${isPulsing ? 50 : 0}, 0, ${Math.random() * flameIntensity})`;
         ctx.fillRect(x, storm.y, w, h);
       }
     },
