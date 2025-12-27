@@ -88,6 +88,10 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
           // 부정출발 - 낮은 버저음
           this.playChord([220, 277], 'sawtooth', 0.25, 0.15);
           break;
+        case 'slowmo_enter':
+          // 슬로우모션 진입 - 시간이 느려지는 "우웅~" 효과
+          this.playSlowMoEnter();
+          break;
       }
     },
     // [JUST FRAME BOOSTER] 화음 재생 (동시에 여러 음)
@@ -211,8 +215,76 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
         whooshOsc.stop(now + duration);
 
       } catch(e) {}
-    }
-    ,
+    },
+    // [SLOWMO] 매트릭스 스타일 슬로우모션 진입 사운드
+    playSlowMoEnter() {
+      if (actx.state === 'suspended') actx.resume();
+      try {
+        const now = actx.currentTime;
+        const duration = 0.5;
+        const baseVol = 0.2 * (window.qaConfig?.sfxVol ?? 1);
+
+        // 1. 저주파 하강 스위프 (시간이 느려지는 느낌)
+        const bassOsc = actx.createOscillator();
+        bassOsc.type = 'sine';
+        bassOsc.frequency.setValueAtTime(200, now);
+        bassOsc.frequency.exponentialRampToValueAtTime(60, now + duration * 0.7);
+        bassOsc.frequency.setValueAtTime(50, now + duration);
+
+        const bassGain = actx.createGain();
+        bassGain.gain.setValueAtTime(0, now);
+        bassGain.gain.linearRampToValueAtTime(baseVol * 0.6, now + 0.05);
+        bassGain.gain.linearRampToValueAtTime(baseVol * 0.4, now + duration * 0.5);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        bassOsc.connect(bassGain);
+        bassGain.connect(actx.destination);
+        bassOsc.start(now);
+        bassOsc.stop(now + duration);
+
+        // 2. 중주파 "우웅" 하강 (감속 느낌)
+        const midOsc = actx.createOscillator();
+        midOsc.type = 'triangle';
+        midOsc.frequency.setValueAtTime(400, now);
+        midOsc.frequency.exponentialRampToValueAtTime(100, now + duration * 0.6);
+
+        const midGain = actx.createGain();
+        midGain.gain.setValueAtTime(0, now);
+        midGain.gain.linearRampToValueAtTime(baseVol * 0.3, now + 0.08);
+        midGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.7);
+
+        midOsc.connect(midGain);
+        midGain.connect(actx.destination);
+        midOsc.start(now);
+        midOsc.stop(now + duration);
+
+        // 3. 고주파 디튠 효과 (시간 왜곡)
+        const detuneOsc = actx.createOscillator();
+        detuneOsc.type = 'sawtooth';
+        detuneOsc.frequency.setValueAtTime(800, now);
+        detuneOsc.frequency.exponentialRampToValueAtTime(200, now + duration * 0.8);
+        detuneOsc.detune.setValueAtTime(0, now);
+        detuneOsc.detune.linearRampToValueAtTime(-100, now + duration);
+
+        // 로우패스 필터로 부드럽게
+        const lpf = actx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.setValueAtTime(2000, now);
+        lpf.frequency.exponentialRampToValueAtTime(300, now + duration);
+
+        const detuneGain = actx.createGain();
+        detuneGain.gain.setValueAtTime(0, now);
+        detuneGain.gain.linearRampToValueAtTime(baseVol * 0.15, now + 0.1);
+        detuneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        detuneOsc.connect(lpf);
+        lpf.connect(detuneGain);
+        detuneGain.connect(actx.destination);
+        detuneOsc.start(now);
+        detuneOsc.stop(now + duration);
+
+      } catch(e) {}
+    },
     _bgmGain: null,
     _bgmStep: 0,
     _bgmNextTime: 0,

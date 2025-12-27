@@ -107,14 +107,15 @@ window.initQASliders = function() {
   setValue('qa-zoom-lerp', (camConfig.lerpRunToWarning ?? 0.15) * 100);
   setValue('qa-pan-ratio', (camConfig.panRatioX ?? 0.35) * 100);
 
-  // Slow Motion
+  // Slow Motion (Matrix-style 3-phase system)
   const slowMoConfig = activeConfig.slowMo ?? {};
   document.getElementById('qa-slowmo-enabled').value = (slowMoConfig.enabled !== false) ? 'true' : 'false';
-  setValue('qa-slowmo-duration', (slowMoConfig.durationSec ?? 0.22) * 100);
-  setValue('qa-slowmo-scale', (slowMoConfig.scale ?? 0.7) * 100);
-  setValue('qa-slowmo-easeout', (slowMoConfig.easeOutSec ?? 0.08) * 100);
-  setValue('qa-slowmo-interval', (slowMoConfig.minIntervalSec ?? 0.4) * 100);
-  document.getElementById('qa-slowmo-cancel').value = slowMoConfig.cancelPolicy ?? 'on_boost_press';
+  // duration slider now controls holdSec (freeze duration at peak slow)
+  setValue('qa-slowmo-duration', (slowMoConfig.holdSec ?? 0.30) * 100);
+  setValue('qa-slowmo-scale', (slowMoConfig.scale ?? 0.12) * 100);
+  setValue('qa-slowmo-easeout', (slowMoConfig.easeOutSec ?? 0.25) * 100);
+  setValue('qa-slowmo-interval', (slowMoConfig.minIntervalSec ?? 0.3) * 100);
+  document.getElementById('qa-slowmo-cancel').value = slowMoConfig.cancelPolicy ?? 'on_boost_start';
   document.getElementById('qa-slowmo-mask').value = slowMoConfig.applyMask ?? 'world_only';
 
   // After setting slider values, call updateQA to sync labels
@@ -248,19 +249,21 @@ window.updateQA = function() {
   window.qaConfig.camera.lerpRunToWarning = zoomLerpRaw / 100;
   window.qaConfig.camera.panRatioX = panRatioRaw / 100;
 
-  // Slow Motion 저장
+  // Slow Motion 저장 (Matrix-style 3-phase system)
   const slowMoEnabled = document.getElementById('qa-slowmo-enabled')?.value === 'true';
-  const slowMoDurationRaw = parseInt(document.getElementById('qa-slowmo-duration')?.value ?? 22, 10);
-  const slowMoScaleRaw = parseInt(document.getElementById('qa-slowmo-scale')?.value ?? 70, 10);
-  const slowMoEaseOutRaw = parseInt(document.getElementById('qa-slowmo-easeout')?.value ?? 8, 10);
-  const slowMoIntervalRaw = parseInt(document.getElementById('qa-slowmo-interval')?.value ?? 40, 10);
-  const slowMoCancelPolicy = document.getElementById('qa-slowmo-cancel')?.value ?? 'on_boost_press';
+  const slowMoHoldRaw = parseInt(document.getElementById('qa-slowmo-duration')?.value ?? 30, 10);
+  const slowMoScaleRaw = parseInt(document.getElementById('qa-slowmo-scale')?.value ?? 12, 10);
+  const slowMoEaseOutRaw = parseInt(document.getElementById('qa-slowmo-easeout')?.value ?? 25, 10);
+  const slowMoIntervalRaw = parseInt(document.getElementById('qa-slowmo-interval')?.value ?? 30, 10);
+  const slowMoCancelPolicy = document.getElementById('qa-slowmo-cancel')?.value ?? 'on_boost_start';
   const slowMoApplyMask = document.getElementById('qa-slowmo-mask')?.value ?? 'world_only';
 
   window.qaConfig.slowMo = window.qaConfig.slowMo ?? {};
   window.qaConfig.slowMo.enabled = slowMoEnabled;
-  window.qaConfig.slowMo.durationSec = slowMoDurationRaw / 100;
   window.qaConfig.slowMo.scale = slowMoScaleRaw / 100;
+  // Matrix 3-phase timing
+  window.qaConfig.slowMo.easeInSec = (slowMoEaseOutRaw / 100) * 0.4;  // ease-in = 40% of ease-out
+  window.qaConfig.slowMo.holdSec = slowMoHoldRaw / 100;
   window.qaConfig.slowMo.easeOutSec = slowMoEaseOutRaw / 100;
   window.qaConfig.slowMo.minIntervalSec = slowMoIntervalRaw / 100;
   window.qaConfig.slowMo.cancelPolicy = slowMoCancelPolicy;
@@ -345,8 +348,8 @@ window.updateQA = function() {
   setText('qa-val-zoom-lerp', `${(zoomLerpRaw / 100).toFixed(2)}`);
   setText('qa-val-pan-ratio', `${(panRatioRaw / 100).toFixed(2)}`);
 
-  // Slow Motion
-  setText('qa-val-slowmo-duration', `${(slowMoDurationRaw / 100).toFixed(2)}s`);
+  // Slow Motion (Matrix 3-phase)
+  setText('qa-val-slowmo-duration', `${(slowMoHoldRaw / 100).toFixed(2)}s`);
   setText('qa-val-slowmo-scale', `${(slowMoScaleRaw / 100).toFixed(2)}x`);
   setText('qa-val-slowmo-easeout', `${(slowMoEaseOutRaw / 100).toFixed(2)}s`);
   setText('qa-val-slowmo-interval', `${(slowMoIntervalRaw / 100).toFixed(2)}s`);

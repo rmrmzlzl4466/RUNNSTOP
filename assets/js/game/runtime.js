@@ -33,11 +33,18 @@ window.GameModules = window.GameModules || {};
       treasureCoinBonus: 0,  // 보물 코인 보너스 % (상한 50%)
       slowMo: {
         active: false,
-        remaining: 0,
-        scaleBase: qaConfig?.slowMo?.scale ?? 1.0,
+        phase: 0,  // 0=INACTIVE, 1=EASE_IN, 2=HOLD, 3=EASE_OUT
+        phaseTime: 0,
+        easeInDuration: 0.12,
+        holdDuration: 0.25,
+        easeOutDuration: 0.20,
+        targetScale: 0.15,
+        currentScale: 1.0,
+        totalRemaining: 0,
         blockUntil: 0,
         lastTriggerTime: 0,
         applyMask: qaConfig?.slowMo?.applyMask ?? 'world_only',
+        visualIntensity: 0,  // 0~1 for visual effects
         reason: null
       },
       stage: {
@@ -100,11 +107,18 @@ window.GameModules = window.GameModules || {};
     runtime.treasureCoinBonus = 0;
     runtime.slowMo = {
       active: false,
-      remaining: 0,
-      scaleBase: qaConfig?.slowMo?.scale ?? 1.0,
+      phase: 0,
+      phaseTime: 0,
+      easeInDuration: 0.12,
+      holdDuration: 0.25,
+      easeOutDuration: 0.20,
+      targetScale: 0.15,
+      currentScale: 1.0,
+      totalRemaining: 0,
       blockUntil: 0,
       lastTriggerTime: 0,
       applyMask: qaConfig?.slowMo?.applyMask ?? 'world_only',
+      visualIntensity: 0,
       reason: null
     };
     runtime.stage = {

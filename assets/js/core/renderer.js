@@ -273,6 +273,90 @@ function lerpColorToBlack(hex, t) {
 
       ctx.globalAlpha = 1.0;
       ctx.restore();
+
+      // === Matrix-style SlowMo Visual Effects ===
+      this.drawSlowMoEffects(ctx, canvasWidth, canvasHeight);
+    },
+
+    /**
+     * Draw Matrix-style slow motion visual effects
+     * - Desaturated blue/cyan color overlay
+     * - Vignette effect (dark edges)
+     * - Radial lines from center (motion emphasis)
+     */
+    drawSlowMoEffects: function(ctx, canvasWidth, canvasHeight) {
+      const SlowMo = window.GameModules?.SlowMo;
+      const runtime = window.Game?.runtime;
+      const intensity = SlowMo?.getVisualIntensity?.(runtime) ?? 0;
+
+      if (intensity <= 0) return;
+
+      ctx.save();
+
+      // 1. Color overlay - cool cyan/blue tint (Matrix-like)
+      const overlayAlpha = intensity * 0.15;
+      ctx.fillStyle = `rgba(0, 180, 255, ${overlayAlpha})`;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // 2. Desaturation overlay
+      const desatAlpha = intensity * 0.25;
+      ctx.fillStyle = `rgba(100, 100, 120, ${desatAlpha})`;
+      ctx.globalCompositeOperation = 'saturation';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.globalCompositeOperation = 'source-over';
+
+      // 3. Vignette effect (dark edges)
+      const vignetteAlpha = intensity * 0.6;
+      const centerX = canvasWidth / 2;
+      const centerY = canvasHeight / 2;
+      const maxDist = Math.max(centerX, centerY) * 1.2;
+
+      const vignette = ctx.createRadialGradient(
+        centerX, centerY, maxDist * 0.3,
+        centerX, centerY, maxDist
+      );
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vignette.addColorStop(0.5, `rgba(0, 0, 20, ${vignetteAlpha * 0.3})`);
+      vignette.addColorStop(1, `rgba(0, 0, 30, ${vignetteAlpha})`);
+
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // 4. Subtle radial lines (speed/focus effect)
+      if (intensity > 0.3) {
+        const lineAlpha = (intensity - 0.3) * 0.15;
+        const lineCount = 24;
+        ctx.strokeStyle = `rgba(150, 200, 255, ${lineAlpha})`;
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < lineCount; i++) {
+          const angle = (i / lineCount) * Math.PI * 2;
+          const innerRadius = maxDist * 0.6;
+          const outerRadius = maxDist * 1.1;
+
+          ctx.beginPath();
+          ctx.moveTo(
+            centerX + Math.cos(angle) * innerRadius,
+            centerY + Math.sin(angle) * innerRadius
+          );
+          ctx.lineTo(
+            centerX + Math.cos(angle) * outerRadius,
+            centerY + Math.sin(angle) * outerRadius
+          );
+          ctx.stroke();
+        }
+      }
+
+      // 5. Time indicator text (subtle)
+      if (intensity > 0.5) {
+        const textAlpha = (intensity - 0.5) * 0.4;
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = `rgba(0, 255, 255, ${textAlpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('▼ SLOW MOTION ▼', centerX, 30);
+      }
+
+      ctx.restore();
     },
 
     drawItems: function(ctx, items, useSoftShadows) {

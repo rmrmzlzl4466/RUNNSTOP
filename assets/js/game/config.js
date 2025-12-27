@@ -13,18 +13,20 @@ window.GameModules = window.GameModules || {};
   };
 
   /**
-   * 슬로우모션 설정 (GLOBAL)
+   * 슬로우모션 설정 (GLOBAL) - Matrix-style "Neo dodging bullets"
+   * 3-phase system: ease-in → hold → ease-out
    */
   const FALLBACK_SLOWMO = {
     enabled: true,
-    scale: 0.7,
-    durationSec: 0.22,
-    easeOutSec: 0.08,
-    cancelPolicy: 'on_boost_press',
+    scale: 0.12,              // How slow at peak (0.12 = 88% slower, very dramatic)
+    easeInSec: 0.10,          // Time to ramp down to slow
+    holdSec: 0.30,            // Time frozen at peak slowdown
+    easeOutSec: 0.25,         // Time to return to normal
+    cancelPolicy: 'on_boost_start',
     blockWhileBoosting: true,
-    blockWindowAfterBoostSec: 0.22,
+    blockWindowAfterBoostSec: 0.15,
     applyMask: 'world_only',
-    minIntervalSec: 0.4
+    minIntervalSec: 0.3
   };
 
   /**
