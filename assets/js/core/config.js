@@ -84,8 +84,10 @@
     // === 스폰 ===
     coinRate: 0.3,
     minCoinRunLength: 13,
-    itemRate: 0.03,
-    itemWeights: { barrier: 0.2, booster: 0.4, magnet: 0.4 },
+    // 개별 아이템 드랍률
+    barrierRate: 0.03,   // 실드 드랍률 (모든 행에서)
+    boosterRate: 0.5,    // 부스터 드랍률 (코인 라인 끝에서)
+    magnetRate: 0.5,     // 자석 드랍률 (코인 라인 끝에서)
 
     // === 속도 ===
     stormBaseSpeed: 150,

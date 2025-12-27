@@ -382,8 +382,16 @@
             <input type="range" id="qa-stage-coinrate" min="0" max="100" step="5" value="30" oninput="window.updateStageParam?.('coinRate', this.value/100)">
           </div>
           <div class="setting-item">
-            <div class="vol-row"><span>📦 Item Rate</span> <span class="val-display" id="qa-val-stage-itemrate">0.03</span></div>
-            <input type="range" id="qa-stage-itemrate" min="0" max="40" step="1" value="3" oninput="window.updateStageParam?.('itemRate', this.value/100)">
+            <div class="vol-row"><span>🛡️ Barrier Rate</span> <span class="val-display" id="qa-val-stage-barrierrate">0.03</span></div>
+            <input type="range" id="qa-stage-barrierrate" min="0" max="20" step="1" value="3" oninput="window.updateStageParam?.('barrierRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🚀 Booster Rate</span> <span class="val-display" id="qa-val-stage-boosterrate">0.50</span></div>
+            <input type="range" id="qa-stage-boosterrate" min="0" max="100" step="5" value="50" oninput="window.updateStageParam?.('boosterRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🧲 Magnet Rate</span> <span class="val-display" id="qa-val-stage-magnetrate">0.50</span></div>
+            <input type="range" id="qa-stage-magnetrate" min="0" max="100" step="5" value="50" oninput="window.updateStageParam?.('magnetRate', this.value/100)">
           </div>
           <div class="setting-item">
             <div class="vol-row"><span>🌪️ Storm Speed Mult</span> <span class="val-display" id="qa-val-stage-stormmult">1.00x</span></div>
@@ -396,17 +404,6 @@
           <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
             <div class="vol-row"><span>Score Mult</span> <span class="val-display" id="qa-val-stage-scoremult">1.0x</span></div>
             <input type="range" id="qa-stage-scoremult" min="5" max="1000" step="5" value="100" oninput="window.updateStageParam?.('scoreMult', this.value/100)">
-          </div>
-          <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
-            <div class="vol-row" style="margin-bottom:5px;"><span>⚖️ Item Weights</span></div>
-            <div style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
-              <div class="vol-row"><span>🛡️ Barrier</span> <span class="val-display" id="qa-val-stage-wbarrier">0.20</span></div>
-              <input type="range" id="qa-stage-wbarrier" min="0" max="100" step="5" value="20" oninput="window.updateStageWeight?.('barrier', this.value/100)">
-              <div class="vol-row"><span>🚀 Booster</span> <span class="val-display" id="qa-val-stage-wbooster">0.40</span></div>
-              <input type="range" id="qa-stage-wbooster" min="0" max="100" step="5" value="40" oninput="window.updateStageWeight?.('booster', this.value/100)">
-              <div class="vol-row"><span>🧲 Magnet</span> <span class="val-display" id="qa-val-stage-wmagnet">0.40</span></div>
-              <input type="range" id="qa-stage-wmagnet" min="0" max="100" step="5" value="40" oninput="window.updateStageWeight?.('magnet', this.value/100)">
-            </div>
           </div>
           <div class="setting-item" style="margin-top:10px; display:flex; gap:5px;">
             <button class="btn-common" onclick="window.resetStageOverride?.()" style="flex:1; background:#636e72; color:#fff; font-size:12px; padding:6px;">Reset Stage</button>

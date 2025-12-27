@@ -35,8 +35,9 @@
     const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
       coinRate: qaConfig.coinRate ?? 0.3,
       minCoinRunLength: qaConfig.minCoinRunLength ?? 5,
-      itemRate: qaConfig.itemRate ?? 0.03,
-      itemWeights: qaConfig.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 }
+      barrierRate: qaConfig.barrierRate ?? 0.03,
+      boosterRate: qaConfig.boosterRate ?? 0.5,
+      magnetRate: qaConfig.magnetRate ?? 0.5
     };
 
     const dist = -rowIndex * 10;
@@ -70,21 +71,28 @@
       coinPattern.pendingRewardItem = false;
       rewardSpawnedThisRow = true; // 이 행에서는 새 코인 라인 시작 안함
 
-      // 보상 아이템 100% 생성 (코인 라인 끝에는 반드시 보상)
-      const { booster, magnet } = effective.itemWeights;
-      const totalWeight = booster + magnet;
+      // 개별 드랍률로 booster/magnet 생성 여부 결정
+      const boosterRate = effective.boosterRate ?? 0.5;
+      const magnetRate = effective.magnetRate ?? 0.5;
+      const totalRate = boosterRate + magnetRate;
 
-      // booster/magnet 중 weight 비율로 선택
-      let rewardType = 'booster';
-      if (Math.random() < magnet / totalWeight) {
-        rewardType = 'magnet';
-      }
+      if (totalRate > 0) {
+        const rand = Math.random();
+        // 마지막 코인 컬럼과 같은 위치에 생성 (코인 라인 바로 뒤)
+        const rewardCol = coinPattern.lastCoinCol;
 
-      // 마지막 코인 컬럼과 같은 위치에 생성 (코인 라인 바로 뒤)
-      const rewardCol = coinPattern.lastCoinCol;
-
-      if (spawnItemCallback) {
-        spawnItemCallback(rewardType, rewardCol);
+        if (rand < boosterRate) {
+          // booster 생성
+          if (spawnItemCallback) {
+            spawnItemCallback('booster', rewardCol);
+          }
+        } else if (rand < boosterRate + magnetRate) {
+          // magnet 생성
+          if (spawnItemCallback) {
+            spawnItemCallback('magnet', rewardCol);
+          }
+        }
+        // else: 아무것도 생성 안함 (드랍률 합이 1 미만이면 가능)
       }
     }
 
@@ -131,9 +139,9 @@
       }
     }
 
-    // === Barrier(실드) 스폰 (기존 로직 유지, 모든 행에서 가능) ===
-    if (Math.random() < effective.itemRate) {
-      // barrier만 생성 (booster/magnet은 코인 라인 끝에서 생성됨)
+    // === Barrier(실드) 스폰 (개별 드랍률, 모든 행에서 가능) ===
+    const barrierRate = effective.barrierRate ?? 0.03;
+    if (Math.random() < barrierRate) {
       // 코인 패턴 위치와 겹치지 않도록 다른 컬럼 선택
       let itemCol = Math.floor(Math.random() * COLS);
       if (coinCol >= 0 && itemCol === coinCol) {

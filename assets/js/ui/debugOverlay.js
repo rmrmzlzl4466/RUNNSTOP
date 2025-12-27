@@ -88,11 +88,11 @@ window.GameModules = window.GameModules || {};
       return Number.isInteger(value) ? value.toString() : value.toFixed(3);
     }
     if (typeof value === 'object') {
-      // For itemWeights etc
+      // For theme/gimmick objects
       try {
         const entries = Object.entries(value);
         if (entries.length <= 3) {
-          return entries.map(([k, v]) => `${k[0]}:${(v * 100).toFixed(0)}%`).join(' ');
+          return entries.map(([k, v]) => `${k}:${v}`).join(' ');
         }
         return JSON.stringify(value).substring(0, 30) + '...';
       } catch (e) {
@@ -133,7 +133,7 @@ window.GameModules = window.GameModules || {};
     const categories = {
       'TIMING (Global)': ['runPhaseDuration', 'stopPhaseDuration', 'firstWarningTimeBase', 'warningTimeBase', 'warningTimeMin', 'warningTimeMult'],
       'SPEED (Stage)': ['stormSpeedMult', 'baseSpeedMult', 'stormSpeed'],
-      'ECONOMY (Stage)': ['coinRate', 'itemRate', 'scoreMult', 'itemWeights'],
+      'ECONOMY (Stage)': ['coinRate', 'barrierRate', 'boosterRate', 'magnetRate', 'scoreMult'],
       'PHYSICS (Global)': ['friction', 'stopFriction', 'baseAccel', 'turnAccelMult'],
       'THEME/GIMMICK': ['theme', 'gimmick']
     };

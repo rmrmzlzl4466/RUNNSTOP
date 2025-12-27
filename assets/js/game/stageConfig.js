@@ -72,8 +72,10 @@ window.GameModules = window.GameModules || {};
     // 경제
     'coinRate',
     'minCoinRunLength',
-    'itemRate',
-    'itemWeights',
+    // 개별 아이템 드랍률
+    'barrierRate',
+    'boosterRate',
+    'magnetRate',
     // 속도 곡선
     'stormSpeedMult',
     'baseSpeedMult',
@@ -339,9 +341,10 @@ window.GameModules = window.GameModules || {};
     // STAGE-ONLY values (from stage tuning only)
     const coinRate = getStage('coinRate', 0.3);
     const minCoinRunLength = getStage('minCoinRunLength', 13);
-    const itemRate = getStage('itemRate', 0.03);
-    const itemWeightsRaw = getStage('itemWeights', null);
-    const itemWeights = normalizeWeights(itemWeightsRaw);
+    // 개별 아이템 드랍률 (STAGE-ONLY)
+    const barrierRate = getStage('barrierRate', 0.03);   // 실드 (모든 행)
+    const boosterRate = getStage('boosterRate', 0.5);    // 부스터 (코인 라인 끝)
+    const magnetRate = getStage('magnetRate', 0.5);      // 자석 (코인 라인 끝)
     const stormSpeedMult = getStage('stormSpeedMult', 1.0);
     const baseSpeedMult = getStage('baseSpeedMult', 1.0);
     const scoreMult = getStage('scoreMult', 1.0);
@@ -390,8 +393,10 @@ window.GameModules = window.GameModules || {};
       // === 스폰 (STAGE-ONLY) ===
       coinRate,
       minCoinRunLength,
-      itemRate,
-      itemWeights,
+      // 개별 아이템 드랍률
+      barrierRate,
+      boosterRate,
+      magnetRate,
 
       // === 속도 곡선 (STAGE-ONLY with multipliers) ===
       stormSpeedMult,

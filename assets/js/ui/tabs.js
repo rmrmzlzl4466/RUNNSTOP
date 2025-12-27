@@ -454,10 +454,11 @@ window.refreshStageTuningUI = function() {
 
   // Update sliders and labels
   const coinRate = getValue('coinRate', 0.3);
-  const itemRate = getValue('itemRate', 0.03);
+  const barrierRate = getValue('barrierRate', 0.03);
+  const boosterRate = getValue('boosterRate', 0.5);
+  const magnetRate = getValue('magnetRate', 0.5);
   const stormSpeedMult = getValue('stormSpeedMult', 1.0);
   const baseSpeedMult = getValue('baseSpeedMult', 1.0);
-  const weights = override.itemWeights ?? stageTuning.itemWeights ?? defaults.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
   const scoreMult = getValue('scoreMult', 1.0);
 
   // Set slider values
@@ -473,8 +474,15 @@ window.refreshStageTuningUI = function() {
   setSlider('qa-stage-coinrate', coinRate * 100);
   setText('qa-val-stage-coinrate', coinRate.toFixed(2));
 
-  setSlider('qa-stage-itemrate', itemRate * 100);
-  setText('qa-val-stage-itemrate', itemRate.toFixed(2));
+  // 개별 아이템 드랍률
+  setSlider('qa-stage-barrierrate', barrierRate * 100);
+  setText('qa-val-stage-barrierrate', (barrierRate * 100).toFixed(0) + '%');
+
+  setSlider('qa-stage-boosterrate', boosterRate * 100);
+  setText('qa-val-stage-boosterrate', (boosterRate * 100).toFixed(0) + '%');
+
+  setSlider('qa-stage-magnetrate', magnetRate * 100);
+  setText('qa-val-stage-magnetrate', (magnetRate * 100).toFixed(0) + '%');
 
   setSlider('qa-stage-stormmult', stormSpeedMult * 100);
   setText('qa-val-stage-stormmult', stormSpeedMult.toFixed(2) + 'x');
@@ -484,16 +492,6 @@ window.refreshStageTuningUI = function() {
 
   setSlider('qa-stage-scoremult', scoreMult * 100);
   setText('qa-val-stage-scoremult', scoreMult.toFixed(1) + 'x');
-
-  // Item weights
-  setSlider('qa-stage-wbarrier', (weights.barrier ?? 0.2) * 100);
-  setText('qa-val-stage-wbarrier', (weights.barrier ?? 0.2).toFixed(2));
-
-  setSlider('qa-stage-wbooster', (weights.booster ?? 0.4) * 100);
-  setText('qa-val-stage-wbooster', (weights.booster ?? 0.4).toFixed(2));
-
-  setSlider('qa-stage-wmagnet', (weights.magnet ?? 0.4) * 100);
-  setText('qa-val-stage-wmagnet', (weights.magnet ?? 0.4).toFixed(2));
 };
 
 /**
@@ -512,33 +510,12 @@ window.updateStageParam = function(key, value) {
   };
 
   if (key === 'coinRate') setText('qa-val-stage-coinrate', value.toFixed(2));
-  if (key === 'itemRate') setText('qa-val-stage-itemrate', value.toFixed(2));
+  if (key === 'barrierRate') setText('qa-val-stage-barrierrate', (value * 100).toFixed(0) + '%');
+  if (key === 'boosterRate') setText('qa-val-stage-boosterrate', (value * 100).toFixed(0) + '%');
+  if (key === 'magnetRate') setText('qa-val-stage-magnetrate', (value * 100).toFixed(0) + '%');
   if (key === 'stormSpeedMult') setText('qa-val-stage-stormmult', value.toFixed(2) + 'x');
   if (key === 'baseSpeedMult') setText('qa-val-stage-speedmult', value.toFixed(2) + 'x');
   if (key === 'scoreMult') setText('qa-val-stage-scoremult', value.toFixed(1) + 'x');
-};
-
-/**
- * Update item weight for current stage
- */
-window.updateStageWeight = function(type, value) {
-  const StageConfig = window.GameModules?.StageConfig;
-  if (!StageConfig) return;
-
-  // Get current weights
-  const override = StageConfig.getQAOverride?.(_currentEditStageId) ?? {};
-  const stageData = window.STAGE_CONFIG?.[parseInt(_currentEditStageId, 10) - 1] ?? {};
-  const defaults = window.qaConfig?.itemWeights ?? { barrier: 0.2, booster: 0.4, magnet: 0.4 };
-
-  const currentWeights = { ...(override.itemWeights ?? stageData.itemWeights ?? defaults) };
-  currentWeights[type] = value;
-
-  // Normalize weights
-  const normalized = StageConfig.normalizeWeights?.(currentWeights) ?? currentWeights;
-  StageConfig.setQAOverride?.(_currentEditStageId, 'itemWeights', normalized);
-
-  // Refresh UI to show normalized values
-  window.refreshStageTuningUI?.();
 };
 
 /**
@@ -577,24 +554,27 @@ window.applyStagePreset = function(presetName) {
   const presets = {
     easy: {
       coinRate: 0.5,
-      itemRate: 0.08,
+      barrierRate: 0.05,
+      boosterRate: 0.6,
+      magnetRate: 0.4,
       stormSpeedMult: 0.7,
-      baseSpeedMult: 1.0,
-      itemWeights: { barrier: 0.4, booster: 0.4, magnet: 0.2 }
+      baseSpeedMult: 1.0
     },
     normal: {
       coinRate: 0.3,
-      itemRate: 0.03,
+      barrierRate: 0.03,
+      boosterRate: 0.5,
+      magnetRate: 0.5,
       stormSpeedMult: 1.0,
-      baseSpeedMult: 1.0,
-      itemWeights: { barrier: 0.2, booster: 0.4, magnet: 0.4 }
+      baseSpeedMult: 1.0
     },
     hard: {
       coinRate: 0.15,
-      itemRate: 0.02,
+      barrierRate: 0.02,
+      boosterRate: 0.4,
+      magnetRate: 0.3,
       stormSpeedMult: 1.5,
-      baseSpeedMult: 1.2,
-      itemWeights: { barrier: 0.1, booster: 0.5, magnet: 0.4 }
+      baseSpeedMult: 1.2
     }
   };
 
@@ -621,16 +601,18 @@ const PRESET_CLAMP_RANGES = {
   baseSpeedMult:  { min: 0.10, max: 4.00 },
   scoreMult:      { min: 0.05, max: 10.00 },
   coinRate:       { min: 0.00, max: 1.00 },
-  itemRate:       { min: 0.00, max: 0.40 }
+  barrierRate:    { min: 0.00, max: 0.20 },
+  boosterRate:    { min: 0.00, max: 1.00 },
+  magnetRate:     { min: 0.00, max: 1.00 }
 };
-const PRESET_ALLOWED_KEYS = ['stormSpeedMult', 'baseSpeedMult', 'scoreMult', 'coinRate', 'itemRate'];
+const PRESET_ALLOWED_KEYS = ['stormSpeedMult', 'baseSpeedMult', 'scoreMult', 'coinRate', 'barrierRate', 'boosterRate', 'magnetRate'];
 
 /**
  * Round value based on key type
  * - multipliers/rates: 2 decimals
  */
 function roundPresetValue(key, value) {
-  const decimalKeys = ['stormSpeedMult', 'baseSpeedMult', 'scoreMult', 'coinRate', 'itemRate'];
+  const decimalKeys = ['stormSpeedMult', 'baseSpeedMult', 'scoreMult', 'coinRate', 'barrierRate', 'boosterRate', 'magnetRate'];
   if (decimalKeys.includes(key)) {
     return Math.round(value * 100) / 100;
   }
@@ -660,7 +642,9 @@ const STAGE_PRESETS = {
     stormSpeedMult: [0.85, 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.50],
     baseSpeedMult:  Array(13).fill(1.0),
     coinRate:       Array(13).fill(0.3),
-    itemRate:       Array(13).fill(0.03),
+    barrierRate:    Array(13).fill(0.03),
+    boosterRate:    Array(13).fill(0.5),
+    magnetRate:     Array(13).fill(0.5),
     scoreMult:      [1.00, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.50, 1.60, 1.70]
   },
 
@@ -671,7 +655,9 @@ const STAGE_PRESETS = {
     stormSpeedMult: [0.72, 0.77, 0.81, 0.85, 0.89, 0.94, 0.98, 1.02, 1.06, 1.11, 1.15, 1.19, 1.28],
     baseSpeedMult:  Array(13).fill(1.0),
     coinRate:       Array(13).fill(0.35),
-    itemRate:       Array(13).fill(0.04),
+    barrierRate:    Array(13).fill(0.04),
+    boosterRate:    Array(13).fill(0.6),
+    magnetRate:     Array(13).fill(0.5),
     scoreMult:      [0.90, 0.90, 0.95, 0.99, 1.04, 1.08, 1.13, 1.17, 1.22, 1.26, 1.35, 1.44, 1.53]
   },
 
@@ -682,7 +668,9 @@ const STAGE_PRESETS = {
     stormSpeedMult: [0.98, 1.04, 1.09, 1.15, 1.21, 1.27, 1.32, 1.38, 1.44, 1.50, 1.55, 1.61, 1.73],
     baseSpeedMult:  Array(13).fill(1.05),
     coinRate:       Array(13).fill(0.25),
-    itemRate:       Array(13).fill(0.025),
+    barrierRate:    Array(13).fill(0.02),
+    boosterRate:    Array(13).fill(0.4),
+    magnetRate:     Array(13).fill(0.4),
     scoreMult:      [1.25, 1.25, 1.31, 1.38, 1.44, 1.50, 1.56, 1.63, 1.69, 1.75, 1.88, 2.00, 2.13]
   }
 };

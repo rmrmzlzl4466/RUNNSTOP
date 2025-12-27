@@ -20,7 +20,9 @@
  * - baseMagnet, magnetRange, morphTrigger, morphDuration
  *
  * STAGE-ONLY KEYS (Stage Tuning에서만 조절):
- * - coinRate, minCoinRunLength, itemRate, itemWeights
+ * - coinRate, minCoinRunLength
+ * - barrierRate (실드 드랍률 - 모든 행)
+ * - boosterRate, magnetRate (코인 라인 끝에서 드랍률)
  * - stormSpeedMult, baseSpeedMult
  * - scoreMult
  * - theme, gimmick
@@ -53,8 +55,10 @@ window.STAGE_TUNING_DEFAULTS = {
   // Economy (STAGE-ONLY)
   coinRate: null,
   minCoinRunLength: null,
-  itemRate: null,
-  itemWeights: null,
+  // Item Drop Rates (STAGE-ONLY) - 개별 아이템 드랍률
+  barrierRate: null,   // 실드 드랍률 (모든 행에서)
+  boosterRate: null,   // 부스터 드랍률 (코인 라인 끝에서)
+  magnetRate: null,    // 자석 드랍률 (코인 라인 끝에서)
   // Speed curves (STAGE-ONLY)
   stormSpeedMult: null,
   baseSpeedMult: null,
