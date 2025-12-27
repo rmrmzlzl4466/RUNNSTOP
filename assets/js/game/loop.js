@@ -17,9 +17,9 @@ window.GameModules = window.GameModules || {};
   let rafId = null;
   let lastTime = 0;
 
-  // Get SlowMo module (may not be loaded yet, so use optional chaining)
-  const SlowMo = window.GameModules.SlowMo;
-  const Gimmick = window.GameModules.Gimmick;
+  // SlowMo와 Gimmick은 동적으로 참조 (모바일에서 로딩 순서 문제 방지)
+  const getSlowMo = () => window.GameModules.SlowMo;
+  const getGimmick = () => window.GameModules.Gimmick;
 
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
@@ -56,7 +56,7 @@ window.GameModules = window.GameModules || {};
     if (result.isSafe) {
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
-      SlowMo?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
+      getSlowMo()?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
     } else if (result.action === 'barrier_save') {
@@ -105,7 +105,7 @@ window.GameModules = window.GameModules || {};
 
   function update(dt, nowSec) {
     // Get world scale from SlowMo module
-    const worldScale = SlowMo?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
+    const worldScale = getSlowMo()?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
 
     // Get effective config (stage-specific values with QA overrides)
@@ -123,7 +123,7 @@ window.GameModules = window.GameModules || {};
     const uiDt = (applyMask === 'everything') ? worldDt : dt;
 
     // Update SlowMo timer with real dt
-    SlowMo?.update?.(runtime, dt);
+    getSlowMo()?.update?.(runtime, dt);
 
     window.Game.UI.updateFloatingTexts(uiDt);
     window.Game.UI.updateBuffs(player);
@@ -141,9 +141,9 @@ window.GameModules = window.GameModules || {};
       updateStageProgress(runtime, player.dist, qaConfig);
     }
 
-    // Update gimmicks
-    Gimmick?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
-    const stormPulseMult = Gimmick?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
+    // Update gimmicks (동적 참조로 모바일 호환성 확보)
+    getGimmick()?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
+    const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
     // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
     const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
@@ -190,7 +190,7 @@ window.GameModules = window.GameModules || {};
     const boostStarted = player.isBoosting && !runtime._prevBoosting;
     runtime._prevBoosting = player.isBoosting;
     if (boostStarted) {
-      SlowMo?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
+      getSlowMo()?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
     }
 
     if (runtime.gameState === STATE.RUN) {

@@ -54,10 +54,16 @@ window.GameModules = window.GameModules || {};
    * @returns {boolean} Whether slowmo was started
    */
   function start(runtime, qaConfig, nowSec, reason) {
-    if (!runtime?.slowMo) return false;
+    if (!runtime?.slowMo) {
+      console.warn('[SlowMo] No runtime.slowMo object');
+      return false;
+    }
 
     const cfg = qaConfig?.slowMo || {};
-    if (!cfg.enabled) return false;
+    if (!cfg.enabled) {
+      console.warn('[SlowMo] Disabled in config');
+      return false;
+    }
 
     // Block if player is boosting
     if (cfg.blockWhileBoosting !== false && window.player?.isBoosting) {
@@ -106,6 +112,7 @@ window.GameModules = window.GameModules || {};
     // Play slowmo enter sound
     window.Sound?.sfx?.('slowmo_enter');
 
+    console.log('[SlowMo] Started:', reason, 'scale:', targetScale, 'hold:', holdDuration);
     return true;
   }
 

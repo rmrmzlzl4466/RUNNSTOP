@@ -280,7 +280,7 @@ function lerpColorToBlack(hex, t) {
 
     /**
      * Draw Matrix-style slow motion visual effects
-     * - Desaturated blue/cyan color overlay
+     * - Blue/cyan color overlay (mobile-compatible)
      * - Vignette effect (dark edges)
      * - Radial lines from center (motion emphasis)
      */
@@ -289,50 +289,60 @@ function lerpColorToBlack(hex, t) {
       const runtime = window.Game?.runtime;
       const intensity = SlowMo?.getVisualIntensity?.(runtime) ?? 0;
 
+      // Debug: Always show slowmo status (can remove later)
+      const slowMoEnabled = window.qaConfig?.slowMo?.enabled;
+      const slowMoActive = runtime?.slowMo?.active;
+      const phase = runtime?.slowMo?.phase ?? 0;
+      ctx.save();
+      ctx.font = '12px monospace';
+      ctx.fillStyle = slowMoActive ? '#0f0' : '#888';
+      ctx.textAlign = 'left';
+      ctx.fillText(`SM: ${slowMoEnabled ? 'ON' : 'OFF'} | Active: ${slowMoActive ? 'Y' : 'N'} | Phase: ${phase} | Int: ${(intensity*100).toFixed(0)}%`, 10, canvasHeight - 30);
+      ctx.restore();
+
       if (intensity <= 0) return;
 
       ctx.save();
 
       // 1. Color overlay - cool cyan/blue tint (Matrix-like)
-      const overlayAlpha = intensity * 0.15;
-      ctx.fillStyle = `rgba(0, 180, 255, ${overlayAlpha})`;
+      // 모바일 호환성을 위해 간단한 오버레이 사용
+      const overlayAlpha = intensity * 0.2;
+      ctx.fillStyle = `rgba(0, 150, 220, ${overlayAlpha})`;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      // 2. Desaturation overlay
-      const desatAlpha = intensity * 0.25;
-      ctx.fillStyle = `rgba(100, 100, 120, ${desatAlpha})`;
-      ctx.globalCompositeOperation = 'saturation';
+      // 2. 어두운 오버레이로 채도 감소 효과 (모바일 호환)
+      const darkAlpha = intensity * 0.15;
+      ctx.fillStyle = `rgba(30, 30, 50, ${darkAlpha})`;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-      ctx.globalCompositeOperation = 'source-over';
 
       // 3. Vignette effect (dark edges)
-      const vignetteAlpha = intensity * 0.6;
+      const vignetteAlpha = intensity * 0.7;
       const centerX = canvasWidth / 2;
       const centerY = canvasHeight / 2;
       const maxDist = Math.max(centerX, centerY) * 1.2;
 
       const vignette = ctx.createRadialGradient(
-        centerX, centerY, maxDist * 0.3,
+        centerX, centerY, maxDist * 0.2,
         centerX, centerY, maxDist
       );
       vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      vignette.addColorStop(0.5, `rgba(0, 0, 20, ${vignetteAlpha * 0.3})`);
-      vignette.addColorStop(1, `rgba(0, 0, 30, ${vignetteAlpha})`);
+      vignette.addColorStop(0.6, `rgba(0, 10, 30, ${vignetteAlpha * 0.4})`);
+      vignette.addColorStop(1, `rgba(0, 5, 20, ${vignetteAlpha})`);
 
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      // 4. Subtle radial lines (speed/focus effect)
-      if (intensity > 0.3) {
-        const lineAlpha = (intensity - 0.3) * 0.15;
-        const lineCount = 24;
-        ctx.strokeStyle = `rgba(150, 200, 255, ${lineAlpha})`;
-        ctx.lineWidth = 1;
+      // 4. Subtle radial lines (speed/focus effect) - 모바일에서도 가벼움
+      if (intensity > 0.4) {
+        const lineAlpha = (intensity - 0.4) * 0.2;
+        const lineCount = 16;  // 줄여서 성능 개선
+        ctx.strokeStyle = `rgba(100, 180, 255, ${lineAlpha})`;
+        ctx.lineWidth = 2;
 
         for (let i = 0; i < lineCount; i++) {
           const angle = (i / lineCount) * Math.PI * 2;
-          const innerRadius = maxDist * 0.6;
-          const outerRadius = maxDist * 1.1;
+          const innerRadius = maxDist * 0.5;
+          const outerRadius = maxDist * 1.0;
 
           ctx.beginPath();
           ctx.moveTo(
@@ -347,13 +357,12 @@ function lerpColorToBlack(hex, t) {
         }
       }
 
-      // 5. Time indicator text (subtle)
-      if (intensity > 0.5) {
-        const textAlpha = (intensity - 0.5) * 0.4;
-        ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = `rgba(0, 255, 255, ${textAlpha})`;
-        ctx.textAlign = 'center';
-        ctx.fillText('▼ SLOW MOTION ▼', centerX, 30);
+      // 5. Time indicator border flash
+      if (intensity > 0.3) {
+        const borderAlpha = intensity * 0.5;
+        ctx.strokeStyle = `rgba(0, 200, 255, ${borderAlpha})`;
+        ctx.lineWidth = 4 + intensity * 4;
+        ctx.strokeRect(2, 2, canvasWidth - 4, canvasHeight - 4);
       }
 
       ctx.restore();
