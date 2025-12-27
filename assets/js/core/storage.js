@@ -3,10 +3,7 @@
   const defaultSave = {
     coins: 0,
     gems: 1000,
-    lvlSpeed: 1,
-    lvlCool: 1,
-    lvlMagnet: 1,
-    lvlGreed: 1,
+    // lvlSpeed, lvlCool, lvlMagnet, lvlGreed 제거됨 (캐릭터 업그레이드 폐지)
     unlockedSkins: [0],
     equippedSkin: 0,
     unlockedTreasures: [],      // 보유한 보물 ID 리스트

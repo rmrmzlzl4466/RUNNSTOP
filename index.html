@@ -139,19 +139,39 @@
         <div class="tab-btn" id="tab-treasure" onclick="window.switchTab('treasure')">TREASURES</div>
       </div>
 
-      <!-- Upgrades Tab -->
+      <!-- Item Upgrades Tab -->
       <div id="shop-upgrade" class="shop-content">
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">⚡ Move Speed</span><span class="upgrade-level" id="lvl-speed">Lv.1</span><span class="stat-preview" id="stat-speed">Max Speed +0</span></div>
-          <button class="btn-common" id="btn-buy-speed">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-boosterDistance">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🚀 Booster Distance</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">100% → 110%</span>
+          </div>
+          <button class="btn-common btn-upgrade">80 🪙</button>
         </div>
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">⏳ Dash Cooldown</span><span class="upgrade-level" id="lvl-cool">Lv.1</span><span class="stat-preview" id="stat-cool">Cooldown -0s</span></div>
-          <button class="btn-common" id="btn-buy-cool">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-magnetDuration">
+          <div class="upgrade-info">
+            <span class="upgrade-name">⏱️ Magnet Duration</span>
+            <span class="upgrade-level">Lv.0/6</span>
+            <span class="stat-preview">+0.0s → +0.5s</span>
+          </div>
+          <button class="btn-common btn-upgrade">60 🪙</button>
         </div>
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">💰 Greed (Coin)</span><span class="upgrade-level" id="lvl-greed">Lv.1</span><span class="stat-preview" id="stat-greed">Bonus +0%</span></div>
-          <button class="btn-common" id="btn-buy-greed">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-magnetRange">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🧲 Magnet Range</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">100% → 115%</span>
+          </div>
+          <button class="btn-common btn-upgrade">70 🪙</button>
+        </div>
+        <div class="upgrade-item" id="upgrade-shieldDropChance">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🛡️ Shield Drop Rate</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">+0% → +2%</span>
+          </div>
+          <button class="btn-common btn-upgrade">90 🪙</button>
         </div>
       </div>
 
@@ -603,6 +623,7 @@
   <script src="./assets/js/core/physics.js"></script>
   <script src="./assets/js/core/renderer.js"></script>
   <script src="./assets/js/game/config.js"></script>
+  <script src="./assets/js/game/itemUpgrades.js"></script>
   <script src="./assets/js/game/runtime.js"></script>
   <script src="./assets/js/game/camera.js"></script>
   <script src="./assets/js/game/items.js"></script>

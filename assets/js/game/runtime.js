@@ -23,6 +23,14 @@ window.GameModules = window.GameModules || {};
       currentZoomLerp: 3.0,
       storm: { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 },
       items: [],
+      // 아이템 업그레이드 효과값 캐시 (런 시작 시 1회 계산)
+      itemUpgrades: {
+        boosterDistanceMult: 1.0,
+        magnetDurationBonusSec: 0,
+        magnetRangeMult: 1.0,
+        shieldDropChanceBonus: 0
+      },
+      treasureCoinBonus: 0,  // 보물 코인 보너스 % (상한 50%)
       slowMo: {
         active: false,
         remaining: 0,
@@ -82,6 +90,14 @@ window.GameModules = window.GameModules || {};
     runtime.currentZoomLerp = 3.0;
     runtime.storm = { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 };
     runtime.items = [];
+    // 아이템 업그레이드 캐시 초기화 (lifecycle에서 실제 값 설정)
+    runtime.itemUpgrades = {
+      boosterDistanceMult: 1.0,
+      magnetDurationBonusSec: 0,
+      magnetRangeMult: 1.0,
+      shieldDropChanceBonus: 0
+    };
+    runtime.treasureCoinBonus = 0;
     runtime.slowMo = {
       active: false,
       remaining: 0,

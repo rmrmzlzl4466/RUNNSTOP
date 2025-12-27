@@ -81,7 +81,10 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleItems() {
-    const activeRange = player.magnetTimer > 0 ? qaConfig.magnetRange : player.baseMagnetRange;
+    // 마그넷 범위 업그레이드 적용
+    const rangeMult = runtime.itemUpgrades?.magnetRangeMult ?? 1.0;
+    const baseRange = player.magnetTimer > 0 ? qaConfig.magnetRange : player.baseMagnetRange;
+    const activeRange = baseRange * rangeMult;
     const collectedItems = window.Game.Physics.processItemCollisions(player, runtime.items, activeRange);
     collectedItems.forEach((it) => applyItem(runtime, player, qaConfig, it));
     window.Game.Physics.removeCollectedItems(runtime.items, collectedItems);

@@ -106,11 +106,16 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('item');
     } else if (item.type === 'booster') {
       player.isBoosting = true;
-      player.boostTargetY = player.y - qaConfig.boostDist;
+      // 부스터 거리 업그레이드 적용
+      const boostMult = runtime.itemUpgrades?.boosterDistanceMult ?? 1.0;
+      player.boostTargetY = player.y - (qaConfig.boostDist * boostMult);
       window.Sound?.sfx('item');
+      window.Sound?.sfx('boost_rush');
     } else if (item.type === 'magnet') {
-      const magnetDuration = itemCfg.magnetDurationSec ?? 10.0;
-      player.magnetTimer = magnetDuration;
+      // 마그넷 지속시간 업그레이드 적용
+      const baseDuration = itemCfg.magnetDurationSec ?? 10.0;
+      const bonusSec = runtime.itemUpgrades?.magnetDurationBonusSec ?? 0;
+      player.magnetTimer = baseDuration + bonusSec;
       window.Sound?.sfx('item');
     }
   }

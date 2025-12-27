@@ -140,7 +140,11 @@
     }
 
     // === Barrier(실드) 스폰 (개별 드랍률, 모든 행에서 가능) ===
-    const barrierRate = effective.barrierRate ?? 0.03;
+    // 실드 드랍 확률 업그레이드 적용 (상한 20%)
+    const runtime = window.Game?.runtime;
+    const baseRate = effective.barrierRate ?? 0.03;
+    const bonus = runtime?.itemUpgrades?.shieldDropChanceBonus ?? 0;
+    const barrierRate = Math.min(baseRate + bonus, 0.20);
     if (Math.random() < barrierRate) {
       // 코인 패턴 위치와 겹치지 않도록 다른 컬럼 선택
       let itemCol = Math.floor(Math.random() * COLS);

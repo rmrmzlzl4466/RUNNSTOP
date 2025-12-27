@@ -115,6 +115,23 @@ window.GameModules = window.GameModules || {};
     const effective = StageConfig.getEffective?.() ?? {};
     const sources = StageConfig.getEffectiveSources?.() ?? {};
 
+    // Merge itemUpgrades from runtime for UPGRADES category
+    const runtime = window.Game?.runtime;
+    if (runtime?.itemUpgrades) {
+      effective.boosterDistanceMult = runtime.itemUpgrades.boosterDistanceMult ?? 1.0;
+      effective.magnetDurationBonusSec = runtime.itemUpgrades.magnetDurationBonusSec ?? 0;
+      effective.magnetRangeMult = runtime.itemUpgrades.magnetRangeMult ?? 1.0;
+      effective.shieldDropChanceBonus = runtime.itemUpgrades.shieldDropChanceBonus ?? 0;
+      sources.boosterDistanceMult = 'stage';  // Calculated at run start
+      sources.magnetDurationBonusSec = 'stage';
+      sources.magnetRangeMult = 'stage';
+      sources.shieldDropChanceBonus = 'stage';
+    }
+    if (runtime?.treasureCoinBonus !== undefined) {
+      effective.treasureCoinBonus = runtime.treasureCoinBonus;
+      sources.treasureCoinBonus = 'stage';
+    }
+
     // Update meta section
     const metaEl = document.getElementById('overlay-meta');
     if (metaEl) {
@@ -135,7 +152,8 @@ window.GameModules = window.GameModules || {};
       'SPEED (Stage)': ['stormSpeedMult', 'baseSpeedMult', 'stormSpeed'],
       'ECONOMY (Stage)': ['coinRate', 'barrierRate', 'boosterRate', 'magnetRate', 'scoreMult'],
       'PHYSICS (Global)': ['friction', 'stopFriction', 'baseAccel', 'turnAccelMult'],
-      'THEME/GIMMICK': ['theme', 'gimmick']
+      'THEME/GIMMICK': ['theme', 'gimmick'],
+      'UPGRADES': ['boosterDistanceMult', 'magnetDurationBonusSec', 'magnetRangeMult', 'shieldDropChanceBonus', 'treasureCoinBonus']
     };
 
     let html = '';

@@ -46,7 +46,6 @@ class Player {
     this.stopFriction = 0.92; // 정지 시 마찰 계수
     this.turnAccelMult = 2.0; // [추가] 초기값 설정
     this.hasRevive = false; // 보물: 부활
-    this.treasureCoinBonus = 0; // 보물: 코인 보너스 %
     this.history = [];
     this._lastDashParticleTs = 0;
 
@@ -91,7 +90,6 @@ class Player {
     this.isCharging = false;
     this.chargeStartTime = 0;
     this.hasRevive = false;
-    this.treasureCoinBonus = 0;
     this.survivalBoosterStartTime = 0;
     this.jfbRandomDelay = 0;
     this.jfbActiveStartTime = 0;
@@ -324,8 +322,9 @@ class Player {
     this.survivalBoosterStartTime = 0;  // 사용 후 리셋
     this.jfbActiveStartTime = 0;
 
-    // PERFECT 효과음
+    // PERFECT 효과음 + 질주 사운드
     window.Sound?.sfx('boost_perfect');
+    window.Sound?.sfx('boost_rush');
 
     return 'perfect';
   }

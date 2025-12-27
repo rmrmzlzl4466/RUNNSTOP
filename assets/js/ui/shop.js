@@ -1,43 +1,79 @@
 // UI shop + upgrades + skins (extracted from game.js)
+// 아이템 업그레이드 시스템으로 교체됨 (캐릭터 스탯 업그레이드 폐지)
 
   function checkUnlockCondition(skin) { if(skin.condType === 'none') return true; if(skin.condType === 'maxDist') return window.GameData.stats.maxDist >= skin.condVal; if(skin.condType === 'totalCoins') return window.GameData.stats.totalCoins >= skin.condVal; if(skin.condType === 'totalGames') return window.GameData.stats.totalGames >= skin.condVal; if(skin.condType === 'totalDeaths') return window.GameData.stats.totalDeaths >= skin.condVal; return false; }
 
-  window.updateUpgradeUI = function() {
-    // GameConfig.Formulas를 사용하여 상점 UI와 게임 로직 일치
-    const F = window.GameConfig?.Formulas;
-    const baseSpeed = window.qaConfig?.baseSpeed ?? 400;
+  // 개별 업그레이드 항목 UI 갱신
+  function updateUpgradeItemUI(upgradeKey) {
+    const info = window.ItemUpgrades?.getUpgradeInfo?.(upgradeKey);
+    if (!info) return;
 
-    const shopCoins = document.getElementById('shop-coins');
-    const shopGems = document.getElementById('shop-gems');
-    if (shopCoins) shopCoins.innerText = window.GameData.coins;
-    if (shopGems) shopGems.innerText = window.GameData.gems;
+    const container = document.getElementById(`upgrade-${upgradeKey}`);
+    if (!container) return;
 
-    // Speed Upgrade
-    const speedCost = F ? F.getUpgradeCost(window.GameData.lvlSpeed) : window.GameData.lvlSpeed * 100;
-    const speedBonus = F ? F.getSpeed(window.GameData.lvlSpeed, baseSpeed) - baseSpeed : (window.GameData.lvlSpeed - 1) * 20;
-    document.getElementById('lvl-speed').innerText = `Lv.${window.GameData.lvlSpeed}`;
-    document.getElementById('stat-speed').innerText = `Max Speed +${speedBonus}`;
-    document.getElementById('btn-buy-speed').innerText = `${speedCost} 🪙`;
-    document.getElementById('btn-buy-speed').onclick = () => buyUpgrade('lvlSpeed', speedCost);
+    const levelEl = container.querySelector('.upgrade-level');
+    const previewEl = container.querySelector('.stat-preview');
+    const btnEl = container.querySelector('.btn-upgrade');
 
-    // Cooldown Upgrade
-    const coolCost = F ? F.getUpgradeCost(window.GameData.lvlCool) : window.GameData.lvlCool * 100;
-    const coolReduction = F ? (1.0 - F.getCool(window.GameData.lvlCool)).toFixed(2) : ((window.GameData.lvlCool - 1) * 0.05).toFixed(2);
-    document.getElementById('lvl-cool').innerText = `Lv.${window.GameData.lvlCool}`;
-    document.getElementById('stat-cool').innerText = `Cool -${coolReduction}s`;
-    document.getElementById('btn-buy-cool').innerText = `${coolCost} 🪙`;
-    document.getElementById('btn-buy-cool').onclick = () => buyUpgrade('lvlCool', coolCost);
+    if (levelEl) {
+      levelEl.innerText = `Lv.${info.currentLevel}/${info.maxLevel}`;
+    }
 
-    // Greed Upgrade
-    const greedCost = F ? F.getUpgradeCost(window.GameData.lvlGreed) : window.GameData.lvlGreed * 100;
-    const greedBonus = F ? Math.round((F.getGreed(window.GameData.lvlGreed) - 1.0) * 100) : (window.GameData.lvlGreed - 1) * 10;
-    document.getElementById('lvl-greed').innerText = `Lv.${window.GameData.lvlGreed}`;
-    document.getElementById('stat-greed').innerText = `Bonus +${greedBonus}%`;
-    document.getElementById('btn-buy-greed').innerText = `${greedCost} 🪙`;
-    document.getElementById('btn-buy-greed').onclick = () => buyUpgrade('lvlGreed', greedCost);
+    if (previewEl) {
+      if (info.isMaxed) {
+        previewEl.innerText = `${info.formatValue(info.currentValue)} (MAX)`;
+      } else {
+        previewEl.innerText = `${info.formatValue(info.currentValue)} → ${info.formatValue(info.nextValue)}`;
+      }
+    }
+
+    if (btnEl) {
+      if (info.isMaxed) {
+        btnEl.innerText = 'MAX';
+        btnEl.disabled = true;
+        btnEl.classList.add('disabled');
+        btnEl.onclick = null;
+      } else {
+        const canAfford = window.GameData.coins >= info.cost;
+        btnEl.innerText = `${info.cost} 🪙`;
+        btnEl.disabled = !canAfford;
+        btnEl.classList.toggle('disabled', !canAfford);
+        btnEl.onclick = () => buyItemUpgrade(upgradeKey);
+      }
+    }
   }
 
-  function buyUpgrade(key, cost) { if (window.GameData.coins >= cost) { window.GameData.coins -= cost; window.GameData[key]++; window.SaveManager.persist(window.GameData); window.updateUpgradeUI(); window.Sound?.sfx('coin'); window.showToast?.('UPGRADE PURCHASED', 'info', 750); } else alert("Not enough coins!"); };
+  // 아이템 업그레이드 구매
+  function buyItemUpgrade(upgradeKey) {
+    const result = window.ItemUpgrades?.purchase?.(upgradeKey, window.GameData);
+    if (!result) return;
+
+    if (result.success) {
+      window.Sound?.sfx('coin');
+      window.showToast?.('UPGRADE PURCHASED', 'info', 750);
+      window.updateUpgradeUI();
+      window.updateShopUI?.();
+    } else {
+      if (result.message === 'Not enough coins') {
+        window.showToast?.('Not enough coins!', 'warn', 600);
+      } else {
+        console.warn('[Shop] Upgrade failed:', result.message);
+      }
+    }
+  }
+
+  window.updateUpgradeUI = function() {
+    const shopCoins = document.getElementById('shop-coins');
+    const shopGems = document.getElementById('shop-gems');
+    if (shopCoins) shopCoins.innerText = window.GameData.coins.toLocaleString();
+    if (shopGems) shopGems.innerText = window.GameData.gems.toLocaleString();
+
+    // 4개 아이템 업그레이드 UI 갱신
+    updateUpgradeItemUI('boosterDistance');
+    updateUpgradeItemUI('magnetDuration');
+    updateUpgradeItemUI('magnetRange');
+    updateUpgradeItemUI('shieldDropChance');
+  };
 
   window.renderSkinList = function() { const list = document.getElementById('skin-list-container'); list.innerHTML = ''; const skins = window.SKINS || []; skins.forEach(skin => { const isOwned = window.GameData.unlockedSkins.includes(skin.id); const isEquipped = window.GameData.equippedSkin === skin.id; const conditionMet = checkUnlockCondition(skin); const el = document.createElement('div'); el.className = `skin-list-item ${isEquipped ? 'equipped' : ''}`; let actionHTML = ''; if (isOwned) { actionHTML = isEquipped ? `<button class=\"btn-buy btn-equipped\">EQUIPPED</button>` : `<button class=\"btn-buy btn-equip\" onclick=\"window.equipSkin(${skin.id})\">EQUIP</button>`; } else { const coinClass = conditionMet ? 'btn-coin' : 'btn-coin locked'; const coinText = conditionMet ? `${skin.coinPrice} 🪙` : `🔒 ${skin.condText}`; const coinAction = conditionMet ? `onclick=\"window.buySkinWithCoin(${skin.id})\"` : ''; if(skin.coinPrice > 0 || skin.gemPrice > 0) { actionHTML = `<div class=\"skin-actions\"><button class=\"btn-buy btn-gem\" onclick=\"window.buySkinWithGem(${skin.id})\">${skin.gemPrice} 💎</button><button class=\"btn-buy ${coinClass}\" ${coinAction}>${coinText}</button></div>`; } else { actionHTML = `<button class=\"btn-buy btn-coin\" onclick=\"window.buySkinWithCoin(${skin.id})\">GET FREE</button>`; } } const previewStyles = [`background:${skin.color}`]; if (skin.sprite) { previewStyles.push(`background-image:url('${skin.sprite}')`); previewStyles.push('background-size: cover'); previewStyles.push('background-position: center'); previewStyles.push('background-repeat: no-repeat'); } el.innerHTML = `<div class=\"skin-header\"><div class=\"skin-info-left\"><div class=\"skin-preview\" style=\"${previewStyles.join(';')}\"></div><div class=\"skin-details\"><span class=\"skin-name\">${skin.name}</span><span class=\"skin-rarity rarity-${skin.rarity}\">${skin.rarity}</span></div></div></div><div class=\"skin-desc\">${skin.desc}</div>${actionHTML}`; list.appendChild(el); }); }
 
@@ -160,8 +196,8 @@ window.renderTreasureList = function() {
 function getTreasureEmoji(effect) {
   const map = {
     'revive': '🥚',
-    'magnet': '🤖',
-    'speed': '🚀',
+    'magnet_enhance': '⏱️',  // 자석 지속시간 강화
+    'booster_enhance': '🚀', // 부스터 거리 강화
     'barrier_start': '🛡️',
     'coin_bonus': '🌸'
   };

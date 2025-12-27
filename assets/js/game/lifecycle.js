@@ -66,8 +66,10 @@ window.GameModules = window.GameModules || {};
     window.updateUpgradeUI?.();
     window.renderSkinList?.();
 
-    if (player.treasureCoinBonus > 0) {
-      const bonus = Math.floor(player.sessionCoins * (player.treasureCoinBonus / 100));
+    // 보물 코인 보너스 적용 (runtime.treasureCoinBonus 사용)
+    const coinBonus = runtime.treasureCoinBonus ?? 0;
+    if (coinBonus > 0) {
+      const bonus = Math.floor(player.sessionCoins * (coinBonus / 100));
       gameData.coins += bonus;
       saveGameData(gameData);
     }
@@ -112,7 +114,18 @@ window.GameModules = window.GameModules || {};
     player.sessionCoins = 0;
     player.sessionGems = 0;
 
-    applyLoadoutStats(player, qaConfig, gameData);
+    // 아이템 업그레이드 로드 및 캐시 (런 시작 시 1회)
+    const itemUpgradesData = window.ItemUpgrades?.load?.() ?? {};
+    const effectiveUpgrades = window.ItemUpgrades?.getEffectiveValues?.(itemUpgradesData) ?? {
+      boosterDistanceMult: 1.0,
+      magnetDurationBonusSec: 0,
+      magnetRangeMult: 1.0,
+      shieldDropChanceBonus: 0
+    };
+    runtime.itemUpgrades = { ...effectiveUpgrades };
+
+    // 스킨/보물 효과 적용 (runtime 전달로 보물 효과가 캐시에 추가됨)
+    applyLoadoutStats(player, qaConfig, gameData, runtime);
 
     const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
     if (skin?.useSprite === false) skin.useSprite = true;

@@ -61,10 +61,7 @@ window.GameModules = window.GameModules || {};
   const defaultSaveData = window.SaveManager?.defaultSave ?? {
     coins: 0,
     gems: 1000,
-    lvlSpeed: 1,
-    lvlCool: 1,
-    lvlMagnet: 1,
-    lvlGreed: 1,
+    // lvlSpeed, lvlCool, lvlMagnet, lvlGreed 제거됨 (캐릭터 업그레이드 폐지)
     unlockedSkins: [0],
     equippedSkin: 0,
     unlockedTreasures: [],
@@ -72,41 +69,58 @@ window.GameModules = window.GameModules || {};
     stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
   };
 
-  function applyLoadoutStats(player, qaConfig, gameData) {
-    const F = window.GameConfig?.Formulas;
-    if (!F) return;
-
-    // STAGE_DEFAULTS에서 기본값 사용
+  /**
+   * applyLoadoutStats - 런 시작 시 플레이어/런타임에 스킨/보물 효과 적용
+   * 캐릭터 스탯 업그레이드 폐지됨 - 이제 고정값 사용
+   * 아이템 업그레이드는 runtime.itemUpgrades에서 별도 관리
+   */
+  function applyLoadoutStats(player, qaConfig, gameData, runtime) {
     const DEFAULTS = window.GameConfig?.STAGE_DEFAULTS ?? {};
 
+    // 고정 기본값 적용 (업그레이드 보너스 없음)
     player.accel = qaConfig.baseAccel ?? DEFAULTS.baseAccel ?? 3000;
-    player.maxSpeed = F.getSpeed(gameData.lvlSpeed, qaConfig.baseSpeed ?? DEFAULTS.baseSpeed ?? 960);
-    player.cooldownMax = F.getCool(gameData.lvlCool);
-    player.baseMagnetRange = (qaConfig.baseMagnet ?? DEFAULTS.baseMagnet ?? 50) + F.getMagnetBonus(gameData.lvlMagnet);
-    player.coinMult = F.getGreed(gameData.lvlGreed);
+    player.maxSpeed = qaConfig.baseSpeed ?? DEFAULTS.baseSpeed ?? 960;
+    player.cooldownMax = qaConfig.dashCooldown ?? DEFAULTS.dashCooldown ?? 0.7;
+    player.baseMagnetRange = qaConfig.baseMagnet ?? DEFAULTS.baseMagnet ?? 50;
+    player.coinMult = 1.0; // 고정값 (Greed 업그레이드 폐지)
     player.dashForce = qaConfig.dashForce ?? DEFAULTS.dashForce ?? 1000;
     player.friction = qaConfig.friction ?? DEFAULTS.friction ?? 0.93;
 
+    // 스킨 효과 - barrier만 유지 (다른 스탯 보너스 폐지)
     const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
     if (skin) {
-      if (skin.statType === 'speed') player.maxSpeed += skin.statVal;
-      if (skin.statType === 'cool') player.cooldownMax = Math.max(0.2, player.cooldownMax - skin.statVal);
-      if (skin.statType === 'greed') player.coinMult += skin.statVal;
-      if (skin.statType === 'magnet') player.baseMagnetRange += skin.statVal;
+      // speed, cool, greed, magnet 스탯 보너스 제거됨
       if (skin.statType === 'barrier' && skin.statVal > 0) player.hasBarrier = true;
     }
 
+    // 보물 효과 적용
     const equippedTreasures = gameData.equippedTreasures || [null, null];
+    let treasureCoinBonus = 0;
+
     equippedTreasures.forEach((tid) => {
       if (!tid) return;
       const treasure = window.getTreasureById?.(tid);
       if (!treasure) return;
-      if (treasure.effect === 'speed') player.maxSpeed += treasure.val;
-      if (treasure.effect === 'magnet') player.baseMagnetRange += treasure.val;
+
+      // speed, magnet 효과 제거됨 → 새 효과로 대체
       if (treasure.effect === 'barrier_start') player.hasBarrier = true;
       if (treasure.effect === 'revive') player.hasRevive = true;
-      if (treasure.effect === 'coin_bonus') player.treasureCoinBonus = treasure.val;
+      if (treasure.effect === 'coin_bonus') {
+        treasureCoinBonus += treasure.val;
+      }
+      // 새 보물 효과: booster_enhance, magnet_enhance
+      if (treasure.effect === 'booster_enhance' && runtime?.itemUpgrades) {
+        runtime.itemUpgrades.boosterDistanceMult += 0.20;
+      }
+      if (treasure.effect === 'magnet_enhance' && runtime?.itemUpgrades) {
+        runtime.itemUpgrades.magnetDurationBonusSec += 2.0;
+      }
     });
+
+    // coin_bonus 상한 50% 적용 (runtime에만 저장)
+    if (runtime) {
+      runtime.treasureCoinBonus = Math.min(treasureCoinBonus, 50);
+    }
   }
 
   window.GameModules.Config = {

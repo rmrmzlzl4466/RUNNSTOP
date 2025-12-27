@@ -76,6 +76,10 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
           // PERFECT 발동 - 화려한 상승 아르페지오
           this.playArpeggio([523, 659, 784, 1047], 'square', 0.08, 0.15);
           break;
+        case 'boost_rush':
+          // 부스터 질주 사운드 - 시원하게 상승하는 바람 + 가속음
+          this.playBoostRush();
+          break;
         case 'jfb_active':
           // Active 시작 - 날카로운 "팅!" 신호음
           this.playArpeggio([1760, 2093, 2637], 'sine', 0.03, 0.12);
@@ -123,6 +127,89 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
           osc.start(startTime);
           osc.stop(startTime + dur);
         });
+      } catch(e) {}
+    },
+    // [BOOSTER] 시원하게 질주하는 바람 + 가속 사운드
+    playBoostRush() {
+      if (actx.state === 'suspended') actx.resume();
+      try {
+        const now = actx.currentTime;
+        const duration = 0.8;
+        const baseVol = 0.15 * (window.qaConfig?.sfxVol ?? 1);
+
+        // 1. 바람/러쉬 노이즈 (화이트 노이즈 + 하이패스 필터)
+        const bufferSize = actx.sampleRate * duration;
+        const noiseBuffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = actx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        // 하이패스 필터로 바람 느낌
+        const highpass = actx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(800, now);
+        highpass.frequency.linearRampToValueAtTime(2000, now + duration * 0.3);
+        highpass.frequency.linearRampToValueAtTime(1200, now + duration);
+
+        // 밴드패스로 "우우웅" 느낌 추가
+        const bandpass = actx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(1000, now);
+        bandpass.frequency.linearRampToValueAtTime(3000, now + duration * 0.4);
+        bandpass.frequency.linearRampToValueAtTime(1500, now + duration);
+        bandpass.Q.value = 1.5;
+
+        const noiseGain = actx.createGain();
+        noiseGain.gain.setValueAtTime(0, now);
+        noiseGain.gain.linearRampToValueAtTime(baseVol * 0.5, now + 0.05);
+        noiseGain.gain.linearRampToValueAtTime(baseVol * 0.7, now + duration * 0.3);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(highpass);
+        highpass.connect(bandpass);
+        bandpass.connect(noiseGain);
+        noiseGain.connect(actx.destination);
+        noise.start(now);
+        noise.stop(now + duration);
+
+        // 2. 상승하는 스위프 톤 (시원한 가속감)
+        const sweepOsc = actx.createOscillator();
+        sweepOsc.type = 'sawtooth';
+        sweepOsc.frequency.setValueAtTime(150, now);
+        sweepOsc.frequency.exponentialRampToValueAtTime(600, now + duration * 0.5);
+        sweepOsc.frequency.exponentialRampToValueAtTime(400, now + duration);
+
+        const sweepGain = actx.createGain();
+        sweepGain.gain.setValueAtTime(0, now);
+        sweepGain.gain.linearRampToValueAtTime(baseVol * 0.3, now + 0.08);
+        sweepGain.gain.linearRampToValueAtTime(baseVol * 0.4, now + duration * 0.4);
+        sweepGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        sweepOsc.connect(sweepGain);
+        sweepGain.connect(actx.destination);
+        sweepOsc.start(now);
+        sweepOsc.stop(now + duration);
+
+        // 3. 고주파 "휘이잉" 효과 (속도감)
+        const whooshOsc = actx.createOscillator();
+        whooshOsc.type = 'sine';
+        whooshOsc.frequency.setValueAtTime(800, now);
+        whooshOsc.frequency.exponentialRampToValueAtTime(2500, now + duration * 0.3);
+        whooshOsc.frequency.exponentialRampToValueAtTime(1200, now + duration);
+
+        const whooshGain = actx.createGain();
+        whooshGain.gain.setValueAtTime(0, now);
+        whooshGain.gain.linearRampToValueAtTime(baseVol * 0.15, now + 0.1);
+        whooshGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.7);
+
+        whooshOsc.connect(whooshGain);
+        whooshGain.connect(actx.destination);
+        whooshOsc.start(now);
+        whooshOsc.stop(now + duration);
+
       } catch(e) {}
     }
     ,

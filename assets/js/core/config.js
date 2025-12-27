@@ -110,16 +110,8 @@
     morphDuration: 0.5
   };
 
-  /**
-   * 스탯 계산 공식 (업그레이드 시스템용)
-   */
-  const Formulas = {
-    getSpeed: (lvl, base) => base + (lvl - 1) * 20,
-    getCool: (lvl) => Math.max(0.3, 1.0 - (lvl - 1) * 0.05),
-    getMagnetBonus: (lvl) => (lvl - 1) * 10,
-    getGreed: (lvl) => 1.0 + (lvl - 1) * 0.1,
-    getUpgradeCost: (lvl) => lvl * 100
-  };
+  // Formulas 객체 제거됨 (캐릭터 업그레이드 시스템 폐지)
+  // 이제 아이템 업그레이드만 사용 (itemUpgrades.js 참조)
 
   /**
    * createQAConfig - GLOBAL + STAGE_DEFAULTS 병합하여 qaConfig 생성
@@ -136,7 +128,7 @@
   window.GameConfig = {
     GLOBAL: GLOBAL_CONFIG,
     STAGE_DEFAULTS: STAGE_DEFAULTS,
-    Formulas,
+    // Formulas 제거됨 (캐릭터 업그레이드 폐지)
     createFullConfig
   };
 })();
