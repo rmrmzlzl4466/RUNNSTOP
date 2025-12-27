@@ -16,6 +16,8 @@
     active: false,      // 현재 패턴 진행 중인지 여부
     remainingRows: 0,   // 남은 행 개수
     currentCol: -1,     // 현재 코인 생성 컬럼 (0~4), -1은 미지정
+    pendingRewardItem: false, // 코인 라인 끝에 booster/magnet 생성 대기
+    lastCoinCol: -1,    // 마지막 코인 라인 컬럼 (회피용)
   };
 
   /**
@@ -61,8 +63,34 @@
     // === 코인 패턴 시스템 ===
     let coinCol = -1; // 이번 행에 코인이 생성될 컬럼 (-1이면 생성 안 함)
 
+    // === [먼저] 보상 아이템 스폰 (이전 행에서 코인 라인 종료됨) ===
+    // booster/magnet은 코인 라인이 끝난 "다음 행"에 생성
+    let rewardSpawnedThisRow = false;
+    if (coinPattern.pendingRewardItem) {
+      coinPattern.pendingRewardItem = false;
+      rewardSpawnedThisRow = true; // 이 행에서는 새 코인 라인 시작 안함
+
+      // 보상 아이템 100% 생성 (코인 라인 끝에는 반드시 보상)
+      const { booster, magnet } = effective.itemWeights;
+      const totalWeight = booster + magnet;
+
+      // booster/magnet 중 weight 비율로 선택
+      let rewardType = 'booster';
+      if (Math.random() < magnet / totalWeight) {
+        rewardType = 'magnet';
+      }
+
+      // 마지막 코인 컬럼과 같은 위치에 생성 (코인 라인 바로 뒤)
+      const rewardCol = coinPattern.lastCoinCol;
+
+      if (spawnItemCallback) {
+        spawnItemCallback(rewardType, rewardCol);
+      }
+    }
+
     // [A] 패턴 시작 (새로운 직선 구간 시작)
-    if (!coinPattern.active && Math.random() < effective.coinRate) {
+    // 보상 아이템이 생성된 행에서는 새 코인 라인 시작 안함
+    if (!coinPattern.active && !rewardSpawnedThisRow && Math.random() < effective.coinRate) {
       coinPattern.active = true;
 
       // 길이 결정 (effective config + 랜덤 다양성)
@@ -78,7 +106,7 @@
         const candidates = [];
         if (coinPattern.currentCol > 0) candidates.push(coinPattern.currentCol - 1);
         if (coinPattern.currentCol < COLS - 1) candidates.push(coinPattern.currentCol + 1);
-        
+
         // 후보 중 랜덤 선택
         if (candidates.length > 0) {
           coinPattern.currentCol = candidates[Math.floor(Math.random() * candidates.length)];
@@ -97,27 +125,22 @@
       coinPattern.remainingRows--;
       if (coinPattern.remainingRows <= 0) {
         coinPattern.active = false;
+        coinPattern.pendingRewardItem = true; // 다음 행에 booster/magnet 생성 예약
+        coinPattern.lastCoinCol = coinPattern.currentCol; // 마지막 컬럼 기억
         // currentCol은 다음 결정을 위해 유지
       }
     }
 
-    // === 기타 아이템 스폰 (코인 패턴 컬럼 회피) ===
+    // === Barrier(실드) 스폰 (기존 로직 유지, 모든 행에서 가능) ===
     if (Math.random() < effective.itemRate) {
-      // Use effective itemWeights for distribution
-      const { barrier, booster, magnet } = effective.itemWeights;
-      const rand = Math.random();
-      let itemType = 'barrier';
-      if (rand < booster) itemType = 'booster';
-      else if (rand < booster + magnet) itemType = 'magnet';
-      // else: barrier (remaining probability)
-
+      // barrier만 생성 (booster/magnet은 코인 라인 끝에서 생성됨)
       // 코인 패턴 위치와 겹치지 않도록 다른 컬럼 선택
       let itemCol = Math.floor(Math.random() * COLS);
       if (coinCol >= 0 && itemCol === coinCol) {
         itemCol = (itemCol + 1 + Math.floor(Math.random() * (COLS - 1))) % COLS;
       }
       if (spawnItemCallback) {
-        spawnItemCallback(itemType, itemCol);
+        spawnItemCallback('barrier', itemCol);
       }
     }
 
@@ -167,6 +190,8 @@
       active: false,
       remainingRows: 0,
       currentCol: -1,
+      pendingRewardItem: false,
+      lastCoinCol: -1,
     };
   }
 
