@@ -5,23 +5,42 @@
   if (!canvas || !surface || !container) return;
 
   const ctx = canvas.getContext('2d', { alpha: false });
-  const TARGET_ASPECT = 9 / 16; // Portrait aspect (width / height)
+  const TARGET_ASPECT = 9 / 16; // Portrait aspect (width / height) = 0.5625
+  const MIN_ASPECT = 9 / 21;    // 세로로 긴 화면 허용 (21:9 세로) = 0.4286
+
+  // 터치 디바이스 감지
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function resize() {
     // Fallback to viewport if the container hasn't been laid out yet (prevent zero-sized canvas)
     const containerWidth = container.clientWidth || window.innerWidth || 1;
     const containerHeight = container.clientHeight || window.innerHeight || 1;
+    const containerAspect = containerWidth / Math.max(1, containerHeight);
 
-    // Fit the target aspect ratio within the container (letterbox/pillarbox)
     let surfaceWidth = containerWidth;
     let surfaceHeight = containerHeight;
-    const containerAspect = containerWidth / Math.max(1, containerHeight);
-    if (containerAspect > TARGET_ASPECT) {
-      surfaceHeight = containerHeight;
-      surfaceWidth = surfaceHeight * TARGET_ASPECT;
+
+    // 모바일(터치 디바이스)에서는 전체 화면 사용 (세로로 긴 화면 대응)
+    if (isTouchDevice) {
+      // 화면 비율이 MIN_ASPECT보다 좁으면 (아주 세로로 긴 화면)
+      // 전체 화면을 그대로 사용
+      if (containerAspect >= MIN_ASPECT) {
+        surfaceWidth = containerWidth;
+        surfaceHeight = containerHeight;
+      } else {
+        // 극단적으로 좁은 화면은 최소 비율 적용
+        surfaceWidth = containerWidth;
+        surfaceHeight = containerWidth / MIN_ASPECT;
+      }
     } else {
-      surfaceWidth = containerWidth;
-      surfaceHeight = surfaceWidth / TARGET_ASPECT;
+      // PC에서는 기존 로직 유지 (16:9 비율)
+      if (containerAspect > TARGET_ASPECT) {
+        surfaceHeight = containerHeight;
+        surfaceWidth = surfaceHeight * TARGET_ASPECT;
+      } else {
+        surfaceWidth = containerWidth;
+        surfaceHeight = surfaceWidth / TARGET_ASPECT;
+      }
     }
 
     // Center the surface inside the container
