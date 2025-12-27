@@ -59,19 +59,22 @@ window.GameModules = window.GameModules || {};
       return;
     }
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
-    runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Action: ${result.action}`;
+    runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Genuine: ${result.genuineSafe}, Action: ${result.action}`;
 
-    if (result.isSafe) {
+    // genuineSafe: 실제로 안전 지대 위에서 생존한 경우만 JFB 보상
+    if (result.genuineSafe) {
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
       const slowMoModule = getSlowMo();
-      runtime._stopJudgmentDebug = `SlowMo module: ${slowMoModule ? 'OK' : 'NULL'}`;
+      runtime._stopJudgmentDebug = `JFB granted! SlowMo: ${slowMoModule ? 'OK' : 'NULL'}`;
       const started = slowMoModule?.start?.(runtime, qaConfig, nowSec, 'stop_survival');
-      runtime._stopJudgmentDebug = `SlowMo started: ${started}`;
-      console.log('[Loop] SlowMo start result:', started, 'module:', !!slowMoModule);
+      console.log('[Loop] JFB granted, SlowMo:', started);
 
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
+    } else if (result.action === 'invincible_save') {
+      // 무적으로 생존 - JFB 보상 없음, 죽지도 않음
+      runtime._stopJudgmentDebug = 'Invincible save - No JFB reward';
     } else if (result.action === 'barrier_save') {
       window.Game.Physics.applyBarrierSave(player);
       window.Game.UI.showBarrierSaved();

@@ -109,8 +109,9 @@ window.GameModules = window.GameModules || {};
       // 부스터 거리 업그레이드 적용
       const boostMult = runtime.itemUpgrades?.boosterDistanceMult ?? 1.0;
       player.boostTargetY = player.y - (qaConfig.boostDist * boostMult);
-      window.Sound?.sfx('item');
-      window.Sound?.sfx('boost_rush');
+      window.Sound?.sfx('booster_pickup');  // 터보 불꽃 획득음
+      // boost_rush는 거의 동시에 (50ms 딜레이)
+      setTimeout(() => window.Sound?.sfx('boost_rush'), 50);
     } else if (item.type === 'magnet') {
       // 마그넷 지속시간 업그레이드 적용
       const baseDuration = itemCfg.magnetDurationSec ?? 10.0;

@@ -92,6 +92,10 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
           // 슬로우모션 진입 - 시간이 느려지는 "우웅~" 효과
           this.playSlowMoEnter();
           break;
+        case 'booster_pickup':
+          // 부스터 아이템 획득 - 순간적인 터보 불꽃 사운드
+          this.playBoosterPickup();
+          break;
       }
     },
     // [JUST FRAME BOOSTER] 화음 재생 (동시에 여러 음)
@@ -284,6 +288,104 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
         detuneOsc.stop(now + duration);
 
       } catch(e) {}
+    },
+    // [BOOSTER PICKUP] 터보 불꽃 버스트 사운드 - 강렬한 "푸아아!" 효과
+    playBoosterPickup() {
+      if (actx.state === 'suspended') actx.resume();
+      try {
+        const now = actx.currentTime;
+        const duration = 0.35;
+        const baseVol = 0.5 * (window.qaConfig?.sfxVol ?? 1);  // 볼륨 2배 증가
+
+        // 1. 강렬한 노이즈 버스트 (폭발/불꽃음)
+        const bufferSize = actx.sampleRate * duration;
+        const noiseBuffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = actx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        // 로우패스 + 하이패스로 "푸아" 느낌
+        const lowpass = actx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(4000, now);
+        lowpass.frequency.exponentialRampToValueAtTime(800, now + duration);
+
+        const noiseGain = actx.createGain();
+        noiseGain.gain.setValueAtTime(baseVol, now);  // 즉시 최대 볼륨
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration * 0.7);
+
+        noise.connect(lowpass);
+        lowpass.connect(noiseGain);
+        noiseGain.connect(actx.destination);
+        noise.start(now);
+        noise.stop(now + duration);
+
+        // 2. 터보 휘슬 (급상승)
+        const turboOsc = actx.createOscillator();
+        turboOsc.type = 'sawtooth';
+        turboOsc.frequency.setValueAtTime(200, now);
+        turboOsc.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
+        turboOsc.frequency.exponentialRampToValueAtTime(600, now + duration);
+
+        const turboGain = actx.createGain();
+        turboGain.gain.setValueAtTime(baseVol * 0.6, now);
+        turboGain.gain.exponentialRampToValueAtTime(0.01, now + duration * 0.5);
+
+        turboOsc.connect(turboGain);
+        turboGain.connect(actx.destination);
+        turboOsc.start(now);
+        turboOsc.stop(now + duration);
+
+        // 3. 강한 저주파 펀치 (쿵!)
+        const punchOsc = actx.createOscillator();
+        punchOsc.type = 'sine';
+        punchOsc.frequency.setValueAtTime(120, now);
+        punchOsc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+
+        const punchGain = actx.createGain();
+        punchGain.gain.setValueAtTime(baseVol * 0.8, now);
+        punchGain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+
+        punchOsc.connect(punchGain);
+        punchGain.connect(actx.destination);
+        punchOsc.start(now);
+        punchOsc.stop(now + 0.2);
+
+        // 4. 불꽃 스파크 (치직!)
+        const sparkOsc = actx.createOscillator();
+        sparkOsc.type = 'square';
+        sparkOsc.frequency.setValueAtTime(4000, now);
+        sparkOsc.frequency.exponentialRampToValueAtTime(1500, now + 0.1);
+
+        const sparkGain = actx.createGain();
+        sparkGain.gain.setValueAtTime(baseVol * 0.3, now);
+        sparkGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+        sparkOsc.connect(sparkGain);
+        sparkGain.connect(actx.destination);
+        sparkOsc.start(now);
+        sparkOsc.stop(now + 0.15);
+
+        // 5. 추가: 중주파 "우웅" (터보 느낌)
+        const midOsc = actx.createOscillator();
+        midOsc.type = 'triangle';
+        midOsc.frequency.setValueAtTime(400, now);
+        midOsc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+        midOsc.frequency.exponentialRampToValueAtTime(300, now + duration);
+
+        const midGain = actx.createGain();
+        midGain.gain.setValueAtTime(baseVol * 0.4, now);
+        midGain.gain.exponentialRampToValueAtTime(0.01, now + duration * 0.6);
+
+        midOsc.connect(midGain);
+        midGain.connect(actx.destination);
+        midOsc.start(now);
+        midOsc.stop(now + duration);
+
+      } catch(e) { console.error('[Sound] booster_pickup error:', e); }
     },
     _bgmGain: null,
     _bgmStep: 0,

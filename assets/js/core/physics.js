@@ -101,26 +101,33 @@
      * Check safe zone and return result with action needed
      * @param {Object} player - Player object
      * @param {number} targetColorIndex - Safe color index
-     * @returns {Object} { isSafe, action: 'none'|'barrier_save'|'die' }
+     * @returns {Object} { isSafe, action: 'none'|'invincible_save'|'barrier_save'|'die', genuineSafe }
+     *   - genuineSafe: true면 실제 안전 지대 위에서 생존 (JFB 보상 대상)
+     *   - invincible_save: 무적으로 생존 (JFB 보상 없음)
      */
     checkSafeZone: function(player, targetColorIndex) {
+      // 먼저 실제로 안전 지대 위에 있는지 확인
+      const actuallyOnSafeTile = this.isPlayerOnSafeTile(player, targetColorIndex);
+
       // 무적 상태 체크: invincibleTimer 또는 부스트 무적
-      if (player.invincibleTimer > 0 || player.isBoostInvincible?.()) {
-        return { isSafe: true, action: 'none' };
+      const isInvincible = player.invincibleTimer > 0 || player.isBoostInvincible?.();
+
+      if (actuallyOnSafeTile) {
+        // 실제로 안전 지대 위 → JFB 보상 대상
+        return { isSafe: true, action: 'none', genuineSafe: true };
       }
 
-      const isSafe = this.isPlayerOnSafeTile(player, targetColorIndex);
-
-      if (isSafe) {
-        return { isSafe: true, action: 'none' };
+      if (isInvincible) {
+        // 안전 지대 밖이지만 무적으로 생존 → JFB 보상 없음
+        return { isSafe: true, action: 'invincible_save', genuineSafe: false };
       }
 
       // Not safe - check barrier
       if (player.hasBarrier) {
-        return { isSafe: false, action: 'barrier_save' };
+        return { isSafe: false, action: 'barrier_save', genuineSafe: false };
       }
 
-      return { isSafe: false, action: 'die' };
+      return { isSafe: false, action: 'die', genuineSafe: false };
     },
 
     /**

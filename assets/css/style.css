@@ -1295,16 +1295,33 @@
       height: auto !important;
     }
 
-/* === [MOBILE UI 조정] === */
-@media screen and (max-width: 500px) {
+/* === [MOBILE UI 조정] - 터치 디바이스 또는 좁은 화면 === */
+@media screen and (max-width: 768px), screen and (hover: none) and (pointer: coarse) {
   #target-display {
     top: calc(76px + env(safe-area-inset-top, 0px));
+    /* 모바일에서 80% 크기로 축소 */
+    width: 96px !important;   /* 120px * 0.8 */
+    height: 96px !important;  /* 120px * 0.8 */
+    border-width: 5px !important;  /* 6px * 0.8 */
+  }
+  #target-display #countdown-text.countdown-is-number {
+    font-size: 42px !important;  /* 52px * 0.8 */
+  }
+  #target-display #countdown-text.countdown-is-text {
+    font-size: 26px !important;  /* 32px * 0.8 */
   }
   #status-bar-container {
-    top: calc(210px + env(safe-area-inset-top, 0px)); /* Original: 160px */
+    top: calc(185px + env(safe-area-inset-top, 0px)); /* 색상 패널 축소로 위치 조정 */
+  }
+  #status-bar-container #phase-bar {
+    width: 96px !important;  /* 120px * 0.8 */
+  }
+  #status-bar-container #status-msg {
+    font-size: 90%;  /* 약간 축소 */
+    padding: 5px 11px;  /* 6px 14px * 0.8 */
   }
   #toast-msg {
-    top: calc(270px + env(safe-area-inset-top, 0px)); /* Original: 220px */
+    top: calc(240px + env(safe-area-inset-top, 0px)); /* 위치 조정 */
   }
 }
 
