@@ -408,6 +408,16 @@
     },
 
     /**
+     * Show/hide chase (storm) UI
+     * @param {boolean} visible
+     */
+    setChaseVisibility: function(visible) {
+      if (elements.chaseUI) {
+        elements.chaseUI.style.display = visible ? 'block' : 'none';
+      }
+    },
+
+    /**
      * Show/hide storm warning
      * @param {boolean} visible
      */

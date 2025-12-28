@@ -131,8 +131,12 @@ window.GameModules = window.GameModules || {};
       warningTimeBase: qaConfig.warningTimeBase ?? 7.0,
       warningTimeMin: qaConfig.warningTimeMin ?? 3.0,
       warningTimeMult: 1.0,
-      stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
+      stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5,
+      disableStorm: false,
+      disableColorCycle: false
     };
+    const disableStorm = effective.disableStorm ?? false;
+    const disableColorCycle = effective.disableColorCycle ?? false;
 
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
@@ -159,20 +163,27 @@ window.GameModules = window.GameModules || {};
 
     // Update gimmicks (동적 참조로 모바일 호환성 확보)
     getGimmick()?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
-    const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
-    // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
-    const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
-    const stormSpeed = baseStormSpeed * stormPulseMult;
-    runtime.storm.y -= stormSpeed * worldDt;
-    if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
-      handlers.onDie?.('STORM');
-      return;
+    if (disableStorm) {
+      window.Game.UI.setStormWarning(false);
+      window.Game.UI.setChaseVisibility?.(false);
+    } else {
+      window.Game.UI.setChaseVisibility?.(true);
+      const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
+
+      // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
+      const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
+      const stormSpeed = baseStormSpeed * stormPulseMult;
+      runtime.storm.y -= stormSpeed * worldDt;
+      if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
+        handlers.onDie?.('STORM');
+        return;
+      }
+
+      const screenBottom = runtime.cameraY + runtime.canvasSize.height;
+      window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
+      window.Game.LevelManager.cleanupRows(runtime.storm.y);
     }
-
-    const screenBottom = runtime.cameraY + runtime.canvasSize.height;
-    window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
-    window.Game.LevelManager.cleanupRows(runtime.storm.y);
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
     const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
@@ -183,8 +194,16 @@ window.GameModules = window.GameModules || {};
     window.Game.Physics.filterItemsBehindStorm(runtime.items, runtime.storm);
     handleItems();
 
-    runtime.cycleTimer -= worldDt;
-    window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
+    if (!disableColorCycle) {
+      runtime.cycleTimer -= worldDt;
+    } else {
+      runtime.cycleTimer = effective.runPhaseDuration ?? runtime.cycleTimer;
+      runtime.targetColorIndex = -1;
+    }
+
+    if (!disableStorm) {
+      window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
+    }
 
     if (runtime.gameState === STATE.RUN) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, effective.runPhaseDuration, STATE);
@@ -207,6 +226,11 @@ window.GameModules = window.GameModules || {};
     runtime._prevBoosting = player.isBoosting;
     if (boostStarted) {
       getSlowMo()?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
+    }
+
+    if (disableColorCycle) {
+      runtime.gameState = STATE.RUN;
+      return;
     }
 
     if (runtime.gameState === STATE.RUN) {

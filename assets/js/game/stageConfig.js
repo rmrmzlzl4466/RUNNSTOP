@@ -83,7 +83,10 @@ window.GameModules = window.GameModules || {};
     'scoreMult',
     // 테마/기믹 (C 섹션)
     'theme',
-    'gimmick'
+    'gimmick',
+    // Stage-only flags
+    'disableStorm',
+    'disableColorCycle'
   ]);
 
   // stormBaseSpeed는 GLOBAL_ONLY이지만 별도 처리
@@ -348,6 +351,8 @@ window.GameModules = window.GameModules || {};
     const stormSpeedMult = getStage('stormSpeedMult', 1.0);
     const baseSpeedMult = getStage('baseSpeedMult', 1.0);
     const scoreMult = getStage('scoreMult', 1.0);
+    const disableStorm = getStage('disableStorm', false);
+    const disableColorCycle = getStage('disableColorCycle', false);
 
     // Theme/Gimmick (STAGE-ONLY, C section)
     const theme = getStage('theme', null) ?? stageConfig?.theme ?? null;
@@ -406,6 +411,10 @@ window.GameModules = window.GameModules || {};
 
       // === 점수 (STAGE-ONLY with loop scaling) ===
       scoreMult: scoreMult * loopScale,
+
+      // === Stage flags ===
+      disableStorm,
+      disableColorCycle,
 
       // === 테마/기믹 (STAGE-ONLY, C section) ===
       theme,

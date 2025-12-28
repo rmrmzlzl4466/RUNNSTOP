@@ -107,7 +107,11 @@
 
     // === 모프 ===
     morphTrigger: 3.5,
-    morphDuration: 0.5
+    morphDuration: 0.5,
+
+    // === Stage-only flags ===
+    disableStorm: false,
+    disableColorCycle: false
   };
 
   // Formulas 객체 제거됨 (캐릭터 업그레이드 시스템 폐지)

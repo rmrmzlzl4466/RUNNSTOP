@@ -64,6 +64,9 @@ window.STAGE_TUNING_DEFAULTS = {
   baseSpeedMult: null,
   // Score (STAGE-ONLY)
   scoreMult: null,
+  // Stage flags
+  disableStorm: null,
+  disableColorCycle: null,
   // Theme/Gimmick (STAGE-ONLY, Section C)
   theme: null,
   gimmick: null
@@ -123,6 +126,13 @@ window.STAGE_PALETTES = {
     colors: ['#2c3e50', '#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7', '#1a252f'],
     safeColor: '#95a5a6',
     dangerColor: '#2c3e50'
+  },
+  NEON_GREEN: {
+    id: 'NEON_GREEN',
+    name: 'Neon Green',
+    colors: ['#00ff6a'],
+    safeColor: '#00ff6a',
+    dangerColor: '#00ff6a'
   }
 };
 
@@ -164,13 +174,15 @@ window.STAGE_CONFIG = [
   // ============================================
   {
     id: 1,
-    themeIdx: 0,
+    themeIdx: 3,
     length: 2000,
     name: "BOOT SEQUENCE",
-    theme: { paletteId: 'DEFAULT' },
+    theme: { paletteId: 'NEON_GREEN' },
     gimmick: { id: 'NONE', params: {} },
     tuning: {
       // Tutorial - use defaults
+      disableStorm: true,
+      disableColorCycle: true
     }
   },
   {
