@@ -1274,23 +1274,19 @@
     }
     .loadout-slots { display: flex; gap: 15px; justify-content: center; }
 
-    /* QA Button - PC 오른쪽 상단 구석 */
-    .btn-qa-corner {
-      position: fixed;
-      top: 8px;
-      right: 8px;
-      padding: 4px 8px;
-      font-size: 9px;
+    /* QA Button - Footer 아래 */
+    .btn-qa-footer {
+      padding: 8px 30px;
+      font-size: 12px;
       font-weight: 900;
-      border: 1px solid rgba(0, 255, 65, 0.2);
-      border-radius: 3px;
-      background: rgba(0, 10, 0, 0.9);
-      color: rgba(0, 255, 65, 0.4);
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      border-radius: 20px;
+      background: transparent;
+      color: rgba(0, 255, 65, 0.5);
       cursor: pointer;
-      z-index: 9999;
-      pointer-events: auto;
+      transition: all 0.1s;
     }
-    .btn-qa-corner:hover, .btn-qa-corner:active {
+    .btn-qa-footer:hover, .btn-qa-footer:active {
       border-color: #00ff41;
       color: #00ff41;
     }
