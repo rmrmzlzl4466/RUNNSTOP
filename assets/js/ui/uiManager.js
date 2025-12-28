@@ -85,6 +85,7 @@
       elements.phaseFill = document.getElementById('phase-bar-fill');
       elements.gameContainer = document.getElementById('game-surface') || document.getElementById('game-container');
       elements.dashVisual = document.getElementById('btn-dash-visual');
+      elements.dashLabel = document.getElementById('dash-label');
       elements.dashCdText = document.getElementById('dash-cooldown-text');
       elements.scoreDisplay = document.getElementById('score-display');
       elements.scoreDisplayLeft = document.getElementById('score-display-left');
@@ -206,7 +207,7 @@
         const waitRemaining = player.getWaitRemaining?.() ?? 0;
         elements.dashVisual.classList.add('boost-wait');
         elements.dashVisual.classList.remove('not-ready');
-        elements.dashVisual.textContent = 'WAIT...';
+        if (elements.dashLabel) elements.dashLabel.textContent = 'WAIT';
         elements.dashCdText.textContent = waitRemaining > 0 ? waitRemaining.toFixed(2) : '';
         elements.dashCdText.style.display = 'block';
         return;
@@ -215,13 +216,13 @@
         const remaining = player.getSurvivalBoosterRemaining?.() ?? 0;
         elements.dashVisual.classList.add('boost-active');
         elements.dashVisual.classList.remove('not-ready');
-        elements.dashVisual.textContent = 'TAP NOW!!';
+        if (elements.dashLabel) elements.dashLabel.textContent = 'TAP!';
         elements.dashCdText.textContent = remaining.toFixed(2);
         elements.dashCdText.style.display = 'block';
         return;
       } else {
         // expired 또는 null
-        elements.dashVisual.textContent = 'DASH';
+        if (elements.dashLabel) elements.dashLabel.textContent = 'DASH';
       }
 
       if (player.canDash && !player.isDead && !player.isBoosting && !player.isDying) {

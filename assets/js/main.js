@@ -65,7 +65,27 @@
   function bindStartButtons() {
     const btnStart = document.getElementById('btn-start');
     const btnResultRestart = document.getElementById('btn-result-restart');
-    btnStart?.addEventListener('click', safeStartGame);
+
+    // Start button with glitch effect
+    btnStart?.addEventListener('click', () => {
+      // Add glitch effect class
+      btnStart.classList.add('glitch-click');
+
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([20, 30, 40]);
+      }
+
+      // Play glitch sound if available
+      window.Sound?.sfx?.('bit');
+
+      // Start game after glitch animation
+      setTimeout(() => {
+        btnStart.classList.remove('glitch-click');
+        safeStartGame();
+      }, 400);
+    });
+
     btnResultRestart?.addEventListener('click', safeStartGame);
     console.log('[BOOT] window.startGame type=', typeof safeStartGame);
     console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);

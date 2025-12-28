@@ -14,7 +14,7 @@
 
     <div id="mobile-controls" style="display:none;">
       <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
-      <div id="dash-zone"><div id="btn-dash-visual">DASH<div id="dash-cooldown-text"></div></div></div>
+      <div id="dash-zone"><div id="btn-dash-visual"><span id="dash-label">DASH</span><div id="dash-cooldown-text"></div></div></div>
     </div>
 
     <div id="hud">
@@ -84,6 +84,9 @@
 
     <!-- ========== [2] LOBBY SCREEN ========== -->
     <div id="screen-lobby" class="full-screen">
+      <!-- QA Button (top right corner) -->
+      <button class="btn-qa-corner" onclick="window.Navigation?.go('qa')">QA</button>
+
       <!-- Header: Currency -->
       <div class="screen-header">
         <div class="currency-row lobby-currency">
@@ -98,26 +101,25 @@
           <div id="lobby-char" class="lobby-char-box"></div>
         </div>
         <div class="lobby-char-name" id="lobby-skin-name">Default Runner</div>
-      </div>
 
-      <!-- Loadout: Treasure Slots -->
-      <div class="lobby-loadout">
-        <div class="loadout-label">LOADOUT</div>
-        <div class="loadout-slots">
-          <div class="lobby-slot" id="lobby-slot-0" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
-            <span class="slot-icon">+</span>
-          </div>
-          <div class="lobby-slot" id="lobby-slot-1" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
-            <span class="slot-icon">+</span>
+        <!-- Loadout: Treasure Slots -->
+        <div class="lobby-loadout">
+          <div class="loadout-label">LOADOUT</div>
+          <div class="loadout-slots">
+            <div class="lobby-slot" id="lobby-slot-0" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+              <span class="slot-icon">+</span>
+            </div>
+            <div class="lobby-slot" id="lobby-slot-1" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+              <span class="slot-icon">+</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Footer: Buttons -->
+      <!-- Footer: Buttons (vertical stack) -->
       <div class="lobby-footer">
-        <button class="btn-side" onclick="window.Navigation?.go('shop')">SHOP</button>
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
-        <button class="btn-side" onclick="window.Navigation?.go('qa')">QA</button>
+        <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
       </div>
     </div>
 
