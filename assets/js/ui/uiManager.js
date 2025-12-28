@@ -17,12 +17,14 @@
     targetDisplay: null,
     countdownText: null,
     statusMsg: null,
+    statusBarContainer: null,
     coinDisplay: null,
     gemDisplay: null,
     mobileControls: null,
     stormWarning: null,
     playerGauge: null,
     stormGauge: null,
+    stormMarker: null,
     chaseUI: null,
     // Result screen elements
     lastDist: null,
@@ -95,12 +97,14 @@
       elements.targetDisplay = document.getElementById('target-display');
       elements.countdownText = document.getElementById('countdown-text');
       elements.statusMsg = document.getElementById('status-msg');
+      elements.statusBarContainer = document.getElementById('status-bar-container');
       elements.coinDisplay = document.getElementById('coin-display');
       elements.gemDisplay = document.getElementById('gem-display');
       elements.mobileControls = document.getElementById('mobile-controls');
       elements.stormWarning = document.getElementById('storm-warning');
       elements.playerGauge = document.getElementById('player-gauge');
       elements.stormGauge = document.getElementById('storm-gauge');
+      elements.stormMarker = document.getElementById('marker-storm');
       elements.chaseUI = document.getElementById('chase-ui');
       // Result screen
       elements.lastDist = document.getElementById('last-dist');
@@ -414,6 +418,27 @@
     setTargetVisible: function(visible) {
       if (elements.targetDisplay) {
         elements.targetDisplay.style.display = visible ? 'flex' : 'none';
+      }
+    },
+
+    /**
+     * Show/hide status/phase container (includes phase bar + status text)
+     * @param {boolean} visible
+     */
+    setPhaseContainerVisible: function(visible) {
+      if (elements.statusBarContainer) {
+        elements.statusBarContainer.style.display = visible ? 'flex' : 'none';
+      }
+    },
+
+    /**
+     * Enable/disable storm marker icon in the chase UI
+     * @param {boolean} active
+     */
+    setStormMarkerActive: function(active) {
+      if (elements.stormMarker) {
+        elements.stormMarker.style.opacity = active ? '1' : '0.25';
+        elements.stormMarker.style.filter = active ? 'none' : 'grayscale(100%)';
       }
     },
 

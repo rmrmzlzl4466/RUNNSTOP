@@ -138,6 +138,8 @@ window.GameModules = window.GameModules || {};
     const disableStorm = effective.disableStorm ?? false;
     const disableColorCycle = effective.disableColorCycle ?? false;
     window.Game.UI.setTargetVisible?.(!disableColorCycle);
+    window.Game.UI.setPhaseContainerVisible?.(!disableColorCycle);
+    window.Game.UI.setStormMarkerActive?.(!disableStorm);
 
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
