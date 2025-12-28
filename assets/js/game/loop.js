@@ -137,6 +137,7 @@ window.GameModules = window.GameModules || {};
     };
     const disableStorm = effective.disableStorm ?? false;
     const disableColorCycle = effective.disableColorCycle ?? false;
+    window.Game.UI.setTargetVisible?.(!disableColorCycle);
 
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
@@ -166,9 +167,7 @@ window.GameModules = window.GameModules || {};
 
     if (disableStorm) {
       window.Game.UI.setStormWarning(false);
-      window.Game.UI.setChaseVisibility?.(false);
     } else {
-      window.Game.UI.setChaseVisibility?.(true);
       const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
       // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
@@ -201,9 +200,7 @@ window.GameModules = window.GameModules || {};
       runtime.targetColorIndex = -1;
     }
 
-    if (!disableStorm) {
-      window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
-    }
+    window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
 
     if (runtime.gameState === STATE.RUN) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, effective.runPhaseDuration, STATE);

@@ -408,6 +408,16 @@
     },
 
     /**
+     * Show/hide target color display
+     * @param {boolean} visible
+     */
+    setTargetVisible: function(visible) {
+      if (elements.targetDisplay) {
+        elements.targetDisplay.style.display = visible ? 'flex' : 'none';
+      }
+    },
+
+    /**
      * Show/hide chase (storm) UI
      * @param {boolean} visible
      */

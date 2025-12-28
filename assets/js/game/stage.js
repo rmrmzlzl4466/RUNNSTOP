@@ -28,6 +28,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function updateStageProgress(runtime, playerDist, qaConfig) {
+    const prevEffective = window.GameModules?.StageConfig?.getEffective?.() ?? {};
     const stageInfo = window.Game.LevelManager.getStageInfo(playerDist);
     runtime.currentLevelGoal = (window.STAGE_CUMULATIVE?.[stageInfo.stageIndex] ?? 0) + stageInfo.stageConfig.length;
 
@@ -44,6 +45,13 @@ window.GameModules = window.GameModules || {};
       }
 
       showStageNotification(stageInfo);
+
+      // Force-recalculate effective config for the new stage
+      const newEffective = window.GameModules?.StageConfig?.getEffectiveConfig?.(runtime, qaConfig, true) ?? {};
+      if (prevEffective.disableStorm && !newEffective.disableStorm) {
+        const playerY = 550 - playerDist * 10;
+        runtime.storm.y = playerY + 800;
+      }
 
       if (stageInfo.isLooping && stageInfo.loopCount > 0) {
         applyLoopDifficultyScaling(runtime, qaConfig, stageInfo.loopCount);
