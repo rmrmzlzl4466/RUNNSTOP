@@ -824,21 +824,153 @@
     /* === [NEW] TITLE SCREEN === */
     #screen-title {
       justify-content: center; padding: 0;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      background: linear-gradient(135deg, #020a02 0%, #0a1f0a 50%, #051005 100%);
+      overflow: hidden;
     }
-    .title-content { text-align: center; animation: title-float 3s ease-in-out infinite; }
-    @keyframes title-float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+    /* Cyber grid background */
+    #screen-title::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background:
+        linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+        linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridMove 20s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes gridMove {
+      0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+      100% { transform: perspective(500px) rotateX(60deg) translateY(40px); }
+    }
+    /* Scanline overlay */
+    #screen-title::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      pointer-events: none;
+      opacity: 0.4;
+    }
+    .title-content {
+      text-align: center;
+      animation: title-float 3s ease-in-out infinite;
+      z-index: 1;
+    }
+    @keyframes title-float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+
+    /* === GLITCH LOGO === */
     .game-logo {
-      font-size: 48px; font-weight: 900; color: #fff; margin: 0;
-      text-shadow: 0 0 30px rgba(52, 152, 219, 0.8), 0 4px 0 #1a5276;
+      font-size: 52px; font-weight: 900; color: #00ff41; margin: 0;
+      text-shadow:
+        0 0 10px rgba(0, 255, 65, 0.8),
+        0 0 20px rgba(0, 255, 65, 0.6),
+        0 0 40px rgba(0, 255, 65, 0.4),
+        0 4px 0 #004d14;
       letter-spacing: -2px; font-style: italic;
+      position: relative;
+      animation: logoGlitch 4s ease-in-out infinite;
     }
-    .game-logo .accent { color: #e74c3c; }
+    .game-logo .accent { color: #ff0040; text-shadow: 0 0 10px rgba(255, 0, 64, 0.8); }
+
+    /* Glitch pseudo-elements */
+    .game-logo::before,
+    .game-logo::after {
+      content: 'RUN & STOP';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+    }
+    .game-logo::before {
+      color: #ff0040;
+      animation: glitchTop 4s ease-in-out infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    }
+    .game-logo::after {
+      color: #00d4ff;
+      animation: glitchBottom 4s ease-in-out infinite;
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    }
+    @keyframes logoGlitch {
+      0%, 90%, 100% { transform: translate(0); }
+      92% { transform: translate(-2px, 1px); }
+      94% { transform: translate(2px, -1px); }
+      96% { transform: translate(-1px, -1px); }
+      98% { transform: translate(1px, 1px); }
+    }
+    @keyframes glitchTop {
+      0%, 90%, 100% { opacity: 0; transform: translate(0); }
+      92% { opacity: 0.8; transform: translate(-3px, 0); }
+      94% { opacity: 0; transform: translate(3px, 0); }
+      96% { opacity: 0.6; transform: translate(-2px, 0); }
+      98% { opacity: 0; }
+    }
+    @keyframes glitchBottom {
+      0%, 90%, 100% { opacity: 0; transform: translate(0); }
+      91% { opacity: 0; }
+      93% { opacity: 0.8; transform: translate(3px, 0); }
+      95% { opacity: 0; transform: translate(-3px, 0); }
+      97% { opacity: 0.6; transform: translate(2px, 0); }
+      99% { opacity: 0; }
+    }
+
     .touch-prompt {
-      margin-top: 40px; font-size: 18px; color: #7f8c8d; font-weight: 700;
-      animation: blink-slow 1.5s ease-in-out infinite;
+      margin-top: 50px; font-size: 16px; color: #00ff41; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 3px;
+      animation: promptPulse 2s ease-in-out infinite;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
     }
-    @keyframes blink-slow { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+    @keyframes promptPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+
+    /* === START GLITCH TRANSITION === */
+    #screen-title.glitch-out {
+      /* 배경은 유지, 내부 콘텐츠만 애니메이션 */
+    }
+    #screen-title.glitch-out .title-content {
+      animation: contentGlitchOut 0.6s ease-out forwards;
+    }
+    #screen-title.glitch-out .game-logo {
+      animation: logoGlitchOut 0.6s ease-out forwards;
+    }
+    #screen-title.glitch-out .touch-prompt {
+      animation: fadeOut 0.2s ease-out forwards;
+    }
+    #screen-title.glitch-out::before,
+    #screen-title.glitch-out::after {
+      animation: fadeOut 0.4s ease-out 0.2s forwards;
+    }
+    @keyframes contentGlitchOut {
+      0% { opacity: 1; filter: none; }
+      20% { filter: hue-rotate(90deg) saturate(2); transform: translateX(-5px); }
+      40% { filter: hue-rotate(-90deg) saturate(1.5); transform: translateX(5px) skewX(-2deg); }
+      60% { filter: hue-rotate(45deg); transform: translateX(-3px) skewX(1deg); }
+      80% { opacity: 0.5; filter: brightness(2); }
+      100% { opacity: 0; filter: brightness(3); transform: scale(1.05); }
+    }
+    @keyframes logoGlitchOut {
+      0%, 10% { transform: translate(0); }
+      20% { transform: translate(-10px, 2px) skewX(-5deg); text-shadow: 5px 0 #ff0040, -5px 0 #00d4ff; }
+      30% { transform: translate(8px, -2px) skewX(3deg); }
+      40% { transform: translate(-5px, 1px) skewX(-2deg); text-shadow: 3px 0 #ff0040, -3px 0 #00d4ff; }
+      50% { transform: translate(3px, -1px); }
+      100% { transform: translate(0) scale(1.2); opacity: 0; }
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
 
     /* === [NEW] LOBBY SCREEN === */
     #screen-lobby { justify-content: space-evenly; padding: 20px 0 30px 0; }
