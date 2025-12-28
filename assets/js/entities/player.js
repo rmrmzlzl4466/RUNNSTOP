@@ -48,6 +48,7 @@ class Player {
     this.hasRevive = false; // 보물: 부활
     this.history = [];
     this._lastDashParticleTs = 0;
+    this.lastDashWasCharged = false;
 
     // [JFB v2] 저스트 프레임 부스터 (Reflex Mode)
     this.survivalBoosterStartTime = 0;     // 부스터 권한 부여 시점 타임스탬프
@@ -95,6 +96,7 @@ class Player {
     this.jfbActiveStartTime = 0;
     this.history = [];
     this._baseMaxSpeed = null;  // 스테이지 배수 리셋
+    this.lastDashWasCharged = false;
   }
 
   update(dt, options = {}) {
@@ -372,6 +374,7 @@ class Player {
 
     // 차징 시간에 따른 힘 계산 (선형 보간)
     const chargeRatio = Math.min(holdDuration / this.maxChargeTime, 1.0);
+    this.lastDashWasCharged = chargeRatio > 0.2; // Dash is considered "charged" if held for more than 20% of max charge time
     const force = this.minDashForce + (this.maxDashForce - this.minDashForce) * chargeRatio;
 
     this._executeDash(force);
@@ -397,6 +400,7 @@ class Player {
   // [LEGACY] 기존 dash() 호환용 - 최소 힘으로 즉시 발동
   dash() {
     if (this.isDead || this.isBoosting || this.isDying || !this.canDash) return;
+    this.lastDashWasCharged = false;
     this._executeDash(this.minDashForce);
   }
 

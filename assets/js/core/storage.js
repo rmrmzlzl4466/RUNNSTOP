@@ -3,21 +3,23 @@
   const defaultSave = {
     coins: 0,
     gems: 1000,
-    // lvlSpeed, lvlCool, lvlMagnet, lvlGreed 제거됨 (캐릭터 업그레이드 폐지)
     unlockedSkins: [0],
     equippedSkin: 0,
-    unlockedTreasures: [],      // 보유한 보물 ID 리스트
-    equippedTreasures: [null, null], // 장착 슬롯 (최대 2개)
-    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
+    unlockedTreasures: [],
+    equippedTreasures: [null, null],
+    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 },
+    isTutorialCompleted: false
   };
 
   function normalizeSave(data) {
     const merged = { ...defaultSave, ...(data || {}) };
     merged.stats = { ...defaultSave.stats, ...(data?.stats || {}) };
-    // 보물 필드 보정 (기존 세이브에 없을 경우 기본값)
     if (!Array.isArray(merged.unlockedTreasures)) merged.unlockedTreasures = [];
     if (!Array.isArray(merged.equippedTreasures) || merged.equippedTreasures.length !== 2) {
       merged.equippedTreasures = [null, null];
+    }
+    if (typeof merged.isTutorialCompleted !== 'boolean') {
+        merged.isTutorialCompleted = false;
     }
     return merged;
   }
@@ -57,6 +59,13 @@
     defaultSave,
     load,
     persist,
-    reset
+    reset,
+    isTutorialCompleted: () => window.GameData.isTutorialCompleted,
+    completeTutorial: () => {
+        if (window.GameData) {
+            window.GameData.isTutorialCompleted = true;
+            persist(window.GameData);
+        }
+    }
   };
 })();

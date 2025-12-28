@@ -256,14 +256,71 @@ window.GameModules = window.GameModules || {};
     }
   }
 
+  function startTutorial() {
+    if (runtime.gameActive) {
+      loop.stop();
+    }
+    window.Input?.setIgnoreInputUntil?.(performance.now() + 250);
+    
+    syncCanvasSize(runtime, canvas);
+    resetRuntime(runtime, qaConfig);
+    runtime.isTutorialActive = true; // Tutorial mode flag
+    
+    player.reset(canvas.width / 2, 550);
+    player.invincibleTimer = 9999; // Make player invincible during tutorial
+    
+    // Disable normal game systems
+    runtime.gameState = STATE.RUN; // Set to RUN to allow movement, but tutorial will control UI
+    runtime.storm.y = player.y + 99999; // Move storm far away
+    qaConfig._effectiveStormSpeed = 0; // Stop storm
+    
+    // Minimal UI setup for tutorial
+    window.Navigation?.hideAll?.();
+    window.Game.UI.setMobileControls(true);
+    window.Game.UI.setPhaseContainerVisible(false); // Hide phase bar
+    window.Game.UI.setChaseVisibility(false); // Hide chase UI
+    
+    window.GameModules.Tutorial.start();
+    loop.start();
+  }
+
+  function transitionFromTutorialToGame() {
+    console.log("Transitioning from tutorial to game...");
+    runtime.isTutorialActive = false;
+    player.invincibleTimer = 2.0; // Give a short grace period of invincibility
+    
+    // Reset player stats for the real run, but keep position/velocity
+    player.sessionScore = 0;
+    player.sessionBits = 0;
+    player.sessionCoins = 0;
+    player.sessionGems = 0;
+    player.dist = 0;
+
+    // Re-enable game systems
+    qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
+    runtime.storm.y = player.y + 800;
+    runtime.cycleTimer = 3.0;
+    runtime.isFirstWarning = true;
+    runtime.gameState = STATE.RUN;
+
+    // Fade in the normal game UI
+    window.Game.UI.setPhaseContainerVisible(true);
+    window.Game.UI.setChaseVisibility(true);
+    window.Game.UI.onRunStart();
+    window.Game.UI.updateScore(0, formatNumber, true);
+    window.Sound?.bgmStart?.();
+  }
+
   return {
     startGame,
+    startTutorial,
     togglePause,
     restartFromPause,
     quitGame,
     warpToDistance,
     pauseForVisibility,
-    resumeIfPausedByVisibility
+    resumeIfPausedByVisibility,
+    transitionFromTutorialToGame
   };
   }
 

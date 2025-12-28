@@ -57,7 +57,8 @@
     confettiContainer: null,
     resultHeader: null,
     resultCard: null,
-    resultFooter: null
+    resultFooter: null,
+    tutorialOverlay: null
   };
 
   // Platform detection
@@ -138,9 +139,25 @@
       elements.resultHeader = document.querySelector('#screen-result .result-header');
       elements.resultCard = document.querySelector('#screen-result .result-card');
       elements.resultFooter = document.querySelector('#screen-result .result-footer');
+      elements.tutorialOverlay = document.getElementById('tutorial-overlay');
 
       // Detect platform capabilities
       this.detectPlatform();
+    },
+
+    /**
+     * Set tutorial message
+     * @param {string|null} text - Text to display. If null, hides the overlay.
+     */
+    setTutorialMessage: function(text) {
+      if (elements.tutorialOverlay) {
+        if (text) {
+          elements.tutorialOverlay.innerText = text;
+          elements.tutorialOverlay.style.display = 'flex';
+        } else {
+          elements.tutorialOverlay.style.display = 'none';
+        }
+      }
     },
 
     /**

@@ -48,6 +48,7 @@
   }
 
   const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
+  window.lifecycle = lifecycle; // Make it globally available for navigation.js
 
   function safeStartGame(e) {
     if (e?.preventDefault) e.preventDefault();

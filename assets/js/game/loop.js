@@ -148,6 +148,16 @@ window.GameModules = window.GameModules || {};
     // Update SlowMo timer with real dt
     getSlowMo()?.update?.(runtime, dt);
 
+    if (runtime.isTutorialActive) {
+      window.GameModules.Tutorial.update(dt);
+      player.update(worldDt, { input: window.Input, qaConfig, effective, canvasWidth: runtime.canvasSize.width });
+      const camOffsetPct = getCameraOffsetPct(qaConfig);
+      const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
+      const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
+      runtime.cameraY += (targetCamY - runtime.cameraY) * followRate * worldDt;
+      return;
+    }
+
     window.Game.UI.updateFloatingTexts(uiDt);
     window.Game.UI.updateBuffs(player);
     window.Game.UI.updateDash(player);
