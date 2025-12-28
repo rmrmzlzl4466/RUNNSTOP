@@ -944,7 +944,7 @@
 
     /* === [NEW] RESULT SCREEN === */
     #screen-result {
-      justify-content: flex-start;
+      justify-content: center;
       padding: 10px;
       padding-top: calc(10px + env(safe-area-inset-top, 0px));
       padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
@@ -1086,6 +1086,8 @@
       align-items: center;
       font-size: 22px;
       font-weight: 900;
+      line-height: 0.8;
+      text-align: center;
       color: #95a5a6;
       background: rgba(0,0,0,0.3);
       animation: rank-pop 0.4s ease-out;
@@ -1203,6 +1205,7 @@
       border-radius: 8px;
       padding: 6px 8px;
       font-size: 12px;
+      margin-bottom: 30px;
     }
     .result-stat {
       display: flex;
@@ -1383,4 +1386,483 @@
   .rank-label { font-size: 10px; }
   .result-header { font-size: 38px; }
   .result-btn { padding: 16px 36px; font-size: 18px; max-width: 180px; }
+}
+
+/* ============================================
+   RESULT SCREEN ENHANCED ANIMATIONS
+   ============================================ */
+
+/* === GLITCH TRANSITION OVERLAY === */
+.glitch-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+}
+.glitch-overlay.active {
+  visibility: visible;
+  animation: glitchFlash 0.4s ease-out forwards;
+}
+@keyframes glitchFlash {
+  0% { opacity: 1; background: #fff; }
+  10% { opacity: 0.8; background: #ff0040; }
+  20% { opacity: 0.6; background: #00ff90; }
+  30% { opacity: 0.4; background: #0080ff; }
+  50% { opacity: 0.2; background: transparent; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* Scanline effect - only visible when overlay is active */
+.glitch-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  opacity: 0;
+}
+.glitch-overlay.active::after {
+  opacity: 0.5;
+  animation: scanlineMove 0.1s linear infinite;
+}
+@keyframes scanlineMove {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* === GAME OVER HEADER GLITCH === */
+.result-header.glitch-text {
+  position: relative;
+  animation: textGlitch 0.3s ease-out;
+}
+.result-header.glitch-text::before,
+.result-header.glitch-text::after {
+  content: 'GAME OVER';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  opacity: 0.8;
+}
+.result-header.glitch-text::before {
+  color: #ff0040;
+  animation: glitchLeft 0.2s ease-out;
+}
+.result-header.glitch-text::after {
+  color: #00ffff;
+  animation: glitchRight 0.2s ease-out;
+}
+@keyframes glitchLeft {
+  0%, 100% { transform: translateX(0); opacity: 0; }
+  20% { transform: translateX(-3px); opacity: 0.8; }
+  40% { transform: translateX(2px); opacity: 0.5; }
+}
+@keyframes glitchRight {
+  0%, 100% { transform: translateX(0); opacity: 0; }
+  20% { transform: translateX(3px); opacity: 0.8; }
+  40% { transform: translateX(-2px); opacity: 0.5; }
+}
+@keyframes textGlitch {
+  0% { opacity: 0; transform: scale(1.1); }
+  30% { opacity: 1; transform: scale(1.02) skewX(-2deg); }
+  60% { transform: scale(0.98) skewX(1deg); }
+  100% { transform: scale(1) skewX(0); }
+}
+
+/* === CARD SLIDE-IN ANIMATION === */
+.result-card.card-enter {
+  animation: cardSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes cardSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(60px) rotateX(10deg) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-8px) rotateX(-2deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0) scale(1);
+  }
+}
+
+/* === ROW SLIDE-IN ANIMATION === */
+.breakdown-row.row-enter {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.breakdown-row.row-animate {
+  animation: rowSlideIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes rowSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 0.5;
+    transform: translateX(0);
+  }
+}
+
+/* Row active glow effect */
+.breakdown-row[data-status="active"] {
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.3), inset 0 0 8px rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.4) !important;
+}
+.breakdown-row[data-status="active"].counting {
+  animation: rowPulseGlow 0.15s ease-in-out infinite;
+}
+@keyframes rowPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(46, 204, 113, 0.3), inset 0 0 8px rgba(46, 204, 113, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.5), inset 0 0 12px rgba(46, 204, 113, 0.2);
+  }
+}
+
+/* Row completion flash */
+.breakdown-row.row-complete {
+  animation: rowCompleteFlash 0.3s ease-out;
+}
+@keyframes rowCompleteFlash {
+  0% { background: rgba(46, 204, 113, 0.3); }
+  100% { background: rgba(0, 0, 0, 0.3); }
+}
+
+/* === RANK BADGE ENHANCED EFFECTS === */
+.rank-badge.rank-enter {
+  animation: rankSpinIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes rankSpinIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Rank-specific glow effects */
+.rank-badge.rank-s {
+  border-color: #f1c40f !important;
+  color: #f1c40f !important;
+  background: radial-gradient(circle, rgba(241, 196, 15, 0.3), rgba(0,0,0,0.3)) !important;
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.6), 0 0 40px rgba(241, 196, 15, 0.3);
+  animation: rankSpinIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), rankSGlow 1.5s ease-in-out infinite 0.6s;
+}
+@keyframes rankSGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(241, 196, 15, 0.6), 0 0 40px rgba(241, 196, 15, 0.3); }
+  50% { box-shadow: 0 0 35px rgba(241, 196, 15, 0.8), 0 0 60px rgba(241, 196, 15, 0.5); }
+}
+
+.rank-badge.rank-a {
+  border-color: #2ecc71 !important;
+  color: #2ecc71 !important;
+  background: radial-gradient(circle, rgba(46, 204, 113, 0.2), rgba(0,0,0,0.3)) !important;
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+}
+
+.rank-badge.rank-b {
+  border-color: #3498db !important;
+  color: #3498db !important;
+  background: radial-gradient(circle, rgba(52, 152, 219, 0.2), rgba(0,0,0,0.3)) !important;
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.4);
+}
+
+.rank-badge.rank-c {
+  border-color: #9b59b6 !important;
+  color: #9b59b6 !important;
+  background: radial-gradient(circle, rgba(155, 89, 182, 0.2), rgba(0,0,0,0.3)) !important;
+}
+
+.rank-badge.rank-d {
+  border-color: #7f8c8d !important;
+  color: #7f8c8d !important;
+  animation: rankSpinIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), rankDGlitch 0.3s ease-out 0.6s;
+}
+@keyframes rankDGlitch {
+  0%, 100% { transform: translateX(0); filter: none; }
+  25% { transform: translateX(-2px); filter: hue-rotate(90deg); }
+  75% { transform: translateX(2px); filter: hue-rotate(-90deg); }
+}
+
+/* === TOTAL SCORE ENHANCED ANIMATION === */
+.result-total-value.total-enter {
+  animation: totalScoreReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes totalScoreReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.result-total-value.counting {
+  animation: totalPulse 0.12s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
+}
+@keyframes totalPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* === NEW RECORD ENHANCED CELEBRATION === */
+.badge-new {
+  display: inline-block;
+  background: linear-gradient(135deg, #f1c40f 0%, #e67e22 50%, #f1c40f 100%);
+  background-size: 200% 100%;
+  color: #1a1a2e;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 900;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.badge-new.record-enter {
+  animation: recordBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), recordShine 2s linear infinite 0.6s;
+}
+@keyframes recordBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes recordShine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Record celebration particles container */
+.record-particles {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+.record-particle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  animation: particleBurst 1s ease-out forwards;
+}
+@keyframes particleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0);
+  }
+}
+
+/* Confetti for new record */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 200;
+}
+.confetti {
+  position: absolute;
+  width: 10px; height: 10px;
+  opacity: 0;
+  animation: confettiFall 3s ease-out forwards;
+}
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(-20px) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+
+/* === HIGHSCORE BAR ENHANCED === */
+.highscore-bar-fill {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.highscore-bar-current {
+  transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.highscore-bar-current.bar-enter {
+  animation: barMarkerPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s backwards;
+}
+@keyframes barMarkerPop {
+  0% { transform: translateX(-50%) scale(0); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+/* Bar glow when passing high score */
+.highscore-bar-fill.bar-exceeded {
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.8);
+  animation: barExceedPulse 0.5s ease-out;
+}
+@keyframes barExceedPulse {
+  0% { box-shadow: 0 0 30px rgba(46, 204, 113, 1); }
+  100% { box-shadow: 0 0 15px rgba(46, 204, 113, 0.8); }
+}
+
+/* === FOOTER BUTTONS ANIMATION === */
+.result-footer.footer-enter .result-btn {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: footerBtnEnter 0.4s ease-out forwards;
+}
+.result-footer.footer-enter .result-btn:nth-child(1) { animation-delay: 0.1s; }
+.result-footer.footer-enter .result-btn:nth-child(2) { animation-delay: 0.2s; }
+@keyframes footerBtnEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === S-RANK LEGENDARY FULLSCREEN EFFECT === */
+.legendary-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 250;
+  opacity: 0;
+}
+.legendary-overlay.active {
+  animation: legendaryFlash 1s ease-out forwards;
+}
+@keyframes legendaryFlash {
+  0% { opacity: 0; background: transparent; }
+  15% { opacity: 1; background: rgba(241, 196, 15, 0.4); }
+  30% { opacity: 0.6; background: rgba(241, 196, 15, 0.2); }
+  100% { opacity: 0; background: transparent; }
+}
+
+/* Legendary sparkle particles */
+.legendary-sparkle {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #f1c40f;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #f1c40f, 0 0 12px #f1c40f;
+  animation: sparkleFade 1.5s ease-out forwards;
+}
+@keyframes sparkleFade {
+  0% {
+    opacity: 1;
+    transform: scale(0);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-30px);
+  }
+}
+
+/* === MOBILE OPTIMIZATIONS === */
+@media screen and (max-width: 768px), screen and (hover: none) {
+  /* Faster animations on mobile */
+  .result-card.card-enter {
+    animation-duration: 0.35s;
+  }
+  .breakdown-row.row-animate {
+    animation-duration: 0.25s;
+  }
+  .rank-badge.rank-enter {
+    animation-duration: 0.4s;
+  }
+
+  /* Simpler glitch on mobile */
+  .result-header.glitch-text::before,
+  .result-header.glitch-text::after {
+    display: none;
+  }
+
+  /* Reduce particle count handled in JS */
+  .confetti {
+    width: 8px; height: 8px;
+  }
+
+  /* Touch-friendly skip button */
+  .result-skip-btn {
+    min-width: 70px;
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+}
+
+/* === REDUCED MOTION SUPPORT === */
+@media (prefers-reduced-motion: reduce) {
+  .result-card.card-enter,
+  .breakdown-row.row-animate,
+  .rank-badge.rank-enter,
+  .badge-new.record-enter,
+  .result-total-value.total-enter,
+  .glitch-overlay.active,
+  .legendary-overlay.active {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .rank-badge.rank-s,
+  .breakdown-row[data-status="active"].counting,
+  .result-total-value.counting {
+    animation: none !important;
+  }
+
+  .confetti,
+  .record-particle,
+  .legendary-sparkle {
+    display: none !important;
+  }
 }

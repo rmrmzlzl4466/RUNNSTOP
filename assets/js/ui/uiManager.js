@@ -48,7 +48,21 @@
     btnResultSkip: null,
     highscoreBarFill: null,
     highscoreBarCurrent: null,
-    scoreGuidePopup: null
+    scoreGuidePopup: null,
+    // Enhanced animation elements
+    glitchOverlay: null,
+    legendaryOverlay: null,
+    confettiContainer: null,
+    resultHeader: null,
+    resultCard: null,
+    resultFooter: null
+  };
+
+  // Platform detection
+  const platformInfo = {
+    isMobile: false,
+    isLowEnd: false,
+    prefersReducedMotion: false
   };
 
   // Result animation state
@@ -112,6 +126,30 @@
       elements.highscoreBarFill = document.getElementById('highscore-bar-fill');
       elements.highscoreBarCurrent = document.getElementById('highscore-bar-current');
       elements.scoreGuidePopup = document.getElementById('score-guide-popup');
+      // Enhanced animation elements
+      elements.glitchOverlay = document.getElementById('glitch-overlay');
+      elements.legendaryOverlay = document.getElementById('legendary-overlay');
+      elements.confettiContainer = document.getElementById('confetti-container');
+      elements.resultHeader = document.querySelector('#screen-result .result-header');
+      elements.resultCard = document.querySelector('#screen-result .result-card');
+      elements.resultFooter = document.querySelector('#screen-result .result-footer');
+
+      // Detect platform capabilities
+      this.detectPlatform();
+    },
+
+    /**
+     * Detect platform capabilities for adaptive animations
+     */
+    detectPlatform: function() {
+      platformInfo.isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || ('ontouchstart' in window)
+        || (window.innerWidth <= 768);
+
+      platformInfo.isLowEnd = (navigator.hardwareConcurrency || 4) <= 2
+        || (navigator.deviceMemory || 4) <= 2;
+
+      platformInfo.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     },
 
     /**
@@ -386,7 +424,7 @@
     },
 
     /**
-     * Update result screen with game over data (immediate, no animation)
+     * Update result screen with game over data (with enhanced animations)
      * @param {Object} data - Result data
      */
     updateResult: function(data) {
@@ -396,11 +434,14 @@
       resultAnimState.skipRequested = false;
       resultAnimState.currentStep = 0;
 
-      // Reset all rows to pending state
-      [elements.rowBits, elements.rowCoins, elements.rowGems, elements.rowDistance].forEach(row => {
+      const rows = [elements.rowBits, elements.rowCoins, elements.rowGems, elements.rowDistance];
+
+      // Reset all rows to pending state with enter class
+      rows.forEach(row => {
         if (row) {
           row.setAttribute('data-status', 'pending');
-          row.classList.remove('counting');
+          row.classList.remove('counting', 'row-animate', 'row-complete');
+          row.classList.add('row-enter');
         }
       });
 
@@ -410,13 +451,31 @@
       }
 
       // Hide new record badge and rank badge initially
-      if (elements.resultNewRecord) elements.resultNewRecord.style.display = 'none';
+      if (elements.resultNewRecord) {
+        elements.resultNewRecord.style.display = 'none';
+        elements.resultNewRecord.classList.remove('record-enter');
+      }
       const rankBadge = document.getElementById('result-rank-badge');
-      if (rankBadge) rankBadge.style.display = 'none';
+      if (rankBadge) {
+        rankBadge.style.display = 'none';
+        rankBadge.className = 'rank-badge'; // Reset classes
+      }
 
       // Reset high score bar
-      if (elements.highscoreBarFill) elements.highscoreBarFill.style.width = '0%';
-      if (elements.highscoreBarCurrent) elements.highscoreBarCurrent.style.left = '0%';
+      if (elements.highscoreBarFill) {
+        elements.highscoreBarFill.style.width = '0%';
+        elements.highscoreBarFill.classList.remove('bar-exceeded');
+      }
+      if (elements.highscoreBarCurrent) {
+        elements.highscoreBarCurrent.style.left = '0%';
+        elements.highscoreBarCurrent.classList.remove('bar-enter');
+      }
+
+      // Reset total score
+      if (elements.resultTotalScore) {
+        elements.resultTotalScore.innerText = '0';
+        elements.resultTotalScore.classList.remove('total-enter', 'counting');
+      }
 
       // Set currency earned (instant)
       if (elements.lastDist) elements.lastDist.innerText = data.dist;
@@ -427,8 +486,52 @@
       // Update score guide with current multipliers
       this.updateScoreGuide();
 
+      // Add entry animations to result screen elements
+      if (elements.resultHeader) {
+        elements.resultHeader.classList.remove('glitch-text');
+        if (!platformInfo.prefersReducedMotion) {
+          // Slight delay for glitch text effect
+          setTimeout(() => {
+            elements.resultHeader.classList.add('glitch-text');
+          }, 100);
+        }
+      }
+
+      if (elements.resultCard) {
+        elements.resultCard.classList.remove('card-enter');
+        if (!platformInfo.prefersReducedMotion) {
+          // Force reflow and add animation class
+          void elements.resultCard.offsetWidth;
+          elements.resultCard.classList.add('card-enter');
+        }
+      }
+
+      if (elements.resultFooter) {
+        elements.resultFooter.classList.remove('footer-enter');
+        if (!platformInfo.prefersReducedMotion) {
+          void elements.resultFooter.offsetWidth;
+          elements.resultFooter.classList.add('footer-enter');
+        }
+      }
+
       // Start animation sequence
       this.animateResultSequence(data);
+    },
+
+    /**
+     * Play glitch transition effect
+     */
+    playGlitchTransition: function() {
+      if (!elements.glitchOverlay) return;
+
+      elements.glitchOverlay.classList.remove('active');
+      void elements.glitchOverlay.offsetWidth; // Force reflow
+      elements.glitchOverlay.classList.add('active');
+
+      // Remove class after animation
+      setTimeout(() => {
+        elements.glitchOverlay.classList.remove('active');
+      }, 500);
     },
 
     /**
@@ -478,12 +581,13 @@
     },
 
     /**
-     * Animate result screen sequence (slot machine style)
+     * Animate result screen sequence (slot machine style with enhanced effects)
      * @param {Object} data - Result data
      */
     animateResultSequence: async function(data) {
       const { bits, coins, gems, dist, totalScore, highScore, isNewRecord, formatNumber } = data;
       const qaConfig = window.qaConfig || {};
+      const reducedMotion = platformInfo.prefersReducedMotion;
 
       const scorePerBit = qaConfig.scorePerBit ?? 50;
       const scorePerCoin = qaConfig.scorePerCoin ?? 200;
@@ -495,8 +599,9 @@
       const gemsScore = gems * scorePerGem;
       const distScore = dist * scorePerMeter;
 
-      // Animation speed multiplier from QA settings (1.0 = normal, 0.5 = fast, 2.0 = slow)
-      const speedMult = qaConfig.resultAnimSpeed ?? 1.0;
+      // Animation speed multiplier - faster on mobile
+      const baseMult = qaConfig.resultAnimSpeed ?? 1.0;
+      const speedMult = platformInfo.isMobile ? baseMult * 0.8 : baseMult;
 
       // Animation config - adaptive based on count size
       const getAnimConfig = (count) => {
@@ -507,6 +612,7 @@
       };
 
       const delayBetweenRows = Math.max(50, 150 * speedMult);
+      const rowSlideDelay = reducedMotion ? 0 : 80;
 
       // Sound pitch configs for each item type
       const soundConfigs = {
@@ -516,7 +622,28 @@
         dist: { type: 'bit', pitchMult: 0.8 }
       };
 
-      // Helper function for counting animation
+      // Helper: Trigger row slide-in animation
+      const slideInRow = (rowEl, delayMs) => {
+        if (!rowEl || reducedMotion) {
+          if (rowEl) rowEl.classList.remove('row-enter');
+          return;
+        }
+        setTimeout(() => {
+          rowEl.classList.remove('row-enter');
+          rowEl.classList.add('row-animate');
+        }, delayMs);
+      };
+
+      // Trigger all rows to slide in with stagger
+      slideInRow(elements.rowBits, rowSlideDelay * 0);
+      slideInRow(elements.rowCoins, rowSlideDelay * 1);
+      slideInRow(elements.rowGems, rowSlideDelay * 2);
+      slideInRow(elements.rowDistance, rowSlideDelay * 3);
+
+      // Wait for slide-in animations to start
+      if (!reducedMotion) await this.delay(rowSlideDelay * 4 + 100);
+
+      // Helper function for counting animation with enhanced effects
       const animateCount = async (countEl, scoreEl, targetCount, targetScore, rowEl, soundKey) => {
         // Skip immediately if count is 0
         if (targetCount === 0 || resultAnimState.skipRequested) {
@@ -524,7 +651,7 @@
           if (scoreEl) scoreEl.innerText = formatNumber(targetScore);
           if (rowEl) {
             rowEl.setAttribute('data-status', 'done');
-            rowEl.classList.remove('counting');
+            rowEl.classList.remove('counting', 'row-enter', 'row-animate');
           }
           return;
         }
@@ -535,6 +662,11 @@
         if (rowEl) {
           rowEl.setAttribute('data-status', 'active');
           rowEl.classList.add('counting');
+
+          // Mobile haptic feedback
+          if (platformInfo.isMobile && navigator.vibrate) {
+            navigator.vibrate(10);
+          }
         }
 
         const stepTime = config.duration / config.steps;
@@ -563,6 +695,12 @@
         if (rowEl) {
           rowEl.setAttribute('data-status', 'done');
           rowEl.classList.remove('counting');
+
+          // Add completion flash effect
+          if (!reducedMotion) {
+            rowEl.classList.add('row-complete');
+            setTimeout(() => rowEl.classList.remove('row-complete'), 300);
+          }
         }
 
         // Play completion sound
@@ -615,6 +753,11 @@
 
       // Step 5: Animate Total Score with fanfare
       if (elements.resultTotalScore) {
+        // Add reveal animation
+        if (!reducedMotion) {
+          elements.resultTotalScore.classList.add('total-enter');
+        }
+
         elements.resultTotalScore.classList.add('counting');
 
         if (!resultAnimState.skipRequested) {
@@ -633,30 +776,59 @@
 
         // Play total score fanfare
         window.Sound?.sfx?.('boost_ready');
+
+        // Haptic feedback for total score
+        if (platformInfo.isMobile && navigator.vibrate) {
+          navigator.vibrate([30, 20, 30]);
+        }
       }
 
-      // Step 6: Show Score Rank
+      // Step 6: Show Score Rank with enhanced effects
       const rank = this.calculateRank(totalScore);
-      this.showRankBadge(rank);
+      this.showRankBadge(rank, reducedMotion);
       if (!resultAnimState.skipRequested) await this.delay(200 * speedMult);
 
-      // Step 7: Animate High Score Bar
+      // Step 7: Animate High Score Bar with enhanced effects
       const maxBarScore = Math.max(highScore, totalScore, 1);
       const currentPct = Math.min(100, (totalScore / maxBarScore) * 100);
       const highPct = Math.min(100, (highScore / maxBarScore) * 100);
 
       if (elements.highscoreBarFill) {
         elements.highscoreBarFill.style.width = `${highPct}%`;
+
+        // Add exceeded effect if beat high score
+        if (isNewRecord && !reducedMotion) {
+          setTimeout(() => {
+            elements.highscoreBarFill.classList.add('bar-exceeded');
+          }, 400);
+        }
       }
       if (elements.highscoreBarCurrent) {
         elements.highscoreBarCurrent.style.left = `${currentPct}%`;
+        if (!reducedMotion) {
+          elements.highscoreBarCurrent.classList.add('bar-enter');
+        }
       }
 
-      // Step 8: Show NEW RECORD badge if applicable
+      // Step 8: Show NEW RECORD badge with celebration
       if (isNewRecord) {
         if (!resultAnimState.skipRequested) await this.delay(300 * speedMult);
         if (elements.resultNewRecord) {
           elements.resultNewRecord.style.display = 'inline-block';
+
+          // Add bounce animation
+          if (!reducedMotion) {
+            elements.resultNewRecord.classList.add('record-enter');
+
+            // Spawn confetti
+            this.spawnConfetti();
+
+            // Haptic for new record
+            if (platformInfo.isMobile && navigator.vibrate) {
+              navigator.vibrate([100, 50, 100]);
+            }
+          }
+
           // Play fanfare for new record
           window.Sound?.sfx?.('boost_perfect');
         }
@@ -667,6 +839,68 @@
       if (elements.btnResultSkip) {
         elements.btnResultSkip.classList.add('hidden');
       }
+    },
+
+    /**
+     * Spawn confetti particles for celebration
+     */
+    spawnConfetti: function() {
+      if (!elements.confettiContainer || platformInfo.isLowEnd) return;
+
+      const colors = ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#9b59b6', '#e67e22'];
+      const count = platformInfo.isMobile ? 20 : 40;
+
+      // Clear previous confetti
+      elements.confettiContainer.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+        confetti.style.animationDuration = `${2 + Math.random() * 2}s`;
+
+        // Random shape
+        if (Math.random() > 0.5) {
+          confetti.style.borderRadius = '50%';
+        } else {
+          confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        }
+
+        elements.confettiContainer.appendChild(confetti);
+      }
+
+      // Clean up after animation
+      setTimeout(() => {
+        if (elements.confettiContainer) {
+          elements.confettiContainer.innerHTML = '';
+        }
+      }, 4000);
+    },
+
+    /**
+     * Spawn legendary sparkles for S-rank
+     */
+    spawnLegendarySparkles: function() {
+      if (!elements.legendaryOverlay || platformInfo.isLowEnd) return;
+
+      const count = platformInfo.isMobile ? 15 : 30;
+
+      for (let i = 0; i < count; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'legendary-sparkle';
+        sparkle.style.left = `${Math.random() * 100}%`;
+        sparkle.style.top = `${Math.random() * 100}%`;
+        sparkle.style.animationDelay = `${Math.random() * 0.8}s`;
+
+        elements.legendaryOverlay.appendChild(sparkle);
+      }
+
+      // Clean up
+      setTimeout(() => {
+        elements.legendaryOverlay.querySelectorAll('.legendary-sparkle').forEach(el => el.remove());
+      }, 2500);
     },
 
     /**
@@ -690,18 +924,57 @@
     },
 
     /**
-     * Show rank badge in result screen
+     * Show rank badge in result screen with enhanced effects
      * @param {Object} rank - Rank info from calculateRank
+     * @param {boolean} reducedMotion - Whether to skip animations
      */
-    showRankBadge: function(rank) {
+    showRankBadge: function(rank, reducedMotion = false) {
       const rankEl = document.getElementById('result-rank-badge');
       const rankLabel = document.getElementById('result-rank-label');
+
       if (rankEl) {
         rankEl.innerText = rank.grade;
-        rankEl.style.borderColor = rank.color;
-        rankEl.style.color = rank.color;
         rankEl.style.display = 'flex';
+
+        // Reset and add rank-specific class
+        rankEl.className = 'rank-badge';
+
+        if (!reducedMotion) {
+          // Add spin-in animation
+          rankEl.classList.add('rank-enter');
+
+          // Add rank-specific glow class
+          rankEl.classList.add(`rank-${rank.grade.toLowerCase()}`);
+
+          // S-rank legendary effects
+          if (rank.grade === 'S') {
+            // Trigger legendary overlay flash
+            if (elements.legendaryOverlay) {
+              elements.legendaryOverlay.classList.remove('active');
+              void elements.legendaryOverlay.offsetWidth;
+              elements.legendaryOverlay.classList.add('active');
+
+              // Spawn sparkles
+              this.spawnLegendarySparkles();
+
+              // Remove after animation
+              setTimeout(() => {
+                elements.legendaryOverlay.classList.remove('active');
+              }, 1200);
+            }
+
+            // Strong haptic for legendary
+            if (platformInfo.isMobile && navigator.vibrate) {
+              navigator.vibrate([50, 30, 100, 30, 150]);
+            }
+          }
+        } else {
+          // Just set colors without animation
+          rankEl.style.borderColor = rank.color;
+          rankEl.style.color = rank.color;
+        }
       }
+
       if (rankLabel) {
         rankLabel.innerText = rank.label;
         rankLabel.style.color = rank.color;
