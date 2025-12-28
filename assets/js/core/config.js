@@ -7,7 +7,7 @@
    */
   const GLOBAL_CONFIG = {
     // === 입력 ===
-    joystickSens: 2.0,       // 조이스틱 민감도 (1.0~3.0)
+    joystickSens: 2.3,       // 조이스틱 민감도 (1.0~3.0)
     wallPaddingCap: 25,      // 벽 이동 제한 상한선
 
     // === 부스터 메카닉 ===
@@ -29,14 +29,14 @@
     bgmVol: 0.15,
     scoreSfxVol: 0.20,
     coinSfxVol: 0.10,
-    itemSfxVol: 0.15,
-    dashSfxVol: 0.4,
+    itemSfxVol: 0.10,
+    dashSfxVol: 0.3,
 
     // === 비주얼 ===
     trailLength: 90,
     trailOpacity: 0.6,
     visualMode: 'A',
-    playerScale: 1.2,
+    playerScale: ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 1.0 : 1.2,
     cameraOffsetPct: 0.75,
 
     // === 카메라 ===
@@ -68,7 +68,7 @@
     friction: 0.93,          // 이동 중 마찰 (높을수록 미끄러움)
     stopFriction: 0.81,      // 정지 시 마찰
     baseAccel: 3000,
-    turnAccelMult: 4.5,      // 방향 전환 가속도 배율
+    turnAccelMult: 4.0,      // 방향 전환 가속도 배율
 
     // === 대쉬 ===
     minDashForce: 600,       // 차징 최소 힘

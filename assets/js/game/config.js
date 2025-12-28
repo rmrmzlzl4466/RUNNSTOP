@@ -19,13 +19,13 @@ window.GameModules = window.GameModules || {};
   const FALLBACK_SLOWMO = {
     enabled: true,
     scale: 0.12,              // How slow at peak (0.12 = 88% slower, very dramatic)
-    easeInSec: 0.10,          // Time to ramp down to slow
-    holdSec: 0.30,            // Time frozen at peak slowdown
+    easeInSec: 0.20,          // Time to ramp down to slow
+    holdSec: 0.50,            // Time frozen at peak slowdown
     easeOutSec: 0.25,         // Time to return to normal
     cancelPolicy: 'on_boost_start',
     blockWhileBoosting: true,
     blockWindowAfterBoostSec: 0.15,
-    applyMask: 'world_only',
+    applyMask: 'everything',
     minIntervalSec: 0.3
   };
 
