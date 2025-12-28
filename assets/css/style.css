@@ -990,23 +990,9 @@
       margin-bottom: 10px;
     }
 
-    /* 일직선의 땅 (Neon Ground) */
-    .lobby-ground {
-      position: absolute;
-      bottom: 20px;
-      width: 120%;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.5);
-      box-shadow: 0 0 15px rgba(52, 152, 219, 0.8), 0 0 5px #fff;
-      border-radius: 50%;
-    }
-
     /* 캐릭터 본체 */
     .lobby-char-box {
-      position: absolute;
-      bottom: 22px;
-      left: 50%;
-      transform: translateX(-50%);
+      position: relative;
       width: 110px; height: 110px;
       border-radius: 50%;
       background: #333;
@@ -1014,33 +1000,9 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.2);
       display: flex; justify-content: center; align-items: center;
       font-size: 55px;
-      cursor: pointer;
-      transition: left 1s ease-in-out, transform 0.2s;
-      animation: char-idle 2s infinite ease-in-out;
-      z-index: 5;
     }
 
-    /* 숨쉬기 동작 */
-    @keyframes char-idle {
-      0%, 100% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(1.05, 0.95); }
-    }
-
-    /* 점프 동작 */
-    @keyframes char-jump {
-      0% { bottom: 22px; transform: translateX(-50%) scale(1.2, 0.8); }
-      40% { bottom: 120px; transform: translateX(-50%) scale(0.9, 1.1); }
-      100% { bottom: 22px; transform: translateX(-50%) scale(1); }
-    }
-    .anim-jump { animation: char-jump 0.5s ease-out !important; }
-
-    /* 걷는 동작 */
-    .anim-walk { animation: char-walk 0.3s infinite alternate !important; }
-    @keyframes char-walk {
-      from { bottom: 22px; }
-      to { bottom: 28px; }
-    }
-    .lobby-char-name { margin-top: 15px; font-size: 16px; font-weight: 800; color: #ecf0f1; cursor: pointer; }
+    .lobby-char-name { margin-top: 15px; font-size: 16px; font-weight: 800; color: #ecf0f1; }
     .lobby-loadout { text-align: center; margin: 20px 0; }
     .loadout-label { font-size: 12px; font-weight: 800; color: #7f8c8d; margin-bottom: 10px; letter-spacing: 2px; }
     .loadout-slots { display: flex; gap: 15px; justify-content: center; }

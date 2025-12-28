@@ -88,24 +88,14 @@
 
   function startLobbyLoop() {
     if (lobbyInterval) clearInterval(lobbyInterval);
+    lobbyInterval = null;
 
+    // 캐릭터 위치 초기화 - flexbox 중앙정렬 사용
     const charEl = document.getElementById('lobby-char');
     if (charEl) {
-      charEl.style.left = '50%';
-      charEl.style.transform = 'translateX(-50%) scale(1)';
+      charEl.style.left = '';
+      charEl.style.transform = '';
     }
-
-    lobbyInterval = setInterval(() => {
-      const lobby = document.getElementById('screen-lobby');
-      if (!lobby || lobby.style.display === 'none') return;
-
-      const el = document.getElementById('lobby-char');
-      if (!el) return;
-
-      const action = Math.random();
-      if (action < 0.3) performJump(el);
-      else if (action < 0.7) performMove(el);
-    }, 2500);
   }
 
   function stopLobbyLoop() {
