@@ -265,10 +265,13 @@ window.GameModules = window.GameModules || {};
     syncCanvasSize(runtime, canvas);
     resetRuntime(runtime, qaConfig);
     runtime.isTutorialActive = true; // Tutorial mode flag
-    
+
     player.reset(canvas.width / 2, 550);
     player.invincibleTimer = 9999; // Make player invincible during tutorial
-    
+
+    // Generate a fresh level layout for tutorial flow (safe tiles, items, etc.)
+    prepareLevel();
+
     // Disable normal game systems
     runtime.gameState = STATE.RUN; // Set to RUN to allow movement, but tutorial will control UI
     runtime.storm.y = player.y + 99999; // Move storm far away

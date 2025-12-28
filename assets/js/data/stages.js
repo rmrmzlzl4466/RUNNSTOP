@@ -180,9 +180,9 @@ window.STAGE_CONFIG = [
     theme: { paletteId: 'NEON_GREEN' },
     gimmick: { id: 'NONE', params: {} },
     tuning: {
-      // Tutorial - use defaults
+      // Tutorial - safe storm but keep cycle so JFB/slowmo can trigger
       disableStorm: true,
-      disableColorCycle: true
+      disableColorCycle: false
     }
   },
   {
