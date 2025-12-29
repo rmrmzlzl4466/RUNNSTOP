@@ -96,25 +96,23 @@ window.updateLobbyUI = function() {
   const skinNameEl = document.getElementById('lobby-skin-name');
   const currentSkin = (window.SKINS || []).find(s => s.id === window.GameData.equippedSkin);
   if (lobbyChar) {
-    if (currentSkin?.sprite) {
-      // [SVG 모드] 배경/테두리 싹 지우고 이미지만 표시
-      lobbyChar.style.background = 'transparent';
-      lobbyChar.style.border = 'none';
-      lobbyChar.style.boxShadow = 'none';
+    const baseColor = currentSkin?.color || '#333';
+    lobbyChar.style.background = baseColor;
+    lobbyChar.style.border = '';
+    lobbyChar.style.boxShadow = '';
+    lobbyChar.style.backgroundImage = '';
+    lobbyChar.style.backgroundSize = '';
+    lobbyChar.style.backgroundRepeat = '';
+    lobbyChar.style.backgroundPosition = '';
+    lobbyChar.innerHTML = currentSkin?.emoji || '';
 
+    if (currentSkin?.sprite) {
       lobbyChar.style.backgroundImage = `url('${currentSkin.sprite}')`;
       lobbyChar.style.backgroundSize = 'contain';
       lobbyChar.style.backgroundRepeat = 'no-repeat';
       lobbyChar.style.backgroundPosition = 'center';
+      // 이미지가 로드되지 않아도 색상/네온 외곽선이 유지되도록 텍스트는 비움
       lobbyChar.innerHTML = '';
-    } else {
-      // [기본 모드] 동그란 색깔 원 복구
-      lobbyChar.style.background = currentSkin?.color || '#333';
-      lobbyChar.style.border = '4px solid #fff';
-      lobbyChar.style.boxShadow = '0 0 20px rgba(255,255,255,0.2)';
-
-      lobbyChar.style.backgroundImage = '';
-      lobbyChar.innerHTML = currentSkin?.emoji || '';
     }
   }
   if (skinNameEl && currentSkin) {
@@ -251,4 +249,3 @@ window.unequipTreasure = function(slot) {
   window.updateLobbyUI?.();
   window.Sound?.sfx('btn');
 };
-

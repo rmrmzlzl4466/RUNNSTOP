@@ -43,5 +43,5 @@ window.SKINS = [
     // Mythic (2)
     { id: 50, name: 'The Creator', rarity: 'Mystic', color: '#00ff00', trailColor: '#fff', coinPrice: 100000, gemPrice: 2000, condType: 'maxDist', condVal: 10000, condText: 'Reach 10000m', desc: 'Divine presence.', statType: 'none', statVal: 0 },
     { id: 51, name: 'Void Walker', rarity: 'Mystic', color: '#8e44ad', trailColor: '#000', coinPrice: 100000, gemPrice: 2000, condType: 'totalDeaths', condVal: 500, condText: 'Die 500 times', desc: 'Starts with Barrier.', statType: 'barrier', statVal: 1 },
-    { id: 999, name: 'Devil', rarity: 'Legendary', color: '#34495e', trailColor: '#ffffff', coinPrice: 1, gemPrice: 0, condType: 'none', condVal: 0, condText: 'Custom', desc: 'My Custom SVG Character', statType: 'none', statVal: 0, sprite:'./assets/Devil_Boss.svg' }
+    { id: 999, name: 'Devil', rarity: 'Legendary', color: '#34495e', trailColor: '#ffffff', coinPrice: 1, gemPrice: 0, condType: 'none', condVal: 0, condText: 'Custom', desc: 'My Custom SVG Character', statType: 'none', statVal: 0, sprite:'./assets/images/characters/devil_boss.svg' }
   ];
