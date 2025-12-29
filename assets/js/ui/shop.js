@@ -77,11 +77,11 @@
 
   window.renderSkinList = function() { const list = document.getElementById('skin-list-container'); list.innerHTML = ''; const skins = window.SKINS || []; skins.forEach(skin => { const isOwned = window.GameData.unlockedSkins.includes(skin.id); const isEquipped = window.GameData.equippedSkin === skin.id; const conditionMet = checkUnlockCondition(skin); const el = document.createElement('div'); el.className = `skin-list-item ${isEquipped ? 'equipped' : ''}`; let actionHTML = ''; if (isOwned) { actionHTML = isEquipped ? `<button class=\"btn-buy btn-equipped\">EQUIPPED</button>` : `<button class=\"btn-buy btn-equip\" onclick=\"window.equipSkin(${skin.id})\">EQUIP</button>`; } else { const coinClass = conditionMet ? 'btn-coin' : 'btn-coin locked'; const coinText = conditionMet ? `${skin.coinPrice} 🪙` : `🔒 ${skin.condText}`; const coinAction = conditionMet ? `onclick=\"window.buySkinWithCoin(${skin.id})\"` : ''; if(skin.coinPrice > 0 || skin.gemPrice > 0) { actionHTML = `<div class=\"skin-actions\"><button class=\"btn-buy btn-gem\" onclick=\"window.buySkinWithGem(${skin.id})\">${skin.gemPrice} 💎</button><button class=\"btn-buy ${coinClass}\" ${coinAction}>${coinText}</button></div>`; } else { actionHTML = `<button class=\"btn-buy btn-coin\" onclick=\"window.buySkinWithCoin(${skin.id})\">GET FREE</button>`; } } const previewStyles = [`background:${skin.color}`]; if (skin.sprite) { previewStyles.push(`background-image:url('${skin.sprite}')`); previewStyles.push('background-size: cover'); previewStyles.push('background-position: center'); previewStyles.push('background-repeat: no-repeat'); } el.innerHTML = `<div class=\"skin-header\"><div class=\"skin-info-left\"><div class=\"skin-preview\" style=\"${previewStyles.join(';')}\"></div><div class=\"skin-details\"><span class=\"skin-name\">${skin.name}</span><span class=\"skin-rarity rarity-${skin.rarity}\">${skin.rarity}</span></div></div></div><div class=\"skin-desc\">${skin.desc}</div>${actionHTML}`; list.appendChild(el); }); }
 
-  window.buySkinWithCoin = (id) => { const skin = (window.SKINS || []).find(s=>s.id===id); if (!skin) return; if (!checkUnlockCondition(skin)) { alert(`Locked: ${skin.condText}`); return; } if (window.GameData.coins >= skin.coinPrice) { window.GameData.coins -= skin.coinPrice; window.GameData.unlockedSkins.push(id); window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.updateUpgradeUI(); window.Sound?.sfx('coin'); } else alert("Not enough coins"); };
+  window.buySkinWithCoin = (id) => { const skin = (window.SKINS || []).find(s=>s.id===id); if (!skin) return; if (!checkUnlockCondition(skin)) { alert(`Locked: ${skin.condText}`); return; } if (window.GameData.coins >= skin.coinPrice) { window.GameData.coins -= skin.coinPrice; window.GameData.unlockedSkins.push(id); window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.updateUpgradeUI(); window.updateLobbyUI?.(); window.Sound?.sfx('coin'); } else alert("Not enough coins"); };
 
-  window.buySkinWithGem = (id) => { const skin = (window.SKINS || []).find(s=>s.id===id); if (!skin) return; if (window.GameData.gems >= skin.gemPrice) { window.GameData.gems -= skin.gemPrice; window.GameData.unlockedSkins.push(id); window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.updateUpgradeUI(); window.Sound?.sfx('coin'); } else alert("Not enough gems!"); };
+  window.buySkinWithGem = (id) => { const skin = (window.SKINS || []).find(s=>s.id===id); if (!skin) return; if (window.GameData.gems >= skin.gemPrice) { window.GameData.gems -= skin.gemPrice; window.GameData.unlockedSkins.push(id); window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.updateUpgradeUI(); window.updateLobbyUI?.(); window.Sound?.sfx('coin'); } else alert("Not enough gems!"); };
 
-  window.equipSkin = (id) => { window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.Sound?.sfx('btn'); };
+  window.equipSkin = (id) => { window.GameData.equippedSkin = id; window.SaveManager.persist(window.GameData); window.renderSkinList(); window.updateLobbyUI?.(); window.Sound?.sfx('btn'); };
 
 // === [NEW] 로비 UI 업데이트 ===
 window.updateLobbyUI = function() {
@@ -98,10 +98,9 @@ window.updateLobbyUI = function() {
   const currentSkin = (window.SKINS || []).find(s => Number(s.id) === equippedSkinId) || (window.SKINS || [])[0];
   if (lobbyChar) {
     const baseColor = currentSkin?.color || '#333';
-    lobbyChar.style.background = baseColor;
-    lobbyChar.style.border = '';
-    lobbyChar.style.boxShadow = '';
-    lobbyChar.style.backgroundImage = '';
+    // 스킨 색상 적용 - CSS gradient를 덮어씌우기 위해 명시적으로 설정
+    lobbyChar.style.backgroundColor = baseColor;
+    lobbyChar.style.backgroundImage = 'none';
     lobbyChar.style.backgroundSize = '';
     lobbyChar.style.backgroundRepeat = '';
     lobbyChar.style.backgroundPosition = '';
@@ -112,7 +111,6 @@ window.updateLobbyUI = function() {
       lobbyChar.style.backgroundSize = 'contain';
       lobbyChar.style.backgroundRepeat = 'no-repeat';
       lobbyChar.style.backgroundPosition = 'center';
-      // 이미지가 로드되지 않아도 색상/네온 외곽선이 유지되도록 텍스트는 비움
       lobbyChar.innerHTML = '';
     }
   }
