@@ -33,7 +33,16 @@ window.Navigation = {
       window.initQASliders?.();
     }
 
-    window.Sound?.sfx('btn');
+    try {
+      const unlocked = typeof window.Sound?.isUnlocked === 'function'
+        ? window.Sound.isUnlocked()
+        : !!window.Sound?.isUnlocked;
+      if (unlocked) {
+        window.Sound?.sfx('btn');
+      }
+    } catch (err) {
+      console.warn('[Navigation] sfx skipped', err);
+    }
   },
 
   // 팝업 열기/닫기

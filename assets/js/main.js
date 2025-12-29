@@ -24,6 +24,7 @@
   window.Game.player = player;
 
   window.shouldStartTutorial = !gameData.tutorialCompleted;
+  window.pendingAutoTutorial = window.shouldStartTutorial === true;
   let canvas = null;
   let ctx = null;
   let runtime = null;
@@ -87,6 +88,7 @@
   let runtimeReady = rebuildRuntime(window.shouldStartTutorial);
   if (!runtimeReady) {
     window.shouldStartTutorial = false;
+    window.pendingAutoTutorial = false;
     runtimeReady = rebuildRuntime(false);
   }
 
@@ -141,6 +143,9 @@
   }
 
   function startTutorialFlow() {
+    let navigationSucceeded = false;
+    document.body.classList.remove('tutorial-lock');
+    window.pendingAutoTutorial = false;
     if (!document.getElementById('screen-tutorial')) {
       console.warn('[BOOT] Tutorial screen not found, skipping tutorial start');
       return;
@@ -150,9 +155,22 @@
     window.TutorialManager?.init?.();
     if (ready) {
       window.TutorialManager?.startTutorial?.(1, runtime);
-      if (window.Navigation?.go) window.Navigation.go('tutorial');
-      window.shouldStartTutorial = false;
-      document.body.classList.add('tutorial-lock');
+      if (window.Navigation?.go) {
+        try {
+          window.Navigation.go('tutorial');
+          navigationSucceeded = true;
+        } catch (err) {
+          console.error('[BOOT] Tutorial navigation failed', err);
+        }
+      }
+      if (navigationSucceeded) {
+        window.shouldStartTutorial = false;
+        document.body.classList.add('tutorial-lock');
+      } else {
+        document.body.classList.remove('tutorial-lock');
+      }
+    } else {
+      document.body.classList.remove('tutorial-lock');
     }
   }
 
@@ -196,6 +214,26 @@
     }
   }
 
+  let autoTutorialTriggered = false;
+  function handleFirstUserGesture() {
+    if (autoTutorialTriggered) return;
+    autoTutorialTriggered = true;
+    try {
+      window.Sound?.unlock?.();
+    } catch (err) {
+      console.warn('[BOOT] Sound unlock attempt failed', err);
+    }
+    if (window.pendingAutoTutorial) {
+      window.pendingAutoTutorial = false;
+      startTutorialFlow();
+    }
+    document.removeEventListener('pointerdown', handleFirstUserGesture);
+    document.removeEventListener('keydown', handleFirstUserGesture);
+  }
+
+  document.addEventListener('pointerdown', handleFirstUserGesture, { once: true });
+  document.addEventListener('keydown', handleFirstUserGesture, { once: true });
+
   // Expose limited API for UI bindings
   window.Game.loadData = () => {
     const fresh = loadGameData();
@@ -225,12 +263,13 @@
 
     const btnTutorial = document.getElementById('btn-tutorial');
     btnTutorial?.addEventListener('click', () => {
+      try {
+        window.Sound?.unlock?.();
+      } catch (err) {
+        console.warn('[BOOT] Sound unlock attempt failed', err);
+      }
       startTutorialFlow();
     });
-
-    if (window.shouldStartTutorial) {
-      startTutorialFlow();
-    }
   });
 
   window.onTutorialFlowComplete = () => {
