@@ -30,6 +30,12 @@
 
     const qaConfig = window.qaConfig || {};
     const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
+    const tutorialPalette = (window.runtime?.tutorialMode && window.TutorialConfig?.getConfig)
+      ? window.TutorialConfig.getConfig(window.runtime.tutorialStep)?.colorPalette
+      : null;
+    const tutorialColors = tutorialPalette
+      ? (window.STAGE_PALETTES?.TUTORIAL?.colors ?? tutorialPalette)
+      : null;
 
     // Get effective config (stage-specific values with QA overrides)
     const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
@@ -41,10 +47,14 @@
     };
 
     const dist = -rowIndex * 10;
+    const isTutorialMode = window.runtime?.tutorialMode === true;
 
     // Use new stage system if available, fallback to legacy
     let themeIdx = 0;
-    if (window.STAGE_CONFIG && typeof getStageInfo === 'function') {
+    if (isTutorialMode) {
+      // Tutorial mode: use runtime's currentThemeIdx (set by lifecycle.js)
+      themeIdx = window.runtime?.currentThemeIdx ?? 0;
+    } else if (window.STAGE_CONFIG && typeof getStageInfo === 'function') {
       const stageInfo = getStageInfo(dist);
       themeIdx = stageInfo.stageConfig.themeIdx;
     } else {
@@ -54,10 +64,15 @@
       else if (dist >= stageLength) themeIdx = 1;
     }
 
-    const palette = getThemes()[themeIdx]?.colors ?? [];
+    const palette = tutorialColors || (getThemes()[themeIdx]?.colors ?? []);
     const rowColors = [];
     for (let i = 0; i < COLS; i++) {
-      rowColors.push(Math.floor(Math.random() * palette.length));
+      // Tutorial mode: use single color (index 0) for all tiles to avoid visual noise
+      if (isTutorialMode) {
+        rowColors.push(0);
+      } else {
+        rowColors.push(Math.floor(Math.random() * palette.length));
+      }
     }
     rows[rowIndex] = { colors: rowColors, themeIdx };
 

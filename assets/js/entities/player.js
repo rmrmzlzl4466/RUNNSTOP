@@ -105,6 +105,11 @@ class Player {
     const effective = options.effective;  // 스테이지별 설정
     const boundsWidth = options.canvasWidth || this.boundsWidth;
 
+    // 튜토리얼 이동 감지
+    if (window.runtime?.tutorialMode && (joystick.vectorX !== 0 || joystick.vectorY !== 0 || keys.a || keys.d || keys.w || keys.s)) {
+      window.GameModules.Tutorial?.onPlayerMove();
+    }
+
     // Per-Stage 값 적용 (effective에서 가져옴)
     if (effective) {
       if (effective.baseAccel !== undefined) this.accel = effective.baseAccel;
@@ -375,6 +380,9 @@ class Player {
     const force = this.minDashForce + (this.maxDashForce - this.minDashForce) * chargeRatio;
 
     this._executeDash(force);
+
+    // 튜토리얼 대쉬 감지
+    window.GameModules.Tutorial?.onPlayerDash();
   }
 
   // [INTERNAL] 실제 대쉬 실행 (가변 힘)

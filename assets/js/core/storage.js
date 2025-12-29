@@ -8,16 +8,25 @@
     equippedSkin: 0,
     unlockedTreasures: [],      // 보유한 보물 ID 리스트
     equippedTreasures: [null, null], // 장착 슬롯 (최대 2개)
-    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
+    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 },
+    // 튜토리얼 필드 추가
+    tutorialCompleted: false,    // 튜토리얼 완료 여부
+    tutorialProgress: 0,         // 마지막 완료 단계 (재진입용)
   };
 
   function normalizeSave(data) {
-    const merged = { ...defaultSave, ...(data || {}) };
-    merged.stats = { ...defaultSave.stats, ...(data?.stats || {}) };
+    const merged = Object.assign({}, defaultSave, (data || {}));
+    merged.stats = Object.assign({}, defaultSave.stats, (data?.stats || {}));
     // 보물 필드 보정 (기존 세이브에 없을 경우 기본값)
     if (!Array.isArray(merged.unlockedTreasures)) merged.unlockedTreasures = [];
     if (!Array.isArray(merged.equippedTreasures) || merged.equippedTreasures.length !== 2) {
       merged.equippedTreasures = [null, null];
+    }
+    // 스킨 타입 보정 (문자열로 저장된 기존 세이브 호환)
+    merged.unlockedSkins = (merged.unlockedSkins || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    merged.equippedSkin = Number(merged.equippedSkin ?? 0);
+    if (!merged.unlockedSkins.includes(merged.equippedSkin)) {
+      merged.unlockedSkins.unshift(merged.equippedSkin || 0);
     }
     return merged;
   }

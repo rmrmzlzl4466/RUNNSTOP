@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>RUN! & STOP! : FINAL FIX</title>
   <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" href="./assets/css/tutorial.css" />
 </head>
 
 <body>
@@ -82,6 +83,15 @@
       </div>
     </div>
 
+    <!-- ========== [1.5] TUTORIAL SCREEN ========== -->
+    <div id="screen-tutorial" class="full-screen">
+      <!-- 튜토리얼 오버레이 -->
+      <div id="tutorial-overlay">
+        <div id="tutorial-progress">Step 1-1/4</div>
+        <div id="tutorial-message" class="message-banner"></div>
+      </div>
+    </div>
+
     <!-- ========== [2] LOBBY SCREEN ========== -->
     <div id="screen-lobby" class="full-screen">
       <!-- Header: Currency -->
@@ -118,6 +128,9 @@
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
         <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
         <button class="btn-qa-main" onclick="window.Navigation?.go('qa')">QA</button>
+        <button id="btn-tutorial" class="lobby-btn-circle" title="Tutorial">
+          <span>?</span>
+        </button>
       </div>
     </div>
 
@@ -636,8 +649,14 @@
   <script src="./assets/js/game/gimmick.js"></script>
   <script src="./assets/js/ui/debugOverlay.js"></script>
   <script src="./assets/js/game/slowMo.js"></script>
-  <script src="./assets/js/game/loop.js"></script>
   <script src="./assets/js/game/storage.js"></script>
+
+  <!-- Tutorial Modules (must be before loop/lifecycle) -->
+  <script src="./assets/js/game/tutorialConfig.js"></script>
+  <script src="./assets/js/ui/tutorialUI.js"></script>
+  <script src="./assets/js/game/tutorial.js"></script>
+  
+  <script src="./assets/js/game/loop.js"></script>
   <script src="./assets/js/game/lifecycle.js"></script>
   <script src="./assets/js/main.js"></script>
 </body>

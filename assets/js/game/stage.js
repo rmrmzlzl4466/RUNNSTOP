@@ -39,7 +39,8 @@ window.GameModules = window.GameModules || {};
       // Update currentConfig for StageConfig system
       window.GameModules?.StageConfig?.updateCurrentConfig?.(runtime, stageInfo.stageConfig.id);
 
-      if (stageInfo.stageConfig.themeIdx !== runtime.currentThemeIdx) {
+      // Skip theme change in tutorial mode (tutorial uses dedicated TUTORIAL theme)
+      if (!runtime.tutorialMode && stageInfo.stageConfig.themeIdx !== runtime.currentThemeIdx) {
         runtime.currentThemeIdx = stageInfo.stageConfig.themeIdx;
       }
 

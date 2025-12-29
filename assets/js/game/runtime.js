@@ -7,6 +7,11 @@ window.GameModules = window.GameModules || {};
     const runtime = {
       gameState: STATE.RUN,
       gameActive: false,
+      tutorialMode: false,
+      tutorialStep: 0,
+      tutorialSubStep: 0,
+      _tutorialHoldCycle: false,
+      _tutorialStormEnabled: true,
       cycleTimer: 0,
       targetColorIndex: -1,
       currentThemeIdx: 0,
@@ -78,9 +83,14 @@ window.GameModules = window.GameModules || {};
     window.Game?.Physics?.setCellWidth?.(runtime.grid.CELL_W);
   }
 
-  function resetRuntime(runtime, qaConfig) {
-    runtime.gameState = STATE.RUN;
+  function resetRuntime(runtime, qaConfig, overrides = {}) {
+    runtime.gameState = overrides.gameState ?? STATE.RUN;
     runtime.gameActive = true;
+    runtime.tutorialMode = overrides.tutorialMode ?? false;
+    runtime.tutorialStep = overrides.tutorialStep ?? 0;
+    runtime.tutorialSubStep = overrides.tutorialSubStep ?? 0;
+    runtime._tutorialHoldCycle = overrides.tutorialHoldCycle ?? false;
+    runtime._tutorialStormEnabled = overrides.tutorialStormEnabled ?? true;
     runtime.cycleTimer = 3.0;
     runtime.targetColorIndex = -1;
     runtime.currentThemeIdx = 0;

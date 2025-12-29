@@ -1,0 +1,102 @@
+/* 튜토리얼 오버레이 */
+#tutorial-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 하위 요소에만 이벤트 전달 */
+  z-index: 120; /* 게임 UI보다 높게 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 메시지를 하단에 배치하기 위함 */
+  align-items: center;
+  padding: 20px;
+}
+
+#tutorial-progress {
+  position: relative; /* overlay 내에서 top으로 */
+  top: 0;
+  left: auto;
+  transform: none;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 0 10px rgba(0,255,65,0.3);
+}
+
+#tutorial-message {
+  position: relative; /* overlay 내에서 bottom으로 */
+  bottom: 0;
+  left: auto;
+  transform: none;
+  padding: 12px 24px;
+  background: rgba(0,0,0,0.8);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none; /* 메시지는 클릭 방해하지 않음 */
+  max-width: 80%; /* 너무 길어지지 않게 */
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#tutorial-message.visible {
+  opacity: 1;
+}
+
+.message-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* 튜토리얼 화면이 게임 렌더링을 가리지 않도록 투명 처리 */
+#screen-tutorial {
+  background: transparent;
+  pointer-events: none; /* 하위 요소에서만 제어 */
+}
+
+/* 기존 tutorial-hint (화살표) 스타일은 제거 */
+
+.tutorial-highlight {
+  animation: highlight-glow 1.5s infinite alternate;
+  box-shadow: 0 0 15px 5px rgba(0,255,65,0.7), inset 0 0 10px rgba(0,255,65,0.5);
+  border-radius: 12px; /* 강조할 요소에 따라 유연하게 적용 */
+  z-index: 100; /* 강조되는 요소가 맨 위로 오도록 */
+  position: relative; /* z-index 적용을 위해 */
+}
+
+@keyframes highlight-glow {
+  0% { box-shadow: 0 0 15px 5px rgba(0,255,65,0.7), inset 0 0 10px rgba(0,255,65,0.5); }
+  100% { box-shadow: 0 0 25px 8px rgba(0,255,65,1), inset 0 0 15px rgba(0,255,65,0.8); }
+}
+
+/* 로비 튜토리얼 버튼 */
+#btn-tutorial {
+  position: relative; /* lobby-footer 안에서 상대 위치 */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #4a4a4a;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0; /* 공간이 부족해도 줄어들지 않게 */
+}
+
+#btn-tutorial:hover {
+  background: #6a6a6a;
+}

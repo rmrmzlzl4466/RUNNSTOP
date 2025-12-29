@@ -30,6 +30,9 @@
   window.runtime = runtime;  // For StageConfig module
   window.Game.runtime = runtime;
 
+  // 튜토리얼 완료 여부 확인 (최초 실행 시 튜토리얼로 자동 진입 위함)
+  window.shouldStartTutorial = !gameData.tutorialCompleted;
+
   // Initialize subsystems
   window.Game.UI?.init?.();
   window.Game.Renderer?.init?.(canvas, ctx);
@@ -38,6 +41,11 @@
   window.initQASliders?.();
   window.updateUpgradeUI?.();
   window.renderSkinList?.();
+
+  // 튜토리얼 모듈 초기화
+  window.GameModules.Tutorial?.init();
+  window.GameModules.TutorialUI?.init();
+  const tutorialResumeStep = window.GameModules.Tutorial?.getResumeStep?.() ?? 1;
 
   function saveGame() {
     persistGameData(gameData);
@@ -48,6 +56,12 @@
   }
 
   const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
+
+  function startTutorialFlow(step, options = {}) {
+    const targetStep = step ?? (window.GameModules.Tutorial?.getResumeStep?.() ?? tutorialResumeStep);
+    window.Navigation.go('tutorial');
+    lifecycle.startGame(null, { isTutorial: true, tutorialStep: targetStep, isRetry: options.isRetry });
+  }
 
   function safeStartGame(e) {
     if (e?.preventDefault) e.preventDefault();
@@ -65,6 +79,7 @@
   function bindStartButtons() {
     const btnStart = document.getElementById('btn-start');
     const btnResultRestart = document.getElementById('btn-result-restart');
+    const btnTutorial = document.getElementById('btn-tutorial');
 
     // Start button with glitch effect
     btnStart?.addEventListener('click', () => {
@@ -87,8 +102,11 @@
     });
 
     btnResultRestart?.addEventListener('click', safeStartGame);
-    console.log('[BOOT] window.startGame type=', typeof safeStartGame);
-    console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
+    
+    // 튜토리얼 버튼 핸들러
+    btnTutorial?.addEventListener('click', () => {
+      startTutorialFlow(1);
+    });
   }
 
   // Lobby character helpers
@@ -97,13 +115,6 @@
     if (el.classList.contains('anim-jump')) return;
     el.classList.add('anim-jump');
     setTimeout(() => el.classList.remove('anim-jump'), 500);
-  }
-
-  function performMove(el) {
-    const randomX = 20 + Math.random() * 60;
-    el.style.left = `${randomX}%`;
-    el.classList.add('anim-walk');
-    setTimeout(() => el.classList.remove('anim-walk'), 1000);
   }
 
   function startLobbyLoop() {
@@ -131,12 +142,37 @@
     }
   }
 
+  let titleTransitioning = false;
+  function handleTitleTouch() {
+    if (titleTransitioning) return;
+    titleTransitioning = true;
+  
+    const titleScreen = document.getElementById('screen-title');
+    if (!titleScreen) return;
+  
+    window.Sound?.sfx?.('bit');
+    titleScreen.classList.add('glitch-out');
+    if (navigator.vibrate) navigator.vibrate([30, 20, 50, 20, 30]);
+  
+    setTimeout(() => {
+      if (window.shouldStartTutorial) {
+        startTutorialFlow(tutorialResumeStep);
+      } else {
+        window.Navigation.go('lobby');
+      }
+      titleTransitioning = false;
+    }, 600); // Glitch-out 애니메이션 시간과 맞춤
+  }
+
   // Expose limited API for UI bindings
   window.startGame = safeStartGame;
   window.togglePause = lifecycle.togglePause;
   window.restartFromPause = lifecycle.restartFromPause;
   window.quitGame = lifecycle.quitGame;
   window.resetSaveData = handleResetSave;
+  window.handleTitleTouch = handleTitleTouch; // Expose to global scope for navigation.js
+  window.resumeGame = lifecycle.resumeGame; // Expose for tutorial pause menu
+  
   window.Game.startGame = lifecycle.startGame;
   window.Game.togglePause = lifecycle.togglePause;
   window.Game.restartFromPause = lifecycle.restartFromPause;
@@ -166,6 +202,7 @@
   window.startLobbyLoop = startLobbyLoop;
   window.stopLobbyLoop = stopLobbyLoop;
   window.interactLobbyChar = interactLobbyChar;
+  
   bindStartButtons();
 
   // Audio focus handling

@@ -11,6 +11,12 @@ window.GameModules = window.GameModules || {};
     if (!Array.isArray(merged.equippedTreasures) || merged.equippedTreasures.length !== 2) {
       merged.equippedTreasures = [null, null];
     }
+    // 스킨 ID를 숫자로 정규화해 문자열 세이브를 호환
+    merged.unlockedSkins = (merged.unlockedSkins || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    merged.equippedSkin = Number(merged.equippedSkin ?? 0);
+    if (!merged.unlockedSkins.includes(merged.equippedSkin)) {
+      merged.unlockedSkins.unshift(merged.equippedSkin || 0);
+    }
     return merged;
   }
 
