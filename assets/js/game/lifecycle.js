@@ -121,6 +121,11 @@ window.GameModules = window.GameModules || {};
 
     syncCanvasSize(runtime, canvas);
     const tutorialConfig = window.TutorialConfig?.getConfig?.(targetTutorialStep) ?? {};
+    // Use dedicated tutorial theme when available
+    if (isTutorial && Array.isArray(window.THEMES)) {
+      const idx = window.THEMES.findIndex((t) => t.name === 'TUTORIAL');
+      if (idx >= 0) runtime.currentThemeIdx = idx;
+    }
     resetRuntime(runtime, qaConfig, isTutorial ? {
       tutorialMode: true,
       tutorialStep: targetTutorialStep,
