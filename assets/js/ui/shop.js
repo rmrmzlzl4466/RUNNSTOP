@@ -135,6 +135,8 @@ window.updateLobbyUI = function() {
       slot.querySelector('.slot-icon').innerText = '+';
     }
   });
+
+  window.refreshTutorialCTA?.();
 };
 
 // === [NEW] 상점 UI 업데이트 ===

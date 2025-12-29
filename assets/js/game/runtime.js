@@ -14,6 +14,7 @@ window.GameModules = window.GameModules || {};
       currentWarningMax: 6,
       isFirstWarning: true,
       bigGemSpawned: false,
+      tutorialStep: null,
       previousState: STATE.RUN,
       previousGameState: STATE.RUN,
       wasPlayerBoosting: false,
@@ -59,6 +60,12 @@ window.GameModules = window.GameModules || {};
         CELL_H: window.Game?.LevelManager?.CELL_H ?? 100,
         CELL_W: 0
       },
+      tutorial: {
+        active: false,
+        step: null,
+        progress: 0,
+        completed: false
+      },
       canvasSize: {
         width: canvas?.width ?? 0,
         height: canvas?.height ?? 0
@@ -88,6 +95,7 @@ window.GameModules = window.GameModules || {};
     runtime.currentWarningMax = 6;
     runtime.isFirstWarning = true;
     runtime.bigGemSpawned = false;
+    runtime.tutorialStep = null;
     runtime.previousState = STATE.RUN;
     runtime.previousGameState = STATE.RUN;
     runtime.wasPlayerBoosting = false;
@@ -127,6 +135,12 @@ window.GameModules = window.GameModules || {};
       loopCount: 0,
       loopDifficultyScale: 1.0,
       currentConfig: null
+    };
+    runtime.tutorial = {
+      active: false,
+      step: null,
+      progress: 0,
+      completed: false
     };
     // Initialize Stage 1 config
     window.GameModules?.StageConfig?.updateCurrentConfig?.(runtime, 1);

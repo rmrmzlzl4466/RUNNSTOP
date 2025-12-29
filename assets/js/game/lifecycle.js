@@ -8,6 +8,57 @@ window.GameModules = window.GameModules || {};
   const { applyLoopDifficultyScaling, showStageNotification } = window.GameModules.Stage;
 
   function createLifecycle(canvas, player, qaConfig, gameData, saveGameData, runtime) {
+    const TUTORIAL_COMPLETED_KEY = 'tutorialCompleted';
+    const TUTORIAL_PROGRESS_KEY = 'tutorialProgress';
+
+    function readTutorialState() {
+      let completed = false;
+      let progress = 0;
+      try {
+        completed = localStorage.getItem(TUTORIAL_COMPLETED_KEY) === 'true';
+        const storedProgress = Number(localStorage.getItem(TUTORIAL_PROGRESS_KEY));
+        if (!Number.isNaN(storedProgress) && storedProgress >= 0) {
+          progress = Math.floor(storedProgress);
+        }
+      } catch (err) {
+        console.warn('[TUTORIAL] Failed to read tutorial state', err);
+      }
+      return { completed, progress };
+    }
+
+    function writeTutorialProgress(step) {
+      try {
+        const clamped = Math.max(0, Math.floor(step ?? 0));
+        localStorage.setItem(TUTORIAL_PROGRESS_KEY, String(clamped));
+        return clamped;
+      } catch (err) {
+        console.warn('[TUTORIAL] Failed to persist progress', err);
+        return step ?? 0;
+      }
+    }
+
+    function resolveTutorialState(startOptions = {}) {
+      const stored = readTutorialState();
+      const hasStepOverride = Number.isFinite(startOptions.tutorialStep);
+      const shouldReset = startOptions.resetProgress === true;
+      const forceTutorial = startOptions.forceTutorial === true;
+
+      const baseStep = hasStepOverride
+        ? Math.max(0, Math.floor(startOptions.tutorialStep))
+        : stored.progress;
+      const effectiveStep = shouldReset ? 0 : baseStep;
+
+      const tutorialActive = forceTutorial || !stored.completed;
+      const persistedStep = tutorialActive ? writeTutorialProgress(effectiveStep) : stored.progress;
+
+      return {
+        active: tutorialActive,
+        step: tutorialActive ? persistedStep : null,
+        progress: tutorialActive ? persistedStep : stored.progress,
+        completed: stored.completed
+      };
+    }
+
     const loop = createGameLoop(runtime, player, qaConfig, {
       onDie: handleDeath,
       onGameOver: handleGameOver
@@ -92,10 +143,13 @@ window.GameModules = window.GameModules || {};
     window.Navigation?.go?.('result');
   }
 
-  function startGame(e) {
+  function startGame(e, startOptions = {}) {
     if (e) {
       try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
     }
+
+    const tutorialState = resolveTutorialState(startOptions || {});
+
     if (runtime.gameActive) {
       loop.stop();
     }
@@ -105,6 +159,8 @@ window.GameModules = window.GameModules || {};
 
     syncCanvasSize(runtime, canvas);
     resetRuntime(runtime, qaConfig);
+    runtime.tutorial = { ...tutorialState };
+    runtime.tutorialStep = tutorialState.step;
     runtime._lastPauseReason = null;
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
 
@@ -249,6 +305,19 @@ window.GameModules = window.GameModules || {};
     }
   }
 
+  function getTutorialStatus() {
+    return readTutorialState();
+  }
+
+  function startTutorialAt(step = 0, { resetProgress = false } = {}) {
+    const options = {
+      forceTutorial: true,
+      tutorialStep: step,
+      resetProgress
+    };
+    return startGame(null, options);
+  }
+
   function resumeIfPausedByVisibility() {
     if (runtime.gameState === STATE.PAUSE && runtime._lastPauseReason === 'visibility') {
       window.Navigation?.showOverlay?.('overlay-pause');
@@ -263,7 +332,9 @@ window.GameModules = window.GameModules || {};
     quitGame,
     warpToDistance,
     pauseForVisibility,
-    resumeIfPausedByVisibility
+    resumeIfPausedByVisibility,
+    getTutorialStatus,
+    startTutorialAt
   };
   }
 

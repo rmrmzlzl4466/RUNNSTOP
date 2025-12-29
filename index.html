@@ -115,6 +115,15 @@
 
       <!-- Footer: Buttons (vertical stack) -->
       <div class="lobby-footer">
+        <div class="tutorial-entry">
+          <button class="tutorial-fab" id="btn-tutorial" aria-label="Open tutorial">
+            <span class="tutorial-fab__icon">?</span>
+          </button>
+          <div class="tutorial-caption">
+            <div class="tutorial-title">TUTORIAL</div>
+            <div class="tutorial-progress" id="tutorial-progress-label">Mandatory first run</div>
+          </div>
+        </div>
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
         <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
         <button class="btn-qa-main" onclick="window.Navigation?.go('qa')">QA</button>

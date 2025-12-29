@@ -49,14 +49,21 @@
 
   const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
 
-  function safeStartGame(e) {
-    if (e?.preventDefault) e.preventDefault();
+  function safeStartGame(e, options) {
+    let evt = e;
+    let startOptions = options;
+    if (!startOptions && evt && !evt.preventDefault) {
+      startOptions = evt;
+      evt = null;
+    }
+    if (!startOptions) startOptions = {};
+    if (evt?.preventDefault) evt.preventDefault();
     if (!lifecycle || typeof lifecycle.startGame !== 'function') {
       console.error('[BOOT] lifecycle.startGame missing', lifecycle);
       return;
     }
     try {
-      lifecycle.startGame();
+      lifecycle.startGame(null, startOptions);
     } catch (err) {
       console.error('[BOOT] startGame failed', err);
     }
@@ -65,6 +72,23 @@
   function bindStartButtons() {
     const btnStart = document.getElementById('btn-start');
     const btnResultRestart = document.getElementById('btn-result-restart');
+    const btnTutorial = document.getElementById('btn-tutorial');
+    const tutorialProgressLabel = document.getElementById('tutorial-progress-label');
+
+    const updateTutorialCTA = () => {
+      const status = lifecycle.getTutorialStatus ? lifecycle.getTutorialStatus() : {};
+      const progressValue = Number(status.progress ?? 0);
+      const progressText = status.completed
+        ? 'Replay from Step 0'
+        : (progressValue > 0 ? `Resume Step ${progressValue}` : 'Start Tutorial');
+      if (tutorialProgressLabel) tutorialProgressLabel.innerText = progressText;
+      if (btnTutorial) {
+        btnTutorial.dataset.completed = status.completed ? 'true' : 'false';
+        btnTutorial.dataset.progress = status.progress ?? 0;
+      }
+    };
+
+    window.refreshTutorialCTA = updateTutorialCTA;
 
     // Start button with glitch effect
     btnStart?.addEventListener('click', () => {
@@ -87,6 +111,14 @@
     });
 
     btnResultRestart?.addEventListener('click', safeStartGame);
+    btnTutorial?.addEventListener('click', (evt) => {
+      const status = lifecycle.getTutorialStatus ? lifecycle.getTutorialStatus() : {};
+      const shouldReset = status.completed || evt?.shiftKey;
+      const targetStep = shouldReset ? 0 : status.progress ?? 0;
+      safeStartGame(evt, { forceTutorial: true, tutorialStep: targetStep, resetProgress: shouldReset });
+    });
+
+    updateTutorialCTA();
     console.log('[BOOT] window.startGame type=', typeof safeStartGame);
     console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
   }
@@ -133,16 +165,24 @@
 
   // Expose limited API for UI bindings
   window.startGame = safeStartGame;
+  window.startTutorial = (step = 0, options = {}) => safeStartGame(null, {
+    forceTutorial: true,
+    tutorialStep: step,
+    resetProgress: options.resetProgress ?? false
+  });
   window.togglePause = lifecycle.togglePause;
   window.restartFromPause = lifecycle.restartFromPause;
   window.quitGame = lifecycle.quitGame;
+  window.getTutorialStatus = lifecycle.getTutorialStatus;
   window.resetSaveData = handleResetSave;
   window.Game.startGame = lifecycle.startGame;
+  window.Game.startTutorialAt = lifecycle.startTutorialAt;
   window.Game.togglePause = lifecycle.togglePause;
   window.Game.restartFromPause = lifecycle.restartFromPause;
   window.Game.quitGame = lifecycle.quitGame;
   window.Game.saveGame = saveGame;
   window.Game.resetSaveData = handleResetSave;
+  window.Game.getTutorialStatus = lifecycle.getTutorialStatus;
   window.Game.loadData = () => {
     const fresh = loadGameData();
     Object.assign(gameData, fresh);
@@ -158,7 +198,9 @@
     cameraZoom: runtime.cameraZoom,
     targetZoom: runtime.targetZoom,
     currentStageId: runtime.stage.currentStageId,
-    currentLoopCount: runtime.stage.loopCount
+    currentLoopCount: runtime.stage.loopCount,
+    tutorialActive: runtime.tutorial?.active ?? false,
+    tutorialStep: runtime.tutorialStep ?? runtime.tutorial?.step ?? null
   });
 
   window.syncCanvasSize = () => syncCanvasSize(runtime, canvas);

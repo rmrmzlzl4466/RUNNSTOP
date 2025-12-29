@@ -1304,6 +1304,58 @@
       padding-bottom: 40px;
       width: 100%;
     }
+    .tutorial-entry {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .tutorial-caption {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .tutorial-title {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #00ff41;
+      font-weight: 800;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+    }
+    .tutorial-progress {
+      font-size: 13px;
+      color: #d7ffd7;
+      opacity: 0.85;
+    }
+    .tutorial-fab {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 2px solid #00ff41;
+      background: rgba(0, 255, 65, 0.12);
+      color: #00ff41;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow:
+        0 0 10px rgba(0, 255, 65, 0.4),
+        inset 0 0 10px rgba(0, 255, 65, 0.2);
+      transition: all 0.15s ease-out;
+    }
+    .tutorial-fab:hover,
+    .tutorial-fab:active {
+      background: rgba(0, 255, 65, 0.2);
+      box-shadow:
+        0 0 15px rgba(0, 255, 65, 0.6),
+        inset 0 0 12px rgba(0, 255, 65, 0.25);
+      transform: scale(1.02);
+    }
+    .tutorial-fab__icon { pointer-events: none; }
     .lobby-start {
       position: relative;
       padding: 16px 50px;
