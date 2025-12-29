@@ -19,12 +19,15 @@ window.Navigation = {
     this.current = screenId;
 
     // 3. 화면별 초기화 로직
-    if (screenId === 'lobby') {
-      window.updateLobbyUI?.();
-      window.startLobbyLoop?.();
-    } else {
-      window.stopLobbyLoop?.();
+  if (screenId === 'lobby') {
+    window.updateLobbyUI?.();
+    window.startLobbyLoop?.();
+    if (window.shouldStartTutorial && !window.runtime?.gameActive && !window.TutorialManager?.state?.isActive) {
+      window.TutorialManager?.startTutorial?.(Math.max(1, (window.GameData?.tutorialProgress || 0) + 1));
     }
+  } else {
+    window.stopLobbyLoop?.();
+  }
     if (screenId === 'shop') {
       window.updateShopUI?.();
       window.switchTab?.('skin'); // 기본 탭

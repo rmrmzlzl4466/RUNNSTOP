@@ -30,6 +30,7 @@
       this.state.step = targetStep;
       this.state.retryCount = 0;
       this.state.isActive = true;
+      window.shouldStartTutorial = true;
       this.resetStepProgress();
       this._enableTutorialOnRuntime(targetStep);
       window.TutorialUI?.showStep(targetStep);

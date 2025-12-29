@@ -65,6 +65,7 @@
   function bindStartButtons() {
     const btnStart = document.getElementById('btn-start');
     const btnResultRestart = document.getElementById('btn-result-restart');
+    const btnTutorial = document.getElementById('btn-tutorial');
 
     // Start button with glitch effect
     btnStart?.addEventListener('click', () => {
@@ -87,6 +88,10 @@
     });
 
     btnResultRestart?.addEventListener('click', safeStartGame);
+    btnTutorial?.addEventListener('click', () => {
+      window.shouldStartTutorial = true;
+      window.TutorialManager?.startTutorial?.(1);
+    });
     console.log('[BOOT] window.startGame type=', typeof safeStartGame);
     console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
   }
