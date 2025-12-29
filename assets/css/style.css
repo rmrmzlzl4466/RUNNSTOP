@@ -1274,25 +1274,9 @@
     }
     .loadout-slots { display: flex; gap: 15px; justify-content: center; }
 
-    /* QA Button - Top Right Corner */
-    .btn-qa-corner {
-      position: absolute;
-      top: 70px;
-      right: 15px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 900;
-      border: 1px solid rgba(0, 255, 65, 0.3);
-      border-radius: 6px;
-      background: rgba(0, 20, 0, 0.6);
-      color: rgba(0, 255, 65, 0.5);
-      cursor: pointer;
-      z-index: 10;
-      text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
-    }
-    .btn-qa-corner:hover {
-      border-color: #00ff41;
-      color: #00ff41;
+    /* QA Button - matches shop button styling */
+    .btn-qa-main {
+      width: 240px;
     }
     .lobby-slot {
       width: 70px; height: 70px; border-radius: 12px;

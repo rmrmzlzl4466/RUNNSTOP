@@ -90,9 +90,6 @@
 
     <!-- ========== [2] LOBBY SCREEN ========== -->
     <div id="screen-lobby" class="full-screen">
-      <!-- QA Button (top right corner) -->
-      <button class="btn-qa-corner" onclick="window.Navigation?.go('qa')">QA</button>
-
       <!-- Header: Currency -->
       <div class="screen-header">
         <div class="currency-row lobby-currency">
@@ -126,6 +123,7 @@
       <div class="lobby-footer">
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
         <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
+        <button class="btn-shop-main btn-qa-main" onclick="window.Navigation?.go('qa')">QA</button>
         <button id="btn-tutorial" class="lobby-btn-circle" title="Tutorial">
           <span>?</span>
         </button>
