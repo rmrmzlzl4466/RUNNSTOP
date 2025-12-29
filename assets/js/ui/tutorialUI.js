@@ -80,7 +80,7 @@
     },
 
     showRetryMessage() {
-      this.showMessage('다시 시도하세요', 1500);
+      this.showMessage('Try again', 1500);
     },
 
     showStepTransition(nextStep) {
@@ -90,7 +90,7 @@
     },
 
     showCompletionAnimation(callback) {
-      this.showMessage('튜토리얼 완료!', 3000);
+      this.showMessage('Tutorial complete!', 3000);
       setTimeout(callback, 3000);
     },
 

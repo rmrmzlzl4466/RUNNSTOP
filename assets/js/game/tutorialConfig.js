@@ -52,50 +52,50 @@
 
   const TUTORIAL_TEXTS = {
     1: {
-      name: '기본 조작',
-      description: '이동과 대쉬를 배웁니다',
+      name: 'Basics',
+      description: 'Learn move and dash',
       hints: {
         move: {
-          pc: 'WASD 키를 눌러 이동하세요',
-          mobile: '조이스틱을 움직여 이동하세요',
+          pc: 'Move with WASD',
+          mobile: 'Move the joystick',
         },
         dash: {
-          pc: '스페이스바를 눌러 대쉬하세요',
-          mobile: '대쉬 버튼을 누르세요',
+          pc: 'Press Space to dash',
+          mobile: 'Tap the dash button',
         }
       },
     },
     2: {
-      name: '핵심 메커니즘',
-      description: 'RUN/WARNING/STOP 사이클을 배웁니다',
+      name: 'Core Cycle',
+      description: 'Experience RUN/WARNING/STOP',
       hints: {
         safeJudgment: {
-          pc: '경고 시 안전 색상을 확인하고 타일 위에 서세요',
-          mobile: '경고 시 안전 색상을 확인하고 타일 위에 서세요',
+          pc: 'Watch the safe color and stand on it',
+          mobile: 'Stand on the safe color tile',
         },
       },
     },
     3: {
-      name: '위험 요소',
-      description: '스톰과 장애물을 피하세요',
+      name: 'Hazards',
+      description: 'Avoid storm and obstacles',
       hints: {
         avoidStorm: {
-          pc: '스톰을 피하세요',
-          mobile: '스톰을 피하세요',
+          pc: 'Avoid the storm',
+          mobile: 'Avoid the storm',
         },
         collectItem: {
-          pc: '아이템을 획득하세요',
-          mobile: '아이템을 획득하세요',
+          pc: 'Grab the item',
+          mobile: 'Grab the item',
         }
       },
     },
     4: {
-      name: '실전 시뮬레이션',
-      description: '500m를 완주하세요',
+      name: 'Simulation',
+      description: 'Finish 500m to clear',
       hints: {
         completeRun: {
-          pc: '최종 튜토리얼을 완료하세요!',
-          mobile: '최종 튜토리얼을 완료하세요!',
+          pc: 'Complete the tutorial run!',
+          mobile: 'Complete the tutorial run!',
         }
       },
     },
@@ -122,6 +122,10 @@
     if (tutorialConfig.colorPalette !== undefined) {
       next.colorPalette = tutorialConfig.colorPalette;
     }
+
+    // Tutorial uses a dedicated palette and no gimmicks for stability
+    next.theme = { paletteId: 'TUTORIAL' };
+    next.gimmick = { id: 'NONE', params: {} };
 
     // Additional tutorial-only flags for loop.js to branch on
     next._tutorialRules = {

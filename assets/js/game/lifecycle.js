@@ -203,7 +203,7 @@ window.GameModules = window.GameModules || {};
       <div class="pause-box">
         <div class="pause-title">PAUSED</div>
         <button class="btn-common pause-btn" onclick="window.resumeGame()">RESUME</button>
-        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.GameModules.Tutorial.quitTutorial()">튜토리얼 나가기</button>
+        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.GameModules.Tutorial.quitTutorial()">EXIT TUTORIAL</button>
       </div>
     `;
     const overlayElement = document.getElementById('overlay-pause');

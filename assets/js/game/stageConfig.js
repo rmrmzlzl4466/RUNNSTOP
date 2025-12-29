@@ -269,6 +269,7 @@ window.GameModules = window.GameModules || {};
   // ====================================
 
   function getEffectiveConfig(runtime, qaConfig, forceRecalc = false) {
+    const isTutorial = runtime?.tutorialMode;
     const stageId = runtime?.stage?.currentStageId ?? 1;
     const stageIdStr = normalizeStageId(stageId);
     const loopCount = runtime?.stage?.loopCount ?? 0;
@@ -276,7 +277,7 @@ window.GameModules = window.GameModules || {};
     const qaHash = hashObject(getQaHashSource(qaConfig));
     const overrideHash = hashObject(stageOverrides);
 
-    if (!forceRecalc && isCacheValid(stageId, loopCount, qaHash, overrideHash)) {
+    if (!forceRecalc && !isTutorial && isCacheValid(stageId, loopCount, qaHash, overrideHash)) {
       return cachedEffective;
     }
 
@@ -358,9 +359,9 @@ window.GameModules = window.GameModules || {};
     // baseSpeed for reference (stage tuning can affect it)
     const baseSpeedResult = getStageValue('baseSpeed', stageTuning, stageOverride, DEFAULTS);
     sources['baseSpeed'] = baseSpeedResult.source;
-    const baseSpeed = baseSpeedResult.value ?? 960;
+    const baseSpeed = (baseSpeedResult.value ?? 960) * loopScale;
 
-    const effective = {
+    let effective = {
       // === 물리 (GLOBAL-ONLY) ===
       friction,
       stopFriction,
@@ -420,12 +421,19 @@ window.GameModules = window.GameModules || {};
       _loopScale: loopScale
     };
 
-    // Update cache
-    cachedEffective = effective;
-    cachedStageId = stageId;
-    cachedLoopCount = loopCount;
-    cachedQaHash = qaHash;
-    cachedOverrideHash = overrideHash;
+    // Apply tutorial overrides last to stabilize palette/gimmick for tutorial
+    if (runtime?.tutorialMode && window.TutorialConfig?.applyOverrides) {
+      effective = window.TutorialConfig.applyOverrides({ ...effective }, runtime?.tutorialStep ?? 1);
+    }
+
+    // Update cache (skip caching tutorial-specific effective config)
+    if (!runtime?.tutorialMode) {
+      cachedEffective = effective;
+      cachedStageId = stageId;
+      cachedLoopCount = loopCount;
+      cachedQaHash = qaHash;
+      cachedOverrideHash = overrideHash;
+    }
 
     // Store sources for debug overlay
     lastEffectiveDebugSources = Object.assign({}, sources);

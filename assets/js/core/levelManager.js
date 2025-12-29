@@ -30,6 +30,12 @@
 
     const qaConfig = window.qaConfig || {};
     const getThemes = () => window.THEMES ?? window.GameConfig?.THEMES ?? [];
+    const tutorialPalette = (window.runtime?.tutorialMode && window.TutorialConfig?.getConfig)
+      ? window.TutorialConfig.getConfig(window.runtime.tutorialStep)?.colorPalette
+      : null;
+    const tutorialColors = tutorialPalette
+      ? (window.STAGE_PALETTES?.TUTORIAL?.colors ?? tutorialPalette)
+      : null;
 
     // Get effective config (stage-specific values with QA overrides)
     const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
@@ -54,7 +60,7 @@
       else if (dist >= stageLength) themeIdx = 1;
     }
 
-    const palette = getThemes()[themeIdx]?.colors ?? [];
+    const palette = tutorialColors || (getThemes()[themeIdx]?.colors ?? []);
     const rowColors = [];
     for (let i = 0; i < COLS; i++) {
       rowColors.push(Math.floor(Math.random() * palette.length));

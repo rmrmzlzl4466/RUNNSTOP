@@ -137,21 +137,21 @@
             runtime.isFirstWarning = true;
             runtime.cycleTimer = 0.01;
           }
-          window.TutorialUI?.showMessage('사이클이 시작됩니다', 1600);
+          window.TutorialUI?.showMessage('Cycle starting now', 1600);
           break;
         case 'spawn_item_shield':
           if (runtime && player) {
             const rowIdx = Math.floor(player.y / (runtime.grid?.CELL_H || 100)) - 5;
             window.Game.LevelManager.generateRow(rowIdx, (type, col) => window.GameModules.Items.spawnItemAtCol(runtime, rowIdx, type, col));
             window.GameModules.Items.spawnItemAtCol(runtime, rowIdx, 'barrier', Math.floor((runtime.grid?.COLS ?? 5) / 2));
-            window.TutorialUI?.showMessage('보호막 아이템 등장!', 1600);
+            window.TutorialUI?.showMessage('Shield item spawned', 1600);
           }
           break;
         case 'activate_storm':
           if (runtime && player) {
             runtime._tutorialStormEnabled = true;
             runtime.storm.y = player.y + 800;
-            window.TutorialUI?.showMessage('스톰이 접근합니다', 1600);
+            window.TutorialUI?.showMessage('Storm approaching', 1600);
           }
           break;
       }

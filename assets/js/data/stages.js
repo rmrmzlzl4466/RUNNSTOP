@@ -117,6 +117,13 @@ window.STAGE_PALETTES = {
     safeColor: '#54a0ff',
     dangerColor: '#ff6b6b'
   },
+  TUTORIAL: {
+    id: 'TUTORIAL',
+    name: 'Tutorial Duo',
+    colors: ['#00ff41', '#ff5cf4'],
+    safeColor: '#00ff41',
+    dangerColor: '#ff5cf4'
+  },
   STORM: {
     id: 'STORM',
     name: 'Storm',
