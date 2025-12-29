@@ -63,6 +63,9 @@ window.GameModules = window.GameModules || {};
 
     // genuineSafe: 실제로 안전 지대 위에서 생존한 경우만 JFB 보상
     if (result.genuineSafe) {
+      if (runtime.tutorialMode) {
+        window.TutorialManager?.onSafeSuccess();
+      }
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
       const slowMoModule = getSlowMo();
@@ -80,6 +83,10 @@ window.GameModules = window.GameModules || {};
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
+      if (runtime.tutorialMode) {
+        window.TutorialManager?.onStopFailure();
+        return;
+      }
       handlers.onDie?.('FALL');
     }
   }
@@ -92,6 +99,10 @@ window.GameModules = window.GameModules || {};
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
+      if (runtime.tutorialMode) {
+        window.TutorialManager?.onStopFailure();
+        return;
+      }
       handlers.onDie?.('FALL_DURING_STOP');
     }
   }
@@ -123,6 +134,7 @@ window.GameModules = window.GameModules || {};
     // Get world scale from SlowMo module
     const worldScale = getSlowMo()?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
+    const tutorialCfg = runtime.tutorialMode ? window.TutorialConfig?.getConfig?.(runtime.tutorialStep) : null;
 
     // Get effective config (stage-specific values with QA overrides)
     const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
@@ -156,23 +168,32 @@ window.GameModules = window.GameModules || {};
       player.dist = currentDist;
       updateStageProgress(runtime, player.dist, qaConfig);
     }
+    if (runtime.tutorialMode) {
+      window.TutorialManager?.trackPlayerProgress?.(player);
+    }
 
     // Update gimmicks (동적 참조로 모바일 호환성 확보)
     getGimmick()?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
     const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
-    // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
-    const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
-    const stormSpeed = baseStormSpeed * stormPulseMult;
-    runtime.storm.y -= stormSpeed * worldDt;
-    if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
-      handlers.onDie?.('STORM');
-      return;
+    const stormActive = !(tutorialCfg && tutorialCfg.stormEnabled === false);
+    if (stormActive) {
+      // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
+      const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
+      const stormSpeed = baseStormSpeed * stormPulseMult;
+      runtime.storm.y -= stormSpeed * worldDt;
+      if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
+        handlers.onDie?.('STORM');
+        return;
+      }
+      const screenBottom = runtime.cameraY + runtime.canvasSize.height;
+      window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
+      window.Game.LevelManager.cleanupRows(runtime.storm.y);
+    } else {
+      runtime.storm.y = player.y + 9999;
+      window.Game.UI.setStormWarning(false);
+      window.Game.LevelManager.cleanupRows(runtime.storm.y);
     }
-
-    const screenBottom = runtime.cameraY + runtime.canvasSize.height;
-    window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
-    window.Game.LevelManager.cleanupRows(runtime.storm.y);
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
     const followRate = 5 * Math.min(Math.max(runtime.cameraZoom, 1), 1.4);
@@ -181,9 +202,20 @@ window.GameModules = window.GameModules || {};
     updateCameraZoom(runtime, player, qaConfig, worldDt);
     ensureRowsAroundPlayer();
     window.Game.Physics.filterItemsBehindStorm(runtime.items, runtime.storm);
-    handleItems();
+    if (!(tutorialCfg && tutorialCfg.itemsEnabled === false)) {
+      handleItems();
+    } else {
+      runtime.items.length = 0;
+    }
 
-    runtime.cycleTimer -= worldDt;
+    const lockRun = tutorialCfg?.lockGameState === 'RUN';
+    if (!lockRun) {
+      runtime.cycleTimer -= worldDt;
+    } else {
+      runtime.gameState = STATE.RUN;
+      runtime.cycleTimer = effective.runPhaseDuration;
+      runtime.targetColorIndex = -1;
+    }
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
 
     if (runtime.gameState === STATE.RUN) {
@@ -210,7 +242,7 @@ window.GameModules = window.GameModules || {};
     }
 
     if (runtime.gameState === STATE.RUN) {
-      if (runtime.cycleTimer <= 0) {
+      if (!lockRun && runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.WARNING;
         // Use effective warning time values (firstWarningTimeBase for first warning, warningTimeBase with distance scaling for subsequent)
         const baseWarning = runtime.isFirstWarning
@@ -249,6 +281,10 @@ window.GameModules = window.GameModules || {};
         runtime.cycleTimer = effective.runPhaseDuration;
         window.Game.UI.onRunStart();
       }
+    }
+
+    if (runtime.tutorialMode) {
+      window.TutorialManager?.checkStepCompletion();
     }
   }
 

@@ -24,6 +24,10 @@ window.GameModules = window.GameModules || {};
 
   function handleDeath(reason) {
     if (player.isDead || player.isDying) return;
+    if (runtime.tutorialMode) {
+      window.TutorialManager?.retryStep();
+      return;
+    }
     if (player.hasRevive) {
       player.hasRevive = false;
       player.hasBarrier = true;

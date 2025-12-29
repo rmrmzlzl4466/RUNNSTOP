@@ -23,6 +23,8 @@ window.GameModules = window.GameModules || {};
       currentZoomLerp: 3.0,
       storm: { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 },
       items: [],
+      tutorialMode: false,
+      tutorialStep: 0,
       // 아이템 업그레이드 효과값 캐시 (런 시작 시 1회 계산)
       itemUpgrades: {
         boosterDistanceMult: 1.0,
@@ -97,6 +99,8 @@ window.GameModules = window.GameModules || {};
     runtime.currentZoomLerp = 3.0;
     runtime.storm = { y: 0, currentSpeed: qaConfig?.stormBaseSpeed ?? 150 };
     runtime.items = [];
+    runtime.tutorialMode = runtime.tutorialMode || false;
+    runtime.tutorialStep = runtime.tutorialStep || 0;
     // 아이템 업그레이드 캐시 초기화 (lifecycle에서 실제 값 설정)
     runtime.itemUpgrades = {
       boosterDistanceMult: 1.0,

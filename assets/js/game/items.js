@@ -4,6 +4,10 @@ window.GameModules = window.GameModules || {};
   const { formatNumber } = window.GameModules.Config;
 
   function spawnItemAtCol(runtime, rowIdx, type, col) {
+    if (runtime?.tutorialMode) {
+      const stepCfg = window.TutorialConfig?.getConfig?.(runtime.tutorialStep);
+      if (stepCfg?.itemsEnabled === false) return;
+    }
     const { CELL_W, CELL_H } = runtime.grid;
     const x = col * CELL_W + CELL_W / 2;
     const baseY = rowIdx * CELL_H;

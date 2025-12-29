@@ -105,6 +105,7 @@ window.GameModules = window.GameModules || {};
   let cachedLoopCount = null;
   let cachedQaHash = null;
   let cachedOverrideHash = null;
+  let cachedTutorialKey = null;
 
   function normalizeStageId(stageId) {
     return String(stageId);
@@ -255,12 +256,13 @@ window.GameModules = window.GameModules || {};
     return source;
   }
 
-  function isCacheValid(stageId, loopCount, qaHash, overrideHash) {
+  function isCacheValid(stageId, loopCount, qaHash, overrideHash, tutorialKey) {
     if (!cachedEffective) return false;
     if (cachedStageId !== stageId) return false;
     if (cachedLoopCount !== loopCount) return false;
     if (cachedQaHash !== qaHash) return false;
     if (cachedOverrideHash !== overrideHash) return false;
+    if (cachedTutorialKey !== tutorialKey) return false;
     return true;
   }
 
@@ -272,11 +274,12 @@ window.GameModules = window.GameModules || {};
     const stageId = runtime?.stage?.currentStageId ?? 1;
     const stageIdStr = normalizeStageId(stageId);
     const loopCount = runtime?.stage?.loopCount ?? 0;
+    const tutorialKey = runtime?.tutorialMode ? `tutorial-${runtime.tutorialStep ?? 0}` : 'normal';
     const stageOverrides = getStageOverrides();
     const qaHash = hashObject(getQaHashSource(qaConfig));
     const overrideHash = hashObject(stageOverrides);
 
-    if (!forceRecalc && isCacheValid(stageId, loopCount, qaHash, overrideHash)) {
+    if (!forceRecalc && isCacheValid(stageId, loopCount, qaHash, overrideHash, tutorialKey)) {
       return cachedEffective;
     }
 
@@ -360,7 +363,7 @@ window.GameModules = window.GameModules || {};
     sources['baseSpeed'] = baseSpeedResult.source;
     const baseSpeed = baseSpeedResult.value ?? 960;
 
-    const effective = {
+    let effective = {
       // === 물리 (GLOBAL-ONLY) ===
       friction,
       stopFriction,
@@ -420,12 +423,17 @@ window.GameModules = window.GameModules || {};
       _loopScale: loopScale
     };
 
+    if (runtime?.tutorialMode && window.GameModules?.TutorialConfig?.applyOverrides) {
+      effective = window.GameModules.TutorialConfig.applyOverrides({ ...effective }, runtime.tutorialStep);
+    }
+
     // Update cache
     cachedEffective = effective;
     cachedStageId = stageId;
     cachedLoopCount = loopCount;
     cachedQaHash = qaHash;
     cachedOverrideHash = overrideHash;
+    cachedTutorialKey = tutorialKey;
 
     // Store sources for debug overlay
     lastEffectiveDebugSources = { ...sources };
@@ -443,6 +451,7 @@ window.GameModules = window.GameModules || {};
     cachedLoopCount = null;
     cachedQaHash = null;
     cachedOverrideHash = null;
+    cachedTutorialKey = null;
   }
 
   // ====================================

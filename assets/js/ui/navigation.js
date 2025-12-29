@@ -86,11 +86,11 @@ function triggerTitleGlitchOut() {
   }
 
   // Fade in lobby during glitch
-  setTimeout(() => {
-    if (lobbyScreen) {
-      lobbyScreen.style.transition = 'opacity 0.3s ease-out';
-      lobbyScreen.style.opacity = '1';
-    }
+    setTimeout(() => {
+      if (lobbyScreen) {
+        lobbyScreen.style.transition = 'opacity 0.3s ease-out';
+        lobbyScreen.style.opacity = '1';
+      }
   }, 300);
 
   // Complete transition after animation
@@ -108,6 +108,9 @@ function triggerTitleGlitchOut() {
     }
 
     window.Navigation.current = 'lobby';
+    if (window.shouldStartTutorial) {
+      window.TutorialManager?.startTutorial?.(Math.max(1, (window.GameData?.tutorialProgress || 0) + 1));
+    }
     titleTransitioning = false;
   }, 600);
 }

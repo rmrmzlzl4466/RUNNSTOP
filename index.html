@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>RUN! & STOP! : FINAL FIX</title>
   <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" href="./assets/css/tutorial.css" />
 </head>
 
 <body>
@@ -73,6 +74,11 @@
     <div id="toast-msg" aria-live="polite" style="display: none;"></div>
     <div id="theme-notify">ZONE 1<br>DIGITAL CIRCUIT</div>
     <div id="storm-warning">DATA STORM APPROACHING!</div>
+    <div id="tutorial-overlay" aria-live="polite">
+      <div id="tutorial-progress">Step 1/4</div>
+      <div id="tutorial-hint-container"></div>
+      <div id="tutorial-message"></div>
+    </div>
 
     <!-- ========== [1] TITLE SCREEN ========== -->
     <div id="screen-title" class="full-screen active-screen">
@@ -120,6 +126,9 @@
       <div class="lobby-footer">
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
         <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
+        <button id="btn-tutorial" class="lobby-btn-circle" title="Tutorial">
+          <span>?</span>
+        </button>
       </div>
     </div>
 
@@ -635,6 +644,9 @@
   <script src="./assets/js/game/items.js"></script>
   <script src="./assets/js/game/stage.js"></script>
   <script src="./assets/js/game/stageConfig.js"></script>
+  <script src="./assets/js/game/tutorialConfig.js"></script>
+  <script src="./assets/js/ui/tutorialUI.js"></script>
+  <script src="./assets/js/game/tutorial.js"></script>
   <script src="./assets/js/game/gimmick.js"></script>
   <script src="./assets/js/ui/debugOverlay.js"></script>
   <script src="./assets/js/game/slowMo.js"></script>

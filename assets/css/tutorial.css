@@ -1,0 +1,111 @@
+/* Tutorial overlay styling */
+#tutorial-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 120;
+  display: none;
+}
+
+#tutorial-progress {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+#tutorial-message {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#tutorial-message.visible {
+  opacity: 1;
+}
+
+#tutorial-hint-container {
+  position: absolute;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutorial-hint {
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: rgba(255, 231, 76, 0.95);
+  color: #111;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  animation: hint-pulse 1.2s infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.06);
+  }
+}
+
+.tutorial-highlight {
+  animation: highlight-glow 1s infinite;
+}
+
+@keyframes highlight-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px 5px rgba(255, 255, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 18px 9px rgba(255, 255, 0, 0.85);
+  }
+}
+
+/* Lobby tutorial button */
+.lobby-footer {
+  position: relative;
+}
+
+#btn-tutorial {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #444;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+#btn-tutorial:hover {
+  background: #666;
+  transform: scale(1.05);
+}
+
+#btn-tutorial:active {
+  transform: scale(0.98);
+}
