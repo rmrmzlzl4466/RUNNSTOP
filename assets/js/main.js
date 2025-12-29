@@ -144,33 +144,54 @@
 
   function startTutorialFlow() {
     let navigationSucceeded = false;
+    let tutorialStarted = false;
     document.body.classList.remove('tutorial-lock');
     window.pendingAutoTutorial = false;
     if (!document.getElementById('screen-tutorial')) {
       console.warn('[BOOT] Tutorial screen not found, skipping tutorial start');
       return;
     }
-    const ready = rebuildRuntime(true);
-    window.TutorialUI?.init?.();
-    window.TutorialManager?.init?.();
-    if (ready) {
-      window.TutorialManager?.startTutorial?.(1, runtime);
-      if (window.Navigation?.go) {
+    try {
+      const ready = rebuildRuntime(true);
+      window.TutorialUI?.init?.();
+      window.TutorialManager?.init?.();
+      if (ready) {
         try {
-          window.Navigation.go('tutorial');
-          navigationSucceeded = true;
+          window.TutorialManager?.startTutorial?.(1, runtime);
+          tutorialStarted = true;
         } catch (err) {
-          console.error('[BOOT] Tutorial navigation failed', err);
+          console.error('[BOOT] Tutorial start failed', err);
+          tutorialStarted = false;
+        }
+        if (tutorialStarted && window.Navigation?.go) {
+          try {
+            window.Navigation.go('tutorial');
+            navigationSucceeded = true;
+          } catch (err) {
+            console.error('[BOOT] Tutorial navigation failed', err);
+          }
         }
       }
-      if (navigationSucceeded) {
-        window.shouldStartTutorial = false;
-        document.body.classList.add('tutorial-lock');
-      } else {
-        document.body.classList.remove('tutorial-lock');
-      }
-    } else {
-      document.body.classList.remove('tutorial-lock');
+    } catch (err) {
+      console.error('[BOOT] Tutorial flow error', err);
+    }
+    if (navigationSucceeded && tutorialStarted) {
+      window.shouldStartTutorial = false;
+      document.body.classList.add('tutorial-lock');
+      return;
+    }
+    document.body.classList.remove('tutorial-lock');
+    window.shouldStartTutorial = false;
+    window.pendingAutoTutorial = false;
+    try {
+      rebuildRuntime(false);
+    } catch (err) {
+      console.warn('[BOOT] Failed to rebuild runtime after tutorial failure', err);
+    }
+    try {
+      if (!navigationSucceeded) window.Navigation?.go?.('lobby');
+    } catch (err) {
+      console.warn('[BOOT] Lobby navigation after tutorial failure failed', err);
     }
   }
 
