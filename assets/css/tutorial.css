@@ -1,7 +1,7 @@
 #tutorial-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -9,6 +9,7 @@
   gap: 12px;
   padding: 16px;
   z-index: 10;
+  transition: opacity 0.3s ease;
 }
 
 #tutorial-progress {
@@ -92,4 +93,21 @@
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
   filter: brightness(1.05);
+}
+
+.tutorial-lock {
+  pointer-events: none;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+body.tutorial-lock button:not(#btn-tutorial) {
+  pointer-events: none;
+  opacity: 0.5;
 }

@@ -4,6 +4,7 @@
   const state = {
     step: 1,
     isActive: false,
+    isRunning: false,
     retryCount: 0,
     moveDetected: false,
     dashDetected: false,
@@ -48,6 +49,8 @@
   }
 
   function checkStepCondition() {
+    const runtime = window.runtime;
+    if (!runtime || !runtime.gameState) return false;
     const config = getStepConfig();
     if (!config) return false;
 
@@ -63,8 +66,10 @@
   }
 
   function startTutorial(step = 1, runtime = null) {
+    if (state.isRunning) return;
     state.step = step;
     state.isActive = true;
+    state.isRunning = true;
     state.retryCount = 0;
     resetStepProgress();
 
@@ -81,6 +86,7 @@
   }
 
   function onStepComplete(runtime = null) {
+    if (!runtime || !runtime.gameState) return;
     const nextStep = state.step + 1;
     if (nextStep > 4) {
       onTutorialComplete(runtime);
@@ -103,6 +109,8 @@
   }
 
   function retryStep() {
+    const runtime = window.runtime;
+    if (!runtime || !runtime.gameState) return;
     state.retryCount += 1;
     resetStepProgress();
 
@@ -158,6 +166,7 @@
     }
 
     console.debug('[TutorialManager] Tutorial completed');
+    state.isRunning = false;
   }
 
   function markMoved() {

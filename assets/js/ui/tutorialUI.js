@@ -16,6 +16,32 @@
     console.debug('[TutorialUI] Initialized');
   }
 
+  function fadeIn(duration = 300) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('tutorial-overlay');
+      if (!overlay) {
+        resolve();
+        return;
+      }
+      overlay.classList.remove('fade-out');
+      overlay.classList.add('fade-in');
+      setTimeout(resolve, duration);
+    });
+  }
+
+  function fadeOut(duration = 300) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('tutorial-overlay');
+      if (!overlay) {
+        resolve();
+        return;
+      }
+      overlay.classList.remove('fade-in');
+      overlay.classList.add('fade-out');
+      setTimeout(resolve, duration);
+    });
+  }
+
   function clearMessageTimer() {
     if (messageTimer) {
       clearTimeout(messageTimer);
@@ -44,6 +70,7 @@
     if (config?.description) {
       showMessage(config.description, 3000);
     }
+    fadeIn();
   }
 
   function showRetryMessage() {
@@ -59,9 +86,11 @@
 
   function showCompletionAnimation(cb) {
     showMessage('튜토리얼 완료!', 3000);
-    if (typeof cb === 'function') {
-      setTimeout(cb, 3000);
-    }
+    fadeOut(300).then(() => {
+      if (typeof cb === 'function') {
+        cb();
+      }
+    });
   }
 
   function showHint(step) {
@@ -106,6 +135,8 @@
     showHint,
     showArrowHint,
     highlightElement,
-    removeHighlight
+    removeHighlight,
+    fadeIn,
+    fadeOut
   };
 })();

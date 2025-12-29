@@ -152,6 +152,7 @@
       window.TutorialManager?.startTutorial?.(1, runtime);
       if (window.Navigation?.go) window.Navigation.go('tutorial');
       window.shouldStartTutorial = false;
+      document.body.classList.add('tutorial-lock');
     }
   }
 
@@ -236,6 +237,7 @@
     runtime?.gameActive && (runtime.gameActive = false);
     rebuildRuntime(false);
     if (window.Navigation?.go) window.Navigation.go('lobby');
+    document.body.classList.remove('tutorial-lock');
   };
 
   // Audio focus handling
@@ -259,6 +261,17 @@
       lifecycle.resumeIfPausedByVisibility();
     }
   });
+
+  window.addEventListener('beforeunload', () => {
+    if (window.TutorialManager?.state?.isRunning) {
+      sessionStorage.setItem('tutorialInterrupted', '1');
+    }
+  });
+
+  if (sessionStorage.getItem('tutorialInterrupted')) {
+    sessionStorage.removeItem('tutorialInterrupted');
+    window.Navigation?.go?.('lobby');
+  }
 
   window.dashOnClick = function(e) { e.preventDefault(); window.Input?.attemptDash?.(); };
   } catch (err) {
