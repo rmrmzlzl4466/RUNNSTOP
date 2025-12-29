@@ -1274,26 +1274,6 @@
     }
     .loadout-slots { display: flex; gap: 15px; justify-content: center; }
 
-    /* QA Button - Top Right Corner */
-    .btn-qa-corner {
-      position: absolute;
-      top: 70px;
-      right: 15px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 900;
-      border: 1px solid rgba(0, 255, 65, 0.3);
-      border-radius: 6px;
-      background: rgba(0, 20, 0, 0.6);
-      color: rgba(0, 255, 65, 0.5);
-      cursor: pointer;
-      z-index: 10;
-      text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
-    }
-    .btn-qa-corner:hover {
-      border-color: #00ff41;
-      color: #00ff41;
-    }
     .lobby-slot {
       width: 70px; height: 70px; border-radius: 12px;
       background: rgba(0, 255, 65, 0.05);
@@ -1401,7 +1381,8 @@
       );
       pointer-events: none;
     }
-    .btn-shop-main {
+    .btn-shop-main,
+    .btn-qa-main {
       padding: 12px 50px;
       font-size: 16px;
       font-weight: 900;
@@ -1414,11 +1395,13 @@
       text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
       transition: all 0.1s;
     }
-    .btn-shop-main:hover {
+    .btn-shop-main:hover,
+    .btn-qa-main:hover {
       border-color: #00ff41;
       box-shadow: 0 3px 0 #051005, 0 0 25px rgba(0, 255, 65, 0.4);
     }
-    .btn-shop-main:active {
+    .btn-shop-main:active,
+    .btn-qa-main:active {
       transform: translateY(3px);
       box-shadow: none;
     }
