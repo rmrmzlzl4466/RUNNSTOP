@@ -60,7 +60,7 @@
    */
   function load() {
     try {
-      const stored = localStorage.getItem(SAVE_KEY);
+      const stored = localStorage.getItem(ITEM_UPGRADES_KEY);
       if (!stored) return Object.assign({}, defaultItemUpgrades);
       const parsed = JSON.parse(stored);
       // Ensure all default keys exist

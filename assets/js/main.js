@@ -109,6 +109,39 @@
     });
   }
 
+  // Lobby character helpers
+  let lobbyInterval = null;
+  function performJump(el) {
+    if (el.classList.contains('anim-jump')) return;
+    el.classList.add('anim-jump');
+    setTimeout(() => el.classList.remove('anim-jump'), 500);
+  }
+
+  function startLobbyLoop() {
+    if (lobbyInterval) clearInterval(lobbyInterval);
+    lobbyInterval = null;
+
+    // 캐릭터 위치 초기화 - flexbox 중앙정렬 사용
+    const charEl = document.getElementById('lobby-char');
+    if (charEl) {
+      charEl.style.left = '';
+      charEl.style.transform = '';
+    }
+  }
+
+  function stopLobbyLoop() {
+    if (lobbyInterval) clearInterval(lobbyInterval);
+    lobbyInterval = null;
+  }
+
+  function interactLobbyChar() {
+    const el = document.getElementById('lobby-char');
+    if (el) {
+      performJump(el);
+      window.Sound?.sfx('jump');
+    }
+  }
+
   let titleTransitioning = false;
   function handleTitleTouch() {
     if (titleTransitioning) return;
