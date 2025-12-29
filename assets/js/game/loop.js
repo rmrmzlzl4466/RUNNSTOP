@@ -21,6 +21,18 @@ window.GameModules = window.GameModules || {};
   const getSlowMo = () => window.GameModules.SlowMo;
   const getGimmick = () => window.GameModules.Gimmick;
 
+  function checkTutorialProgress() {
+    if (!runtime.tutorialMode) return;
+    const tm = window.TutorialManager;
+    if (tm?.checkStepCondition?.()) {
+      tm.onStepComplete?.(runtime);
+    }
+    const step = tm?.getCurrentStep?.();
+    if (typeof step === 'number') {
+      runtime.tutorialStep = step;
+    }
+  }
+
   function render() {
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const pivotY = runtime.canvasSize.height * camOffsetPct;
@@ -60,6 +72,19 @@ window.GameModules = window.GameModules || {};
     }
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Genuine: ${result.genuineSafe}, Action: ${result.action}`;
+    if (runtime.tutorialMode) {
+      if (result.genuineSafe) {
+        if (window.TutorialManager?.incrementSafeJudgment) {
+          window.TutorialManager.incrementSafeJudgment();
+        } else if (window.TutorialManager?.state) {
+          window.TutorialManager.state.safeJudgmentCount += 1;
+        }
+      }
+      if (!result.isSafe) {
+        window.TutorialManager?.retryStep?.();
+        return;
+      }
+    }
 
     // genuineSafe: 실제로 안전 지대 위에서 생존한 경우만 JFB 보상
     if (result.genuineSafe) {
@@ -120,6 +145,12 @@ window.GameModules = window.GameModules || {};
   }
 
   function update(dt, nowSec) {
+    const isTutorial = runtime.tutorialMode;
+    const tutorialStep = isTutorial ? (window.TutorialManager?.getCurrentStep?.() ?? runtime.tutorialStep ?? 1) : null;
+    if (isTutorial && typeof tutorialStep === 'number') {
+      runtime.tutorialStep = tutorialStep;
+    }
+
     // Get world scale from SlowMo module
     const worldScale = getSlowMo()?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
@@ -134,6 +165,13 @@ window.GameModules = window.GameModules || {};
       stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
     };
 
+    if (isTutorial && tutorialStep === 1) {
+      runtime.gameState = STATE.RUN;
+      if (!Number.isFinite(runtime.cycleTimer) || runtime.cycleTimer <= 0) {
+        runtime.cycleTimer = effective.runPhaseDuration ?? 3.0;
+      }
+    }
+
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
     const uiDt = (applyMask === 'everything') ? worldDt : dt;
@@ -144,8 +182,15 @@ window.GameModules = window.GameModules || {};
     window.Game.UI.updateFloatingTexts(uiDt);
     window.Game.UI.updateBuffs(player);
     window.Game.UI.updateDash(player);
+    const prevX = player.x;
+    const prevY = player.y;
     // Pass effective config for per-stage physics (friction, baseSpeed, etc.)
     player.update(worldDt, { input: window.Input, qaConfig, effective, canvasWidth: runtime.canvasSize.width });
+    if (isTutorial && tutorialStep === 1) {
+      if (player.x !== prevX || player.y !== prevY) {
+        window.TutorialManager?.markMoved?.();
+      }
+    }
     // Apply scoreMult from effective config (includes loopScale)
     player.sessionScore += (qaConfig.scorePerSecond ?? 0) * worldDt * effective.scoreMult;
     window.Game.UI.updateScore(player.sessionScore, formatNumber);
@@ -165,6 +210,10 @@ window.GameModules = window.GameModules || {};
     const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
     const stormSpeed = baseStormSpeed * stormPulseMult;
     runtime.storm.y -= stormSpeed * worldDt;
+    const disableStorm = isTutorial && (tutorialStep === 1 || tutorialStep === 2);
+    if (disableStorm) {
+      runtime.storm.y = runtime.cameraY + runtime.canvasSize.height + 5000;
+    }
     if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
       handlers.onDie?.('STORM');
       return;
@@ -207,6 +256,9 @@ window.GameModules = window.GameModules || {};
     runtime._prevBoosting = player.isBoosting;
     if (boostStarted) {
       getSlowMo()?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
+      if (isTutorial && tutorialStep === 1) {
+        window.TutorialManager?.markDashed?.();
+      }
     }
 
     if (runtime.gameState === STATE.RUN) {
@@ -249,6 +301,10 @@ window.GameModules = window.GameModules || {};
         runtime.cycleTimer = effective.runPhaseDuration;
         window.Game.UI.onRunStart();
       }
+    }
+
+    if (isTutorial) {
+      checkTutorialProgress();
     }
   }
 
