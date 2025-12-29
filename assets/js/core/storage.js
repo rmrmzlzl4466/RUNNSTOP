@@ -8,7 +8,10 @@
     equippedSkin: 0,
     unlockedTreasures: [],      // 보유한 보물 ID 리스트
     equippedTreasures: [null, null], // 장착 슬롯 (최대 2개)
-    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
+    stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 },
+    // 튜토리얼 필드 추가
+    tutorialCompleted: false,    // 튜토리얼 완료 여부
+    tutorialProgress: 0,         // 마지막 완료 단계 (재진입용)
   };
 
   function normalizeSave(data) {

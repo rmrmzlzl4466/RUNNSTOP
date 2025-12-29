@@ -32,6 +32,11 @@ window.Navigation = {
     if (screenId === 'qa') {
       window.initQASliders?.();
     }
+    if (screenId === 'tutorial') {
+      // 튜토리얼 화면은 Navigation.go 호출 시점에 활성화되지 않음
+      // 튜토리얼 매니저에서 직접 `screen-tutorial`을 활성화할 예정
+      // window.GameModules.Tutorial.startTutorial() 호출 시점에 활성화
+    }
 
     window.Sound?.sfx('btn');
   },
@@ -56,75 +61,20 @@ window.Navigation = {
   }
 };
 
-// 타이틀 화면 터치 이벤트
-let titleTransitioning = false;
-
-function triggerTitleGlitchOut() {
-  if (titleTransitioning) return;
-  titleTransitioning = true;
-
-  const titleScreen = document.getElementById('screen-title');
-  const lobbyScreen = document.getElementById('screen-lobby');
-  if (!titleScreen) return;
-
-  // Play glitch sound if available
-  window.Sound?.sfx?.('bit');
-
-  // Prepare lobby screen behind title (hidden but ready)
-  if (lobbyScreen) {
-    lobbyScreen.style.display = 'flex';
-    lobbyScreen.style.opacity = '0';
-    window.updateLobbyUI?.();
-  }
-
-  // Add glitch-out class to trigger animation
-  titleScreen.classList.add('glitch-out');
-
-  // Haptic feedback on mobile
-  if (navigator.vibrate) {
-    navigator.vibrate([30, 20, 50, 20, 30]);
-  }
-
-  // Fade in lobby during glitch
-  setTimeout(() => {
-    if (lobbyScreen) {
-      lobbyScreen.style.transition = 'opacity 0.3s ease-out';
-      lobbyScreen.style.opacity = '1';
-    }
-  }, 300);
-
-  // Complete transition after animation
-  setTimeout(() => {
-    // Hide title screen
-    titleScreen.style.display = 'none';
-    titleScreen.classList.remove('active-screen', 'glitch-out');
-
-    // Finalize lobby
-    if (lobbyScreen) {
-      lobbyScreen.classList.add('active-screen');
-      lobbyScreen.style.transition = '';
-      lobbyScreen.style.opacity = '';
-      window.startLobbyLoop?.();
-    }
-
-    window.Navigation.current = 'lobby';
-    titleTransitioning = false;
-  }, 600);
-}
-
-function initTitleScreen() {
-  const titleScreen = document.getElementById('screen-title');
-  if (titleScreen) {
-    titleScreen.addEventListener('click', triggerTitleGlitchOut);
-    titleScreen.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      triggerTitleGlitchOut();
-    }, { passive: false });
-  }
-}
-
 // 앱 시작 시 타이틀 화면 보이기
 window.addEventListener('load', () => {
-  initTitleScreen();
+  const titleScreen = document.getElementById('screen-title');
+  if (titleScreen) {
+    const onTitleTouch = () => {
+      // 이 로직은 이제 main.js의 triggerTitleGlitchOut에서 처리됩니다.
+      // 이 이벤트 리스너는 여전히 필요하지만, 실제 로직은 main.js에 있습니다.
+      window.handleTitleTouch?.(); 
+    };
+    titleScreen.addEventListener('click', onTitleTouch);
+    titleScreen.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      onTitleTouch();
+    }, { passive: false });
+  }
   window.Navigation.go('title');
 });

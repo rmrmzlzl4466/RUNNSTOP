@@ -30,6 +30,9 @@
   window.runtime = runtime;  // For StageConfig module
   window.Game.runtime = runtime;
 
+  // 튜토리얼 완료 여부 확인 (최초 실행 시 튜토리얼로 자동 진입 위함)
+  window.shouldStartTutorial = !gameData.tutorialCompleted;
+
   // Initialize subsystems
   window.Game.UI?.init?.();
   window.Game.Renderer?.init?.(canvas, ctx);
@@ -38,6 +41,10 @@
   window.initQASliders?.();
   window.updateUpgradeUI?.();
   window.renderSkinList?.();
+
+  // 튜토리얼 모듈 초기화
+  window.GameModules.Tutorial?.init();
+  window.GameModules.TutorialUI?.init();
 
   function saveGame() {
     persistGameData(gameData);
@@ -65,6 +72,7 @@
   function bindStartButtons() {
     const btnStart = document.getElementById('btn-start');
     const btnResultRestart = document.getElementById('btn-result-restart');
+    const btnTutorial = document.getElementById('btn-tutorial');
 
     // Start button with glitch effect
     btnStart?.addEventListener('click', () => {
@@ -87,6 +95,14 @@
     });
 
     btnResultRestart?.addEventListener('click', safeStartGame);
+    
+    // 튜토리얼 버튼 핸들러
+    btnTutorial?.addEventListener('click', () => {
+      window.GameModules.Tutorial.startTutorial(1);
+      window.Navigation.go('tutorial');
+      safeStartGame(); // 튜토리얼 게임 루프 시작
+    });
+
     console.log('[BOOT] window.startGame type=', typeof safeStartGame);
     console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
   }
@@ -131,12 +147,39 @@
     }
   }
 
+  let titleTransitioning = false;
+  function handleTitleTouch() {
+    if (titleTransitioning) return;
+    titleTransitioning = true;
+  
+    const titleScreen = document.getElementById('screen-title');
+    if (!titleScreen) return;
+  
+    window.Sound?.sfx?.('bit');
+    titleScreen.classList.add('glitch-out');
+    if (navigator.vibrate) navigator.vibrate([30, 20, 50, 20, 30]);
+  
+    setTimeout(() => {
+      if (window.shouldStartTutorial) {
+        window.GameModules.Tutorial.startTutorial(1);
+        window.Navigation.go('tutorial');
+        safeStartGame(); // 튜토리얼 게임 루프 시작
+      } else {
+        window.Navigation.go('lobby');
+      }
+      titleTransitioning = false;
+      // titleScreen.classList.remove('active-screen', 'glitch-out'); // Navigation.go가 처리
+    }, 600); // Glitch-out 애니메이션 시간과 맞춤
+  }
+
   // Expose limited API for UI bindings
   window.startGame = safeStartGame;
   window.togglePause = lifecycle.togglePause;
   window.restartFromPause = lifecycle.restartFromPause;
   window.quitGame = lifecycle.quitGame;
   window.resetSaveData = handleResetSave;
+  window.handleTitleTouch = handleTitleTouch; // Expose to global scope for navigation.js
+  
   window.Game.startGame = lifecycle.startGame;
   window.Game.togglePause = lifecycle.togglePause;
   window.Game.restartFromPause = lifecycle.restartFromPause;
@@ -166,6 +209,7 @@
   window.startLobbyLoop = startLobbyLoop;
   window.stopLobbyLoop = stopLobbyLoop;
   window.interactLobbyChar = interactLobbyChar;
+  
   bindStartButtons();
 
   // Audio focus handling

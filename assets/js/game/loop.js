@@ -124,6 +124,15 @@ window.GameModules = window.GameModules || {};
     const worldScale = getSlowMo()?.getWorldScale?.(runtime, qaConfig, nowSec, player.isBoosting) ?? 1.0;
     const worldDt = dt * worldScale;
 
+    // 튜토리얼 모드 분기 처리
+    if (runtime.tutorialMode) {
+      window.GameModules.Tutorial.checkEventTriggers(); // 이벤트 트리거 체크
+      if (window.GameModules.Tutorial.checkStepCondition()) { // 단계 성공 조건 체크
+        window.GameModules.Tutorial.onStepComplete(); // 단계 완료 처리
+        return; // 현재 프레임은 여기까지만 처리하고 다음 프레임에 새로운 단계 시작
+      }
+    }
+
     // Get effective config (stage-specific values with QA overrides)
     const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
       stormSpeed: qaConfig.stormBaseSpeed ?? 150,
@@ -133,6 +142,17 @@ window.GameModules = window.GameModules || {};
       warningTimeMult: 1.0,
       stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
     };
+
+    // 튜토리얼 Step 1: RUN 상태 고정
+    if (runtime.tutorialMode && runtime.tutorialStep === 1) {
+      runtime.gameState = STATE.RUN;
+      runtime.cycleTimer = 999; // 타이머 리셋 방지
+    }
+
+    // 튜토리얼 Step 1-2: 스톰 비활성화
+    if (runtime.tutorialMode && runtime.tutorialStep <= 2) {
+      runtime.storm.y = -99999; // 스톰을 화면 밖으로
+    }
 
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';

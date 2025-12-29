@@ -8,6 +8,12 @@ window.GameModules = window.GameModules || {};
   const { applyLoopDifficultyScaling, showStageNotification } = window.GameModules.Stage;
 
   function createLifecycle(canvas, player, qaConfig, gameData, saveGameData, runtime) {
+    let _originalPauseBoxHtml = ''; // 초기 HTML 저장 변수
+    const pauseBoxElement = document.querySelector('#overlay-pause .pause-box');
+    if (pauseBoxElement) {
+      _originalPauseBoxHtml = pauseBoxElement.innerHTML;
+    }
+
     const loop = createGameLoop(runtime, player, qaConfig, {
       onDie: handleDeath,
       onGameOver: handleGameOver
@@ -23,6 +29,12 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleDeath(reason) {
+    // 튜토리얼 모드에서는 사망 시 재시도
+    if (runtime.tutorialMode) {
+      window.GameModules.Tutorial?.retryStep();
+      return;
+    }
+
     if (player.isDead || player.isDying) return;
     if (player.hasRevive) {
       player.hasRevive = false;
@@ -149,23 +161,8 @@ window.GameModules = window.GameModules || {};
     loop.start();
   }
 
-  function togglePause() {
-    if (!runtime.gameActive) return;
-    if (runtime.gameState === STATE.PAUSE) {
-      resumeGame();
-    } else {
-      pauseGame({ showOverlay: true, reason: 'manual' });
-    }
-    window.Sound?.sfx?.('btn');
-  }
-
-  function restartFromPause() {
-    window.Navigation?.hideOverlay?.('overlay-pause');
-    loop.stop();
-    startGame();
-  }
-
-  function quitGame() {
+  // 기존 quitGame 로직을 별도 함수로 래핑
+  function _quitGameOriginal() {
     window.Navigation?.hideOverlay?.('overlay-pause');
     loop.stop();
     runtime.gameActive = false;
@@ -173,6 +170,58 @@ window.GameModules = window.GameModules || {};
     window.Game.UI.setMobileControls(false);
     window.Navigation?.go?.('lobby');
     window.Sound?.sfx?.('btn');
+  }
+
+  // 튜토리얼 전용 일시정지 메뉴 표시
+  function _showTutorialPauseMenu() {
+    runtime.previousState = runtime.gameState || STATE.RUN;
+    runtime.gameState = STATE.PAUSE;
+    window.Sound?.bgmStop?.();
+    loop.pause();
+
+    // 튜토리얼 전용 일시정지 UI 생성
+    const tutorialPauseHtml = `
+      <div class="pause-box">
+        <div class="pause-title">PAUSED</div>
+        <button class="btn-common pause-btn" onclick="window.GameModules.Lifecycle.resumeGame()">RESUME</button>
+        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.GameModules.Tutorial.quitTutorial()">튜토리얼 나가기</button>
+      </div>
+    `;
+    const overlayElement = document.getElementById('overlay-pause');
+    if (overlayElement) {
+      overlayElement.innerHTML = tutorialPauseHtml;
+    }
+    window.Navigation?.showOverlay?.('overlay-pause');
+  }
+
+
+  function togglePause() {
+    if (!runtime.gameActive) return;
+    if (runtime.gameState === STATE.PAUSE) {
+      resumeGame();
+    } else {
+      if (runtime.tutorialMode) {
+        _showTutorialPauseMenu();
+      } else {
+        pauseGame({ showOverlay: true, reason: 'manual' });
+      }
+    }
+    window.Sound?.sfx?.('btn');
+  }
+
+  function restartFromPause() {
+    // 튜토리얼 모드에서는 재시작 버튼을 숨겼으므로, 이 함수는 튜토리얼에선 호출되지 않음
+    window.Navigation?.hideOverlay?.('overlay-pause');
+    loop.stop();
+    startGame();
+  }
+
+  function quitGame() {
+    if (runtime.tutorialMode) {
+      window.GameModules.Tutorial?.quitTutorial();
+    } else {
+      _quitGameOriginal();
+    }
   }
 
   function warpToDistance(targetDistance) {
@@ -235,6 +284,11 @@ window.GameModules = window.GameModules || {};
     runtime.gameState = targetState;
     runtime.previousState = STATE.RUN;
     window.Navigation?.hideOverlay?.('overlay-pause');
+    // 튜토리얼 일시정지 메뉴를 닫을 때 원래대로 복구
+    const overlayElement = document.getElementById('overlay-pause');
+    if (overlayElement) {
+      overlayElement.innerHTML = `<div class="pause-box">${_originalPauseBoxHtml}</div>`;
+    }
     window.Sound?.bgmStart?.();
     loop.resume();
     runtime._lastPauseReason = null;
