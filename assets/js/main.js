@@ -45,6 +45,7 @@
   // 튜토리얼 모듈 초기화
   window.GameModules.Tutorial?.init();
   window.GameModules.TutorialUI?.init();
+  const tutorialResumeStep = window.GameModules.Tutorial?.getResumeStep?.() ?? 1;
 
   function saveGame() {
     persistGameData(gameData);
@@ -55,6 +56,12 @@
   }
 
   const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
+
+  function startTutorialFlow(step, options = {}) {
+    const targetStep = step ?? (window.GameModules.Tutorial?.getResumeStep?.() ?? tutorialResumeStep);
+    window.Navigation.go('tutorial');
+    lifecycle.startGame(null, { isTutorial: true, tutorialStep: targetStep, isRetry: options.isRetry });
+  }
 
   function safeStartGame(e) {
     if (e?.preventDefault) e.preventDefault();
@@ -98,8 +105,7 @@
     
     // 튜토리얼 버튼 핸들러
     btnTutorial?.addEventListener('click', () => {
-      window.Navigation.go('tutorial');
-      lifecycle.startGame(null, { isTutorial: true });
+      startTutorialFlow(1);
     });
   }
 
@@ -117,8 +123,7 @@
   
     setTimeout(() => {
       if (window.shouldStartTutorial) {
-        window.Navigation.go('tutorial');
-        lifecycle.startGame(null, { isTutorial: true });
+        startTutorialFlow(tutorialResumeStep);
       } else {
         window.Navigation.go('lobby');
       }

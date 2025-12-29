@@ -112,18 +112,22 @@ window.GameModules = window.GameModules || {};
       loop.stop();
     }
 
-    if (options.isTutorial) {
-      window.GameModules.Tutorial.setupTutorial(1); // 튜토리얼 상태 및 설정 준비
-    } else {
-      runtime.tutorialMode = false; // 일반 게임 모드임을 명시
-    }
+    const isTutorial = options.isTutorial === true;
+    const targetTutorialStep = options.tutorialStep ?? window.GameModules.Tutorial?.getResumeStep?.() ?? 1;
 
     window.Input?.setIgnoreInputUntil?.(performance.now() + 250);
     window.Sound?.bgmStart?.();
     window.Sound?.sfx?.('btn');
 
     syncCanvasSize(runtime, canvas);
-    resetRuntime(runtime, qaConfig);
+    const tutorialConfig = window.TutorialConfig?.getConfig?.(targetTutorialStep) ?? {};
+    resetRuntime(runtime, qaConfig, isTutorial ? {
+      tutorialMode: true,
+      tutorialStep: targetTutorialStep,
+      tutorialSubStep: 1,
+      tutorialHoldCycle: targetTutorialStep === 2,
+      tutorialStormEnabled: tutorialConfig.stormEnabled !== false && !(tutorialConfig.eventTriggers || []).some((t) => t.action === 'activate_storm')
+    } : { tutorialMode: false, tutorialStep: 0, tutorialSubStep: 0 });
     runtime._lastPauseReason = null;
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
 
@@ -160,6 +164,14 @@ window.GameModules = window.GameModules || {};
     runtime.isFirstWarning = true;
 
     window.Navigation?.hideAll?.();
+    if (isTutorial) {
+      window.Navigation?.go?.('tutorial');
+      window.GameModules.Tutorial?.startTutorial(targetTutorialStep, { isRetry: options.isRetry });
+    }
+    if (!isTutorial) {
+      window.GameModules.Tutorial?.deactivateRuntime?.();
+      window.GameModules.TutorialUI?.setActive?.(false);
+    }
     window.Game.UI.setPhase(STATE.RUN, 3.0, 3.0, STATE);
     window.Game.UI.setStateGlow(STATE.RUN, STATE);
     window.Game.UI.resetForGameStart();
@@ -225,10 +237,15 @@ window.GameModules = window.GameModules || {};
 
   function quitGame() {
     if (runtime.tutorialMode) {
+      window.Navigation?.hideOverlay?.('overlay-pause');
+      loop.stop();
+      runtime.gameActive = false;
+      window.Sound?.bgmStop?.();
+      window.Game.UI.setMobileControls(false);
       window.GameModules.Tutorial?.quitTutorial();
-    } else {
-      _quitGameOriginal();
+      return;
     }
+    _quitGameOriginal();
   }
 
   function warpToDistance(targetDistance) {

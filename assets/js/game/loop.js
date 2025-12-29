@@ -63,6 +63,9 @@ window.GameModules = window.GameModules || {};
 
     // genuineSafe: 실제로 안전 지대 위에서 생존한 경우만 JFB 보상
     if (result.genuineSafe) {
+      if (runtime.tutorialMode) {
+        window.GameModules.Tutorial?.onSafeJudgmentSuccess();
+      }
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
       const slowMoModule = getSlowMo();
@@ -81,7 +84,7 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        window.GameModules.Tutorial.retryStep();
+        window.GameModules.Tutorial?.retryStep();
       } else {
         handlers.onDie?.('FALL');
       }
@@ -97,7 +100,7 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        window.GameModules.Tutorial.retryStep();
+        window.GameModules.Tutorial?.retryStep();
       } else {
         handlers.onDie?.('FALL_DURING_STOP');
       }
@@ -134,15 +137,15 @@ window.GameModules = window.GameModules || {};
 
     // 튜토리얼 모드 분기 처리
     if (runtime.tutorialMode) {
-      window.GameModules.Tutorial.checkEventTriggers(); // 이벤트 트리거 체크
-      if (window.GameModules.Tutorial.checkStepCondition()) { // 단계 성공 조건 체크
-        window.GameModules.Tutorial.onStepComplete(); // 단계 완료 처리
+      window.GameModules.Tutorial?.checkEventTriggers?.(); // 이벤트 트리거 체크
+      if (window.GameModules.Tutorial?.checkStepCondition?.()) { // 단계 성공 조건 체크
+        window.GameModules.Tutorial?.onStepComplete?.(); // 단계 완료 처리
         return; // 현재 프레임은 여기까지만 처리하고 다음 프레임에 새로운 단계 시작
       }
     }
 
     // Get effective config (stage-specific values with QA overrides)
-    const effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
+    let effective = window.GameModules?.StageConfig?.getEffective?.() ?? {
       stormSpeed: qaConfig.stormBaseSpeed ?? 150,
       runPhaseDuration: qaConfig.runPhaseDuration ?? 3.0,
       warningTimeBase: qaConfig.warningTimeBase ?? 7.0,
@@ -151,15 +154,28 @@ window.GameModules = window.GameModules || {};
       stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
     };
 
+    // 튜토리얼 오버라이드 적용
+    if (runtime.tutorialMode) {
+      effective = window.TutorialConfig.applyOverrides({ ...effective }, runtime.tutorialStep);
+    }
+    const tutorialRules = effective._tutorialRules || {};
+
     // 튜토리얼 Step 1: RUN 상태 고정
-    if (runtime.tutorialMode && runtime.tutorialStep === 1) {
+    if (runtime.tutorialMode && tutorialRules.lockGameState === 'RUN') {
       runtime.gameState = STATE.RUN;
-      runtime.cycleTimer = 999; // 타이머 리셋 방지
+      runtime.cycleTimer = Number.isFinite(runtime.cycleTimer) ? Math.max(runtime.cycleTimer, 999) : 999;
+    }
+
+    // 튜토리얼 Step 2: 사이클 지연 (트리거 발생 시까지)
+    if (runtime.tutorialMode && runtime._tutorialHoldCycle) {
+      runtime.gameState = STATE.RUN;
+      runtime.cycleTimer = Infinity;
     }
 
     // 튜토리얼 Step 1-2: 스톰 비활성화
-    if (runtime.tutorialMode && runtime.tutorialStep <= 2) {
-      runtime.storm.y = -99999; // 스톰을 화면 밖으로
+    const stormEnabled = !runtime.tutorialMode || runtime._tutorialStormEnabled;
+    if (!stormEnabled) {
+      runtime.storm.y = player.y - 2000;
     }
 
     // UI uses real time (not slowed)
@@ -190,16 +206,22 @@ window.GameModules = window.GameModules || {};
     const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
     // Use effective stormSpeed (includes stage multiplier, loop scaling, and gimmick pulse)
-    const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
-    const stormSpeed = baseStormSpeed * stormPulseMult;
-    runtime.storm.y -= stormSpeed * worldDt;
-    if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
-      handlers.onDie?.('STORM');
-      return;
+    if (stormEnabled) {
+      const baseStormSpeed = window.Game.Physics.getStormSpeed(player.dist, effective.stormSpeed);
+      const stormSpeed = baseStormSpeed * stormPulseMult;
+      runtime.storm.y -= stormSpeed * worldDt;
+      if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
+        if (runtime.tutorialMode) {
+          window.GameModules.Tutorial?.retryStep();
+          return;
+        }
+        handlers.onDie?.('STORM');
+        return;
+      }
     }
 
     const screenBottom = runtime.cameraY + runtime.canvasSize.height;
-    window.Game.UI.setStormWarning(runtime.storm.y < screenBottom + 300);
+    window.Game.UI.setStormWarning(stormEnabled && runtime.storm.y < screenBottom + 300);
     window.Game.LevelManager.cleanupRows(runtime.storm.y);
     const camOffsetPct = getCameraOffsetPct(qaConfig);
     const targetCamY = player.y - (runtime.canvasSize.height / Math.max(0.001, runtime.cameraZoom)) * camOffsetPct;
@@ -209,7 +231,11 @@ window.GameModules = window.GameModules || {};
     updateCameraZoom(runtime, player, qaConfig, worldDt);
     ensureRowsAroundPlayer();
     window.Game.Physics.filterItemsBehindStorm(runtime.items, runtime.storm);
-    handleItems();
+    if (!runtime.tutorialMode || tutorialRules.itemsEnabled !== false) {
+      handleItems();
+    } else {
+      runtime.items.length = 0;
+    }
 
     runtime.cycleTimer -= worldDt;
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);

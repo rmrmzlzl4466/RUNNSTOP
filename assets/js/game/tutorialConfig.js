@@ -108,27 +108,42 @@
 
   function applyTutorialOverrides(effectiveConfig, step) {
     const tutorialConfig = getTutorialConfig(step);
+    const next = Object.assign({}, effectiveConfig);
 
     if (tutorialConfig.stormSpeedMult !== undefined) {
-      effectiveConfig.stormSpeed *= tutorialConfig.stormSpeedMult;
+      next.stormSpeed = (effectiveConfig.stormSpeed ?? 0) * tutorialConfig.stormSpeedMult;
     }
     if (tutorialConfig.warningTimeBase !== undefined) {
-      effectiveConfig.warningTimeBase = tutorialConfig.warningTimeBase;
+      next.warningTimeBase = tutorialConfig.warningTimeBase;
     }
     if (tutorialConfig.stopPhaseDuration !== undefined) {
-      effectiveConfig.stopPhaseDuration = tutorialConfig.stopPhaseDuration;
+      next.stopPhaseDuration = tutorialConfig.stopPhaseDuration;
     }
     if (tutorialConfig.colorPalette !== undefined) {
-      effectiveConfig.colorPalette = tutorialConfig.colorPalette;
+      next.colorPalette = tutorialConfig.colorPalette;
     }
 
-    return effectiveConfig;
+    // Additional tutorial-only flags for loop.js to branch on
+    next._tutorialRules = {
+      lockGameState: tutorialConfig.lockGameState,
+      stormEnabled: tutorialConfig.stormEnabled !== false,
+      obstaclesEnabled: tutorialConfig.obstaclesEnabled !== false,
+      itemsEnabled: tutorialConfig.itemsEnabled !== false
+    };
+
+    // Disable storm entirely when stormEnabled is false
+    if (tutorialConfig.stormEnabled === false) {
+      next.stormSpeed = 0;
+    }
+
+    return next;
   }
 
   window.TutorialConfig = {
     STEP_CONFIG: TUTORIAL_STEP_CONFIG,
     TEXTS: TUTORIAL_TEXTS, // 텍스트도 외부에서 접근 가능하도록 추가
     getConfig: getTutorialConfig,
+    getTexts: (step) => TUTORIAL_TEXTS[step] || null,
     applyOverrides: applyTutorialOverrides,
   };
   window.GameModules = window.GameModules || {};

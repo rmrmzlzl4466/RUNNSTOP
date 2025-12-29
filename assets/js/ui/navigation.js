@@ -32,11 +32,7 @@ window.Navigation = {
     if (screenId === 'qa') {
       window.initQASliders?.();
     }
-    if (screenId === 'tutorial') {
-      // 튜토리얼 화면은 Navigation.go 호출 시점에 활성화되지 않음
-      // 튜토리얼 매니저에서 직접 `screen-tutorial`을 활성화할 예정
-      // window.GameModules.Tutorial.startTutorial() 호출 시점에 활성화
-    }
+    window.GameModules?.TutorialUI?.setActive?.(screenId === 'tutorial');
 
     window.Sound?.sfx('btn');
   },
