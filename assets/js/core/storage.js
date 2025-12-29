@@ -19,6 +19,12 @@
     if (!Array.isArray(merged.equippedTreasures) || merged.equippedTreasures.length !== 2) {
       merged.equippedTreasures = [null, null];
     }
+    // 스킨 타입 보정 (문자열로 저장된 기존 세이브 호환)
+    merged.unlockedSkins = (merged.unlockedSkins || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    merged.equippedSkin = Number(merged.equippedSkin ?? 0);
+    if (!merged.unlockedSkins.includes(merged.equippedSkin)) {
+      merged.unlockedSkins.unshift(merged.equippedSkin || 0);
+    }
     return merged;
   }
 

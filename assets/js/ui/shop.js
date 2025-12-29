@@ -94,7 +94,8 @@ window.updateLobbyUI = function() {
   // 캐릭터 미리보기
   const lobbyChar = document.getElementById('lobby-char');
   const skinNameEl = document.getElementById('lobby-skin-name');
-  const currentSkin = (window.SKINS || []).find(s => s.id === window.GameData.equippedSkin);
+  const equippedSkinId = Number(window.GameData?.equippedSkin ?? 0);
+  const currentSkin = (window.SKINS || []).find(s => Number(s.id) === equippedSkinId) || (window.SKINS || [])[0];
   if (lobbyChar) {
     const baseColor = currentSkin?.color || '#333';
     lobbyChar.style.background = baseColor;
