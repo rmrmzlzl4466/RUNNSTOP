@@ -121,11 +121,6 @@ window.GameModules = window.GameModules || {};
 
     syncCanvasSize(runtime, canvas);
     const tutorialConfig = window.TutorialConfig?.getConfig?.(targetTutorialStep) ?? {};
-    // Use dedicated tutorial theme when available
-    if (isTutorial && Array.isArray(window.THEMES)) {
-      const idx = window.THEMES.findIndex((t) => t.name === 'TUTORIAL');
-      if (idx >= 0) runtime.currentThemeIdx = idx;
-    }
     resetRuntime(runtime, qaConfig, isTutorial ? {
       tutorialMode: true,
       tutorialStep: targetTutorialStep,
@@ -134,6 +129,12 @@ window.GameModules = window.GameModules || {};
       tutorialStormEnabled: tutorialConfig.stormEnabled !== false && !(tutorialConfig.eventTriggers || []).some((t) => t.action === 'activate_storm')
     } : { tutorialMode: false, tutorialStep: 0, tutorialSubStep: 0 });
     runtime._lastPauseReason = null;
+
+    // Set tutorial theme AFTER resetRuntime (which resets currentThemeIdx to 0)
+    if (isTutorial && Array.isArray(window.THEMES)) {
+      const idx = window.THEMES.findIndex((t) => t.name === 'TUTORIAL');
+      if (idx >= 0) runtime.currentThemeIdx = idx;
+    }
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
 
     player.reset(canvas.width / 2, 550);
