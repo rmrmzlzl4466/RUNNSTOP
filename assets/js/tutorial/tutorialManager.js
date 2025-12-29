@@ -3,6 +3,7 @@
   const MIN_STEP = 1;
   const RESTORE_RETRY_LIMIT = 10;
   const RESTORE_RETRY_DELAY = 100;
+  const FAIL_RESET_DELAY = 50;
 
   function getRuntime() {
     return window.Game?.runtime;
@@ -25,6 +26,7 @@
     runtime.tutorial.from = runtime.tutorial.from ?? null;
     runtime.tutorial.firstRunLock = Boolean(runtime.tutorial.firstRunLock);
     runtime.tutorial.finishing = Boolean(runtime.tutorial.finishing);
+    runtime.tutorial._handlingFail = Boolean(runtime.tutorial._handlingFail);
     return runtime.tutorial;
   }
 
@@ -33,6 +35,19 @@
     window.Navigation?.hideOverlay?.('tutorial');
   }
 
+  function clearTutorialOverrides(runtime) {
+    runtime.tutorial = ensureTutorialRuntime(runtime);
+    runtime.tutorial._handlingFail = false;
+    runtime.tutorial.finishing = false;
+    runtime.tutorial.active = false;
+    runtime.tutorial.firstRunLock = false;
+    runtime.tutorial.from = null;
+    window.GameModules?.SlowMo?.forceOff?.(runtime);
+    window.Input?.setIgnoreInputUntil?.(0);
+    window.GameModules?.TutorialSteps?.clearOverrides?.(runtime);
+    window.GameModules?.Items?.setTutorialDropMode?.(false);
+    window.GameModules?.Stage?.setTutorialMode?.(runtime, false);
+  }
   function startStep(step) {
     const runtime = getRuntime();
     if (!runtime) return;
@@ -55,14 +70,19 @@
     tutorial.from = from ?? null;
     tutorial.firstRunLock = from === 'boot';
     tutorial.finishing = false;
+    tutorial._handlingFail = false;
 
     window.TutorialStorage?.setTutorialInProgress?.(true);
     tutorial.step = window.TutorialStorage?.getTutorialProgress?.() ?? tutorial.step;
 
-    getStartGameFn()?.({ allowDuringTutorial: true });
     window.Navigation?.go?.('tutorial');
 
-    startStep(tutorial.step);
+    requestAnimationFrame(() => {
+      if (!getRuntime()?.gameActive) {
+        getStartGameFn()?.({ allowDuringTutorial: true });
+      }
+      startStep(tutorial.step);
+    });
   }
 
   function abortTutorial() {
@@ -73,6 +93,7 @@
 
     tutorial.active = false;
     tutorial.finishing = false;
+    tutorial._handlingFail = false;
     window.TutorialStorage?.setTutorialInProgress?.(false);
 
     window.Navigation?.go?.('lobby');
@@ -91,20 +112,29 @@
 
     hideTutorialUI();
 
+    clearTutorialOverrides(runtime);
     tutorial.active = false;
     tutorial.firstRunLock = false;
-    getStartGameFn()?.({ allowDuringTutorial: true });
+    requestAnimationFrame(() => {
+      getStartGameFn()?.({ allowDuringTutorial: true });
+    });
   }
 
   function onPlayerFail(reason) {
     const runtime = getRuntime();
     if (!runtime) return;
     const tutorial = ensureTutorialRuntime(runtime);
-    if (!tutorial.active || tutorial.finishing) return;
+    if (!tutorial.active || tutorial.finishing || tutorial._handlingFail) return;
 
     window.GameModules?.TutorialSteps?.handleFail?.(tutorial.step, reason, runtime);
-    getStartGameFn()?.({ allowDuringTutorial: true });
-    startStep(tutorial.step);
+    tutorial._handlingFail = true;
+    setTimeout(() => {
+      tutorial._handlingFail = false;
+      if (!getRuntime()?.gameActive) {
+        getStartGameFn()?.({ allowDuringTutorial: true });
+      }
+      startStep(tutorial.step);
+    }, FAIL_RESET_DELAY);
   }
 
   function restoreFromStorage(retryCount = 0) {
@@ -119,7 +149,7 @@
     const inProgress = window.TutorialStorage?.getTutorialInProgress?.();
 
     if (inProgress && !tutorial.active) {
-      startTutorial({ from: 'lobby' });
+      startTutorial({ from: 'boot' });
       return;
     }
 

@@ -22,11 +22,17 @@ window.GameModules = window.GameModules || {};
     pruneItemsBehindPlayer(runtime, player);
   }
 
+  function handleTutorialFail(reason) {
+    if (!runtime.tutorial?.active) return false;
+    if (runtime.tutorial._handlingFail) return true;
+    runtime.tutorial._handlingFail = true;
+    window.GameModules?.Tutorial?.onPlayerFail?.(reason);
+    setTimeout(() => { runtime.tutorial._handlingFail = false; }, 100);
+    return true;
+  }
+
   function handleDeath(reason) {
-    if (runtime.tutorial?.active) {
-      window.GameModules?.Tutorial?.onPlayerFail?.(reason);
-      return;
-    }
+    if (handleTutorialFail(reason)) return;
     if (player.isDead || player.isDying) return;
     if (player.hasRevive) {
       player.hasRevive = false;
@@ -44,10 +50,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleGameOver() {
-    if (runtime.tutorial?.active) {
-      window.GameModules?.Tutorial?.onPlayerFail?.('gameover');
-      return;
-    }
+    if (handleTutorialFail('gameover')) return;
     if (!runtime.gameActive) return;
     runtime.gameActive = false;
     // Force off slow motion

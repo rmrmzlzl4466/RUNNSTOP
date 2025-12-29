@@ -68,7 +68,8 @@ window.GameModules = window.GameModules || {};
         step: 1,
         from: null,
         firstRunLock: false,
-        finishing: false
+        finishing: false,
+        _handlingFail: false
       }
     };
 
