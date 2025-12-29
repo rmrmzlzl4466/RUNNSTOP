@@ -9,11 +9,12 @@
 
 <body>
   <div id="game-container">
+    <div id="game-surface">
     <canvas id="gameCanvas"></canvas>
 
     <div id="mobile-controls" style="display:none;">
       <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
-      <div id="dash-zone"><div id="btn-dash-visual">DASH<div id="dash-cooldown-text"></div></div></div>
+      <div id="dash-zone"><div id="btn-dash-visual"><span id="dash-label">DASH</span><div id="dash-cooldown-text"></div></div></div>
     </div>
 
     <div id="hud">
@@ -69,7 +70,7 @@
       <div id="score-display" class="score-display" style="display:none;">SCORE: 0</div>
     </div>
 
-<div id="toast-msg" aria-live="polite" style="display: none;"></div>
+    <div id="toast-msg" aria-live="polite" style="display: none;"></div>
     <div id="theme-notify">ZONE 1<br>DIGITAL CIRCUIT</div>
     <div id="storm-warning">DATA STORM APPROACHING!</div>
 
@@ -83,6 +84,9 @@
 
     <!-- ========== [2] LOBBY SCREEN ========== -->
     <div id="screen-lobby" class="full-screen">
+      <!-- QA Button (top right corner) -->
+      <button class="btn-qa-corner" onclick="window.Navigation?.go('qa')">QA</button>
+
       <!-- Header: Currency -->
       <div class="screen-header">
         <div class="currency-row lobby-currency">
@@ -94,30 +98,28 @@
       <!-- Center: Character Preview -->
       <div class="lobby-center">
         <div class="lobby-stage">
-          <div id="lobby-char" class="lobby-char-box" onclick="window.interactLobbyChar()"></div>
-          <div class="lobby-ground"></div>
+          <div id="lobby-char" class="lobby-char-box"></div>
         </div>
-        <div class="lobby-char-name" id="lobby-skin-name" onclick="window.Navigation.go('shop'); window.switchTab('skin');">Default Runner</div>
+        <div class="lobby-char-name" id="lobby-skin-name">Default Runner</div>
+
+        <!-- Loadout: Treasure Slots -->
+        <div class="lobby-loadout">
+          <div class="loadout-label">LOADOUT</div>
+          <div class="loadout-slots">
+            <div class="lobby-slot" id="lobby-slot-0" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+              <span class="slot-icon">+</span>
+            </div>
+            <div class="lobby-slot" id="lobby-slot-1" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
+              <span class="slot-icon">+</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Loadout: Treasure Slots -->
-      <div class="lobby-loadout">
-        <div class="loadout-label">LOADOUT</div>
-        <div class="loadout-slots">
-          <div class="lobby-slot" id="lobby-slot-0" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
-            <span class="slot-icon">+</span>
-          </div>
-          <div class="lobby-slot" id="lobby-slot-1" onclick="window.Navigation?.go('shop'); window.switchTab?.('treasure');">
-            <span class="slot-icon">+</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer: Buttons -->
+      <!-- Footer: Buttons (vertical stack) -->
       <div class="lobby-footer">
-        <button class="btn-side" onclick="window.Navigation?.go('shop')">SHOP</button>
-        <button class="start-btn lobby-start" onclick="window.startGame(event)">GAME START</button>
-        <button class="btn-side" onclick="window.Navigation?.go('qa')">QA</button>
+        <button class="start-btn lobby-start" id="btn-start">GAME START</button>
+        <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
       </div>
     </div>
 
@@ -138,19 +140,39 @@
         <div class="tab-btn" id="tab-treasure" onclick="window.switchTab('treasure')">TREASURES</div>
       </div>
 
-      <!-- Upgrades Tab -->
+      <!-- Item Upgrades Tab -->
       <div id="shop-upgrade" class="shop-content">
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">⚡ Move Speed</span><span class="upgrade-level" id="lvl-speed">Lv.1</span><span class="stat-preview" id="stat-speed">Max Speed +0</span></div>
-          <button class="btn-common" id="btn-buy-speed">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-boosterDistance">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🚀 Booster Distance</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">100% → 110%</span>
+          </div>
+          <button class="btn-common btn-upgrade">80 🪙</button>
         </div>
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">⏳ Dash Cooldown</span><span class="upgrade-level" id="lvl-cool">Lv.1</span><span class="stat-preview" id="stat-cool">Cooldown -0s</span></div>
-          <button class="btn-common" id="btn-buy-cool">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-magnetDuration">
+          <div class="upgrade-info">
+            <span class="upgrade-name">⏱️ Magnet Duration</span>
+            <span class="upgrade-level">Lv.0/6</span>
+            <span class="stat-preview">+0.0s → +0.5s</span>
+          </div>
+          <button class="btn-common btn-upgrade">60 🪙</button>
         </div>
-        <div class="upgrade-item">
-          <div class="upgrade-info"><span class="upgrade-name">💰 Greed (Coin)</span><span class="upgrade-level" id="lvl-greed">Lv.1</span><span class="stat-preview" id="stat-greed">Bonus +0%</span></div>
-          <button class="btn-common" id="btn-buy-greed">100 🪙</button>
+        <div class="upgrade-item" id="upgrade-magnetRange">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🧲 Magnet Range</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">100% → 115%</span>
+          </div>
+          <button class="btn-common btn-upgrade">70 🪙</button>
+        </div>
+        <div class="upgrade-item" id="upgrade-shieldDropChance">
+          <div class="upgrade-info">
+            <span class="upgrade-name">🛡️ Shield Drop Rate</span>
+            <span class="upgrade-level">Lv.0/5</span>
+            <span class="stat-preview">+0% → +2%</span>
+          </div>
+          <button class="btn-common btn-upgrade">90 🪙</button>
         </div>
       </div>
 
@@ -174,6 +196,15 @@
       </div>
 
       <div class="qa-content qa-group" style="display:block; flex:1;">
+        <!-- Debug Tools -->
+        <fieldset class="qa-section" style="border:1px solid #9b59b6; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#9b59b6; font-weight:bold; padding:0 8px;">Debug</legend>
+          <div class="setting-item" style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="qa-show-overlay" onchange="window.GameModules?.DebugOverlay?.toggle?.(); this.checked = window.GameModules?.DebugOverlay?.isVisible?.() ?? false;">
+            <label for="qa-show-overlay">Show Effective Config Overlay (F2)</label>
+          </div>
+        </fieldset>
+
         <!-- Group 1: Economy -->
         <fieldset class="qa-section" style="border:1px solid #2ecc71; border-radius:8px; padding:10px; margin-bottom:15px;">
           <legend style="color:#2ecc71; font-weight:bold; padding:0 8px;">Economy</legend>
@@ -181,12 +212,11 @@
             <button class="btn-common" onclick="window.addQAData('gold', 10000)" style="flex:1; background:#f1c40f; color:#000;">+10,000 Gold</button>
             <button class="btn-common" onclick="window.addQAData('gems', 1000)" style="flex:1; background:#00d2d3; color:#000;">+1,000 Gems</button>
           </div>
-          <div class="setting-item"><div class="vol-row"><span>💰 Coin Rate</span> <span class="val-display" id="qa-val-coin">30%</span></div><input type="range" id="qa-coin" min="0" max="100" step="5" value="30" oninput="window.updateQA()"></div>
-          <div class="setting-item"><div class="vol-row"><span>🎁 Item Rate</span> <span class="val-display" id="qa-val-item">3%</span></div><input type="range" id="qa-item" min="0" max="20" step="1" value="3" oninput="window.updateQA()"></div>
-<div class="setting-item">
-  <div class="vol-row"><span>📏 Min Coin Run</span> <span class="val-display" id="qa-val-coinlen">5</span></div>
-  <input type="range" id="qa-coinlen" min="3" max="20" step="1" value="5" oninput="window.updateQA()">
-</div>
+          <!-- Coin Rate / Item Rate moved to Stage Tuning section -->
+          <div class="setting-item">
+            <div class="vol-row"><span>📏 Min Coin Run</span> <span class="val-display" id="qa-val-coinlen">5</span></div>
+            <input type="range" id="qa-coinlen" min="3" max="20" step="1" value="5" oninput="window.updateQA()">
+          </div>
         </fieldset>
 
         <!-- Group 2: Physics -->
@@ -200,7 +230,6 @@
             <div class="vol-row"><span>↩️ Turn Agility</span> <span class="val-display" id="qa-val-turnaccel">2.0x</span></div>
             <input type="range" id="qa-turnaccel" min="10" max="50" step="5" value="20" oninput="window.updateQA()">
           </div>
-          <div class="setting-item"><div class="vol-row"><span>⚡ Dash Power (Legacy)</span> <span class="val-display" id="qa-val-dash">1100</span></div><input type="range" id="qa-dash" min="800" max="2000" step="100" value="1100" oninput="window.updateQA()"></div>
           <!-- [CHARGING SYSTEM] 차징 대쉬 관련 설정 -->
           <div class="setting-item"><div class="vol-row"><span>🔋 Min Dash Force</span> <span class="val-display" id="qa-val-mindash">600</span></div><input type="range" id="qa-mindash" min="400" max="1200" step="50" value="600" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>⚡ Max Dash Force</span> <span class="val-display" id="qa-val-maxdash">4000</span></div><input type="range" id="qa-maxdash" min="1000" max="5000" step="100" value="4000" oninput="window.updateQA()"></div>
@@ -219,6 +248,7 @@
           <div class="setting-item"><div class="vol-row"><span>🧲 Item Magnet Range</span> <span class="val-display" id="qa-val-magnet">160</span></div><input type="range" id="qa-magnet" min="50" max="400" step="10" value="160" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>🌪️ Storm Base Speed</span> <span class="val-display" id="qa-val-storm">150</span></div><input type="range" id="qa-storm" min="50" max="500" step="10" value="150" oninput="window.updateQA()"></div>
           <div class="setting-item"><div class="vol-row"><span>🚀 Booster Distance</span> <span class="val-display" id="qa-val-boost">700</span></div><input type="range" id="qa-boost" min="100" max="1000" step="50" value="700" oninput="window.updateQA()"></div>
+          <div class="setting-item"><div class="vol-row"><span>🛡️ Boost Invincible</span> <span class="val-display" id="qa-val-boostinvinc">1.0s</span></div><input type="range" id="qa-boostinvinc" min="0" max="30" step="1" value="10" oninput="window.updateQA()"></div>
           <div class="setting-item">
             <div class="vol-row"><span>📏 Stage Length</span> <span class="val-display" id="qa-val-stagelen">2000m</span></div>
             <input type="range" id="qa-stagelen" min="500" max="4000" step="100" value="2000" oninput="window.updateQA()">
@@ -264,6 +294,10 @@
     </select>
   </div>
 </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎬 Result Anim Speed</span> <span class="val-display" id="qa-val-resultspeed">1.0x</span></div>
+            <input type="range" id="qa-resultspeed" min="25" max="200" step="25" value="100" oninput="window.updateQA()">
+          </div>
         </fieldset>
 
         <!-- Group 6: Dynamic Camera -->
@@ -295,7 +329,127 @@
           </div>
         </fieldset>
 
-        <!-- Group 7: Stage Warp (Debug) -->
+        <!-- Group 7: Slow Motion -->
+        <fieldset class="qa-section" style="border:1px solid #fd79a8; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#fd79a8; font-weight:bold; padding:0 8px;">Slow Motion</legend>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎬 Enabled</span>
+              <select id="qa-slowmo-enabled" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="true">ON</option>
+                <option value="false">OFF</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⏱️ Duration</span> <span class="val-display" id="qa-val-slowmo-duration">0.22s</span></div>
+            <input type="range" id="qa-slowmo-duration" min="5" max="100" step="5" value="22" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🐢 Time Scale</span> <span class="val-display" id="qa-val-slowmo-scale">0.70x</span></div>
+            <input type="range" id="qa-slowmo-scale" min="10" max="90" step="5" value="70" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🌊 Ease Out</span> <span class="val-display" id="qa-val-slowmo-easeout">0.08s</span></div>
+            <input type="range" id="qa-slowmo-easeout" min="0" max="30" step="2" value="8" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>⏳ Min Interval</span> <span class="val-display" id="qa-val-slowmo-interval">0.40s</span></div>
+            <input type="range" id="qa-slowmo-interval" min="0" max="100" step="10" value="40" oninput="window.updateQA()">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🚫 Cancel Policy</span>
+              <select id="qa-slowmo-cancel" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="on_boost_press">On Boost Press</option>
+                <option value="on_boost_start">On Boost Start</option>
+                <option value="never">Never</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🎯 Apply Mask</span>
+              <select id="qa-slowmo-mask" onchange="window.updateQA()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:2px 5px;">
+                <option value="world_only">World Only</option>
+                <option value="everything">Everything (UI too)</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Group 8: Stage Tuning -->
+        <fieldset class="qa-section" style="border:1px solid #00cec9; border-radius:8px; padding:10px; margin-bottom:15px;">
+          <legend style="color:#00cec9; font-weight:bold; padding:0 8px;">Stage Tuning</legend>
+          <div class="setting-item">
+            <div class="vol-row">
+              <span>🎯 Target Stage</span>
+              <select id="qa-stage-select" onchange="window.onStageSelectChange?.()" style="background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:4px; padding:4px 8px; min-width:140px;">
+                <option value="1">Stage 1</option>
+                <option value="2">Stage 2</option>
+                <option value="3">Stage 3</option>
+                <option value="4">Stage 4</option>
+                <option value="5">Stage 5</option>
+                <option value="6">Stage 6</option>
+                <option value="7">Stage 7</option>
+                <option value="8">Stage 8</option>
+                <option value="9">Stage 9</option>
+                <option value="10">Stage 10</option>
+                <option value="11">Stage 11</option>
+                <option value="12">Stage 12</option>
+                <option value="13">Stage 13</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🪙 Coin Rate</span> <span class="val-display" id="qa-val-stage-coinrate">0.30</span></div>
+            <input type="range" id="qa-stage-coinrate" min="0" max="100" step="5" value="30" oninput="window.updateStageParam?.('coinRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🛡️ Barrier Rate</span> <span class="val-display" id="qa-val-stage-barrierrate">0.03</span></div>
+            <input type="range" id="qa-stage-barrierrate" min="0" max="20" step="1" value="3" oninput="window.updateStageParam?.('barrierRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🚀 Booster Rate</span> <span class="val-display" id="qa-val-stage-boosterrate">0.50</span></div>
+            <input type="range" id="qa-stage-boosterrate" min="0" max="100" step="5" value="50" oninput="window.updateStageParam?.('boosterRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🧲 Magnet Rate</span> <span class="val-display" id="qa-val-stage-magnetrate">0.50</span></div>
+            <input type="range" id="qa-stage-magnetrate" min="0" max="100" step="5" value="50" oninput="window.updateStageParam?.('magnetRate', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🌪️ Storm Speed Mult</span> <span class="val-display" id="qa-val-stage-stormmult">1.00x</span></div>
+            <input type="range" id="qa-stage-stormmult" min="10" max="400" step="10" value="100" oninput="window.updateStageParam?.('stormSpeedMult', this.value/100)">
+          </div>
+          <div class="setting-item">
+            <div class="vol-row"><span>🏃 Base Speed Mult</span> <span class="val-display" id="qa-val-stage-speedmult">1.00x</span></div>
+            <input type="range" id="qa-stage-speedmult" min="10" max="400" step="10" value="100" oninput="window.updateStageParam?.('baseSpeedMult', this.value/100)">
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:8px; margin-top:8px;">
+            <div class="vol-row"><span>Score Mult</span> <span class="val-display" id="qa-val-stage-scoremult">1.0x</span></div>
+            <input type="range" id="qa-stage-scoremult" min="5" max="1000" step="5" value="100" oninput="window.updateStageParam?.('scoreMult', this.value/100)">
+          </div>
+          <div class="setting-item" style="margin-top:10px; display:flex; gap:5px;">
+            <button class="btn-common" onclick="window.resetStageOverride?.()" style="flex:1; background:#636e72; color:#fff; font-size:12px; padding:6px;">Reset Stage</button>
+            <button class="btn-common" onclick="window.resetAllStageOverrides?.()" style="flex:1; background:#d63031; color:#fff; font-size:12px; padding:6px;">Reset All</button>
+          </div>
+          <div class="setting-item" style="margin-top:5px; display:flex; gap:5px;">
+            <button class="btn-common" onclick="window.applyStagePreset?.('easy')" style="flex:1; background:#00b894; color:#fff; font-size:11px; padding:5px;">Easy</button>
+            <button class="btn-common" onclick="window.applyStagePreset?.('normal')" style="flex:1; background:#0984e3; color:#fff; font-size:11px; padding:5px;">Normal</button>
+            <button class="btn-common" onclick="window.applyStagePreset?.('hard')" style="flex:1; background:#e17055; color:#fff; font-size:11px; padding:5px;">Hard</button>
+          </div>
+          <div class="setting-item" style="border-top:1px solid #444; padding-top:10px; margin-top:10px;">
+            <div class="vol-row" style="margin-bottom:8px;"><span style="font-weight:bold;">Apply Preset to All Stages</span></div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <input type="checkbox" id="qa-skip-loop-stages" onchange="window.toggleSkipLoopStages?.(this.checked)" style="width:16px; height:16px;">
+              <label for="qa-skip-loop-stages" style="font-size:12px; color:#aaa;">Skip loop stages (11-13)</label>
+            </div>
+            <div style="display:flex; gap:5px;">
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('casual')" style="flex:1; background:#74b9ff; color:#000; font-size:10px; padding:5px;">Casual</button>
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('balanced')" style="flex:1; background:#55efc4; color:#000; font-size:10px; padding:5px;">Balanced</button>
+              <button class="btn-common" onclick="window.applyPresetToAllStages?.('aggressive')" style="flex:1; background:#ff7675; color:#000; font-size:10px; padding:5px;">Aggressive</button>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Group 9: Stage Warp (Debug) -->
         <fieldset class="qa-section" style="border:1px solid #f39c12; border-radius:8px; padding:10px; margin-bottom:15px;">
           <legend style="color:#f39c12; font-weight:bold; padding:0 8px;">Stage Warp (Debug)</legend>
           <div class="setting-item">
@@ -339,28 +493,102 @@
       <div class="result-header">GAME OVER</div>
 
       <div class="result-card">
-        <div class="result-total-row">
-          <div class="result-title">TOTAL SCORE</div>
-          <div id="result-total-score" class="numeric-val">0</div>
+        <!-- Skip Button (larger with icon) -->
+        <button id="btn-result-skip" class="result-skip-btn" onclick="window.Game?.UI?.skipResultAnimation?.()">
+          <span class="skip-icon">⏩</span> SKIP
+        </button>
+
+        <!-- Score Breakdown Table -->
+        <div class="result-breakdown">
+          <!-- Bits Row -->
+          <div class="breakdown-row" id="row-bits" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/bit.png" alt="bit"></div>
+            <div class="breakdown-label">BITS</div>
+            <div class="breakdown-count"><span id="result-bits-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-bits-mult">50</span></div>
+            <div class="breakdown-score score-green"><span id="result-bits-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Coins Row -->
+          <div class="breakdown-row" id="row-coins" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/coin.png" alt="coin"></div>
+            <div class="breakdown-label">COINS</div>
+            <div class="breakdown-count"><span id="result-coins-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-coins-mult">200</span></div>
+            <div class="breakdown-score score-gold"><span id="result-coins-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Gems Row -->
+          <div class="breakdown-row" id="row-gems" data-status="pending">
+            <div class="breakdown-icon"><img src="./assets/images/icons/gem.png" alt="gem"></div>
+            <div class="breakdown-label">GEMS</div>
+            <div class="breakdown-count"><span id="result-gems-count" class="numeric-val">0</span></div>
+            <div class="breakdown-mult">x<span id="result-gems-mult">1000</span></div>
+            <div class="breakdown-score score-cyan"><span id="result-gems-score" class="numeric-val">0</span></div>
+          </div>
+          <!-- Distance Row -->
+          <div class="breakdown-row" id="row-distance" data-status="pending">
+            <div class="breakdown-icon"><span style="font-size:18px">📏</span></div>
+            <div class="breakdown-label">DISTANCE</div>
+            <div class="breakdown-count"><span id="result-dist-count" class="numeric-val">0</span>m</div>
+            <div class="breakdown-mult">x<span id="result-dist-mult">10</span></div>
+            <div class="breakdown-score score-white"><span id="result-distance-score" class="numeric-val">0</span></div>
+          </div>
         </div>
-        <div class="result-high-row">
-          <span>HIGH SCORE</span>
-          <span id="result-high-score" class="numeric-val">0</span>
-          <span id="result-new-record" class="badge-new" style="display:none;">NEW RECORD</span>
+
+        <!-- Divider -->
+        <div class="result-divider"></div>
+
+        <!-- Total Score with Rank -->
+        <div class="result-total-section">
+          <div class="result-rank-container">
+            <div id="result-rank-badge" class="rank-badge" style="display:none;">D</div>
+            <div id="result-rank-label" class="rank-label">KEEP GOING</div>
+          </div>
+          <div class="result-total-row">
+            <div class="result-title">TOTAL SCORE</div>
+            <div id="result-total-score" class="numeric-val result-total-value">0</div>
+          </div>
         </div>
-        <div class="result-detail">
-          <div class="detail-row"><span>Map Items Score</span><span id="result-items-score" class="numeric-val">0</span></div>
-          <div class="detail-row"><span>Distance Bonus</span><span id="result-distance-score" class="numeric-val">0</span></div>
+
+        <!-- High Score Comparison -->
+        <div class="result-highscore-section">
+          <div class="highscore-bar-container">
+            <div class="highscore-bar-bg">
+              <div id="highscore-bar-fill" class="highscore-bar-fill"></div>
+              <div id="highscore-bar-current" class="highscore-bar-current"></div>
+            </div>
+            <div class="highscore-labels">
+              <span>0</span>
+              <span id="result-high-score" class="numeric-val">0</span>
+            </div>
+          </div>
+          <span id="result-new-record" class="badge-new" style="display:none;">NEW RECORD!</span>
         </div>
+
+        <!-- Currency Earned -->
         <div class="result-currency-row">
           <span class="result-stat"><span id="last-dist" class="numeric-val">0</span>m</span>
-          <span class="result-stat"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> <span id="last-coins" class="numeric-val">0</span></span>
-          <span class="result-stat"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> <span id="last-gems" class="numeric-val">0</span></span>
+          <span class="result-stat"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> +<span id="last-coins" class="numeric-val">0</span></span>
+          <span class="result-stat"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> +<span id="last-gems" class="numeric-val">0</span></span>
+        </div>
+
+        <!-- Score Guide Button -->
+        <button id="btn-score-guide" class="score-guide-btn" onclick="window.Game?.UI?.toggleScoreGuide?.()">?</button>
+      </div>
+
+      <!-- Score Guide Popup -->
+      <div id="score-guide-popup" class="score-guide-popup" style="display:none;">
+        <div class="score-guide-content">
+          <div class="score-guide-header">Score Guide</div>
+          <div class="score-guide-item"><img src="./assets/images/icons/bit.png" class="guide-icon" alt="bit"> <span>Bit</span> <span class="guide-value">+<span id="guide-bit-score">50</span> pts</span></div>
+          <div class="score-guide-item"><img src="./assets/images/icons/coin.png" class="guide-icon" alt="coin"> <span>Coin</span> <span class="guide-value">+<span id="guide-coin-score">200</span> pts</span></div>
+          <div class="score-guide-item"><img src="./assets/images/icons/gem.png" class="guide-icon" alt="gem"> <span>Gem</span> <span class="guide-value">+<span id="guide-gem-score">1000</span> pts</span></div>
+          <div class="score-guide-item"><span class="guide-icon">📏</span> <span>1 Meter</span> <span class="guide-value">+<span id="guide-meter-score">10</span> pts</span></div>
+          <button class="btn-common" onclick="window.Game?.UI?.toggleScoreGuide?.()">Close</button>
         </div>
       </div>
 
       <div class="result-footer">
-        <button class="btn-common result-btn" onclick="window.startGame(event)">RESTART</button>
+        <button class="btn-common result-btn" id="btn-result-restart">RESTART</button>
         <button class="btn-common result-btn" style="background:#7f8c8d;" onclick="window.Navigation?.go('lobby')">LOBBY</button>
       </div>
     </div>
@@ -374,9 +602,14 @@
         <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.quitGame?.()">QUIT</button>
       </div>
     </div>
+
+    <!-- ========== [7] EFFECT OVERLAYS ========== -->
+    <div id="glitch-overlay" class="glitch-overlay"></div>
+    <div id="legendary-overlay" class="legendary-overlay"></div>
+    <div id="confetti-container" class="confetti-container"></div>
+  </div>
   </div>
 
-  <script src="./assets/js/core/state.js"></script>
   <script src="./assets/js/core/config.js"></script>
   <script src="./assets/js/core/storage.js"></script>
   <script src="./assets/js/core/canvas.js"></script>
@@ -395,6 +628,19 @@
   <script src="./assets/js/core/levelManager.js"></script>
   <script src="./assets/js/core/physics.js"></script>
   <script src="./assets/js/core/renderer.js"></script>
+  <script src="./assets/js/game/config.js"></script>
+  <script src="./assets/js/game/itemUpgrades.js"></script>
+  <script src="./assets/js/game/runtime.js"></script>
+  <script src="./assets/js/game/camera.js"></script>
+  <script src="./assets/js/game/items.js"></script>
+  <script src="./assets/js/game/stage.js"></script>
+  <script src="./assets/js/game/stageConfig.js"></script>
+  <script src="./assets/js/game/gimmick.js"></script>
+  <script src="./assets/js/ui/debugOverlay.js"></script>
+  <script src="./assets/js/game/slowMo.js"></script>
+  <script src="./assets/js/game/loop.js"></script>
+  <script src="./assets/js/game/storage.js"></script>
+  <script src="./assets/js/game/lifecycle.js"></script>
   <script src="./assets/js/main.js"></script>
 </body>
 </html>

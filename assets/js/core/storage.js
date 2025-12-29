@@ -3,10 +3,7 @@
   const defaultSave = {
     coins: 0,
     gems: 1000,
-    lvlSpeed: 1,
-    lvlCool: 1,
-    lvlMagnet: 1,
-    lvlGreed: 1,
+    // lvlSpeed, lvlCool, lvlMagnet, lvlGreed 제거됨 (캐릭터 업그레이드 폐지)
     unlockedSkins: [0],
     equippedSkin: 0,
     unlockedTreasures: [],      // 보유한 보물 ID 리스트
@@ -26,24 +23,32 @@
   }
 
   function load() {
-    const stored = localStorage.getItem(SAVE_KEY);
-    if (!stored) return normalizeSave();
     try {
+      const stored = localStorage.getItem(SAVE_KEY);
+      if (!stored) return normalizeSave();
       const parsed = JSON.parse(stored);
       return normalizeSave(parsed);
-    } catch (_) {
+    } catch (err) {
+      console.warn('[SaveManager] Failed to load save data, falling back to defaults', err);
       return normalizeSave();
     }
   }
 
   function persist(data = window.GameData) {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(normalizeSave(data)));
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(normalizeSave(data)));
+    } catch (err) {
+      console.error('[SaveManager] Failed to persist save data', err);
+    }
   }
 
   function reset() {
-    if (confirm('Reset data?')) {
+    if (!confirm('Reset data?')) return;
+    try {
       localStorage.removeItem(SAVE_KEY);
       location.reload();
+    } catch (err) {
+      console.error('[SaveManager] Failed to reset save data', err);
     }
   }
 

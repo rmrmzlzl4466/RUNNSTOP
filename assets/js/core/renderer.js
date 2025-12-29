@@ -187,6 +187,11 @@ function lerpColorToBlack(hex, t) {
         targetColor = getThemes()[currentThemeIdx]?.colors?.[targetColorIndex];
       }
 
+      // Get gimmick module for effects
+      const Gimmick = window.GameModules?.Gimmick;
+      const safeFadeIntensity = Gimmick?.getSafeFadeIntensity?.(gameState, cycleTimer, qaConfig.stopPhaseDuration) ?? 0;
+      const safeFadeGlowColor = Gimmick?.getSafeFadeGlowColor?.() ?? '#00ff00';
+
       for (let r = startRow; r <= endRow; r++) {
         const rowData = window.Game.LevelManager.getRow(r);
         if (!rowData) continue;
@@ -195,7 +200,9 @@ function lerpColorToBlack(hex, t) {
         const y = r * CELL_H;
 
         for (let c = 0; c < COLS; c++) {
-          const colorIdx = rowData.colors[c];
+          // Check for GLITCH_SWAP color override
+          const swappedColor = Gimmick?.getSwappedColor?.(r, c);
+          const colorIdx = swappedColor !== null ? swappedColor : rowData.colors[c];
           const x = c * CELL_W;
 
           ctx.fillStyle = palette[colorIdx];
@@ -203,6 +210,30 @@ function lerpColorToBlack(hex, t) {
             ctx.fillStyle = '#111';
           }
           ctx.fillRect(x, y, CELL_W, CELL_H);
+
+          // SAFE_FADE: Glow effect on safe tiles during STOP phase
+          if (gameState === STATE.STOP && colorIdx === targetColorIndex && safeFadeIntensity > 0) {
+            ctx.save();
+            ctx.globalAlpha = safeFadeIntensity * 0.6;
+            ctx.fillStyle = safeFadeGlowColor;
+            ctx.fillRect(x, y, CELL_W, CELL_H);
+            // Add border glow
+            ctx.strokeStyle = safeFadeGlowColor;
+            ctx.lineWidth = 2 + safeFadeIntensity * 4;
+            ctx.shadowBlur = 10 + safeFadeIntensity * 15;
+            ctx.shadowColor = safeFadeGlowColor;
+            ctx.strokeRect(x + 2, y + 2, CELL_W - 4, CELL_H - 4);
+            ctx.restore();
+          }
+
+          // GLITCH_SWAP: Visual glitch effect on swapped tiles
+          if (swappedColor !== null) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x, y, CELL_W, CELL_H);
+            ctx.restore();
+          }
 
           if (gameState === STATE.WARNING && colorIdx !== targetColorIndex && morphAlpha > 0 && targetColor) {
             if (qaConfig.visualMode === 'A') {
@@ -241,6 +272,116 @@ function lerpColorToBlack(hex, t) {
       this.drawFloatingTexts(ctx);
 
       ctx.globalAlpha = 1.0;
+      ctx.restore();
+
+      // === Matrix-style SlowMo Visual Effects ===
+      this.drawSlowMoEffects(ctx, canvasWidth, canvasHeight);
+    },
+
+    /**
+     * Draw Matrix-style slow motion visual effects
+     * - Blue/cyan color overlay (mobile-compatible)
+     * - Vignette effect (dark edges)
+     * - Radial lines from center (motion emphasis)
+     */
+    drawSlowMoEffects: function(ctx, canvasWidth, canvasHeight) {
+      const SlowMo = window.GameModules?.SlowMo;
+      const runtime = window.Game?.runtime;
+      const intensity = SlowMo?.getVisualIntensity?.(runtime) ?? 0;
+
+      // Debug: Always show slowmo status (can remove later)
+      const slowMoEnabled = window.qaConfig?.slowMo?.enabled ?? false;
+      const slowMoActive = runtime?.slowMo?.active ?? false;
+      const phase = runtime?.slowMo?.phase ?? 0;
+      const debugMsg = runtime?._slowMoDebug || '(no msg)';
+      const stopDebug = runtime?._stopJudgmentDebug || '(waiting)';
+      const intensityVal = typeof intensity === 'number' ? (intensity * 100).toFixed(0) : '?';
+
+      ctx.save();
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'left';
+
+      // 첫 줄: 기본 상태 체크
+      ctx.fillStyle = '#fff';
+      const runtimeOK = runtime ? 'Y' : 'N';
+      const moduleOK = SlowMo ? 'Y' : 'N';
+      ctx.fillText(`RT:${runtimeOK} MOD:${moduleOK} | SM:${slowMoEnabled?'ON':'OFF'} Act:${slowMoActive?'Y':'N'} Ph:${phase} Int:${intensityVal}%`, 10, canvasHeight - 65);
+
+      // 둘째 줄: SlowMo 디버그 메시지
+      ctx.fillStyle = '#ff0';
+      ctx.fillText(`SM: ${debugMsg}`, 10, canvasHeight - 50);
+
+      // 셋째 줄: StopJudgment 디버그
+      ctx.fillStyle = '#0ff';
+      ctx.fillText(`STOP: ${stopDebug}`, 10, canvasHeight - 35);
+
+      ctx.restore();
+
+      if (intensity <= 0) return;
+
+      ctx.save();
+
+      // 1. Color overlay - cool cyan/blue tint (Matrix-like)
+      // 모바일 호환성을 위해 간단한 오버레이 사용
+      const overlayAlpha = intensity * 0.2;
+      ctx.fillStyle = `rgba(0, 150, 220, ${overlayAlpha})`;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // 2. 어두운 오버레이로 채도 감소 효과 (모바일 호환)
+      const darkAlpha = intensity * 0.15;
+      ctx.fillStyle = `rgba(30, 30, 50, ${darkAlpha})`;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // 3. Vignette effect (dark edges)
+      const vignetteAlpha = intensity * 0.7;
+      const centerX = canvasWidth / 2;
+      const centerY = canvasHeight / 2;
+      const maxDist = Math.max(centerX, centerY) * 1.2;
+
+      const vignette = ctx.createRadialGradient(
+        centerX, centerY, maxDist * 0.2,
+        centerX, centerY, maxDist
+      );
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vignette.addColorStop(0.6, `rgba(0, 10, 30, ${vignetteAlpha * 0.4})`);
+      vignette.addColorStop(1, `rgba(0, 5, 20, ${vignetteAlpha})`);
+
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // 4. Subtle radial lines (speed/focus effect) - 모바일에서도 가벼움
+      if (intensity > 0.4) {
+        const lineAlpha = (intensity - 0.4) * 0.2;
+        const lineCount = 16;  // 줄여서 성능 개선
+        ctx.strokeStyle = `rgba(100, 180, 255, ${lineAlpha})`;
+        ctx.lineWidth = 2;
+
+        for (let i = 0; i < lineCount; i++) {
+          const angle = (i / lineCount) * Math.PI * 2;
+          const innerRadius = maxDist * 0.5;
+          const outerRadius = maxDist * 1.0;
+
+          ctx.beginPath();
+          ctx.moveTo(
+            centerX + Math.cos(angle) * innerRadius,
+            centerY + Math.sin(angle) * innerRadius
+          );
+          ctx.lineTo(
+            centerX + Math.cos(angle) * outerRadius,
+            centerY + Math.sin(angle) * outerRadius
+          );
+          ctx.stroke();
+        }
+      }
+
+      // 5. Time indicator border flash
+      if (intensity > 0.3) {
+        const borderAlpha = intensity * 0.5;
+        ctx.strokeStyle = `rgba(0, 200, 255, ${borderAlpha})`;
+        ctx.lineWidth = 4 + intensity * 4;
+        ctx.strokeRect(2, 2, canvasWidth - 4, canvasHeight - 4);
+      }
+
       ctx.restore();
     },
 
@@ -327,17 +468,34 @@ function lerpColorToBlack(hex, t) {
     },
 
     drawStorm: function(ctx, storm, canvasWidth, canvasHeight) {
+      // Check if storm is pulsing (STORM_PULSE gimmick)
+      const Gimmick = window.GameModules?.Gimmick;
+      const isPulsing = Gimmick?.isStormPulsing?.() ?? false;
+      const pulseMult = Gimmick?.getStormPulseMult?.() ?? 1.0;
+
+      // Storm line - brighter when pulsing
+      if (isPulsing) {
+        ctx.fillStyle = "#ff4444";
+        ctx.fillRect(0, storm.y - 2, canvasWidth, 9);
+        // Add glow effect
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0000';
+      }
       ctx.fillStyle = "#ff0000";
       ctx.fillRect(0, storm.y, canvasWidth, 5);
+      ctx.shadowBlur = 0;
 
       ctx.fillStyle = "rgba(20, 0, 0, 0.9)";
       ctx.fillRect(0, storm.y + 5, canvasWidth, canvasHeight * 2);
 
-      for (let i = 0; i < 15; i++) {
-        const h = Math.random() * 100 + 20;
+      // More intense flames when pulsing
+      const flameCount = isPulsing ? 25 : 15;
+      const flameIntensity = isPulsing ? 0.7 : 0.5;
+      for (let i = 0; i < flameCount; i++) {
+        const h = Math.random() * (isPulsing ? 150 : 100) + 20;
         const w = Math.random() * 20 + 5;
         const x = Math.random() * canvasWidth;
-        ctx.fillStyle = `rgba(255, 0, 0, ${Math.random() * 0.5})`;
+        ctx.fillStyle = `rgba(255, ${isPulsing ? 50 : 0}, 0, ${Math.random() * flameIntensity})`;
         ctx.fillRect(x, storm.y, w, h);
       }
     },

@@ -8,6 +8,7 @@ class Player {
     this.vy = 0;
     this.accel = 1500;
     this.maxSpeed = 400;
+    this._baseMaxSpeed = null;  // 스테이지 배수 적용 전 기본값 저장
     this.dashForce = 1200;
     this.dashDuration = 0.15;
     this.isDashing = false;
@@ -36,6 +37,8 @@ class Player {
     this.isDying = false;
     this.dyingTimer = 0;
     this.invincibleTimer = 0;
+    this.boostInvincibleTimer = 0;      // 부스트 종료 후 무적 시간
+    this.boostInvincibleDuration = 1.0; // 부스트 종료 후 무적 지속 시간 (QA 설정)
     this.baseMagnetRange = 100;
     this.coinMult = 1.0;
     this.boundsWidth = 0;
@@ -43,7 +46,6 @@ class Player {
     this.stopFriction = 0.92; // 정지 시 마찰 계수
     this.turnAccelMult = 2.0; // [추가] 초기값 설정
     this.hasRevive = false; // 보물: 부활
-    this.treasureCoinBonus = 0; // 보물: 코인 보너스 %
     this.history = [];
     this._lastDashParticleTs = 0;
 
@@ -71,6 +73,7 @@ class Player {
     this.dyingTimer = 0;
     this.radius = this.originalRadius;
     this.invincibleTimer = 0;
+    this.boostInvincibleTimer = 0;
     this.dist = 0;
     this.sessionScore = 0;
     this.sessionCoins = 0;
@@ -87,11 +90,11 @@ class Player {
     this.isCharging = false;
     this.chargeStartTime = 0;
     this.hasRevive = false;
-    this.treasureCoinBonus = 0;
     this.survivalBoosterStartTime = 0;
     this.jfbRandomDelay = 0;
     this.jfbActiveStartTime = 0;
     this.history = [];
+    this._baseMaxSpeed = null;  // 스테이지 배수 리셋
   }
 
   update(dt, options = {}) {
@@ -99,29 +102,42 @@ class Player {
     const joystick = input.joystick || {};
     const keys = input.keys || {};
     const qaConfig = options.qaConfig;
+    const effective = options.effective;  // 스테이지별 설정
     const boundsWidth = options.canvasWidth || this.boundsWidth;
 
-    // QA 설정에서 물리 값 실시간 반영
-    if (qaConfig) {
-      if (qaConfig.baseAccel !== undefined && this.accel !== qaConfig.baseAccel) {
-        this.accel = qaConfig.baseAccel;
+    // Per-Stage 값 적용 (effective에서 가져옴)
+    if (effective) {
+      if (effective.baseAccel !== undefined) this.accel = effective.baseAccel;
+      if (effective.friction !== undefined) this.friction = effective.friction;
+      if (effective.stopFriction !== undefined) this.stopFriction = effective.stopFriction;
+      if (effective.turnAccelMult !== undefined) this.turnAccelMult = effective.turnAccelMult;
+      // 대쉬 (Per-Stage)
+      if (effective.minDashForce !== undefined) this.minDashForce = effective.minDashForce;
+      if (effective.maxDashForce !== undefined) this.maxDashForce = effective.maxDashForce;
+      if (effective.maxChargeTime !== undefined) this.maxChargeTime = effective.maxChargeTime;
+      if (effective.dashCooldown !== undefined) this.cooldownMax = effective.dashCooldown;
+      if (effective.chargeSlowdown !== undefined) this.chargeSlowdown = effective.chargeSlowdown;
+      // 스테이지별 속도 배수 적용 (업그레이드 보너스 유지)
+      if (effective.baseSpeedMult !== undefined) {
+        if (this._baseMaxSpeed === null) {
+          this._baseMaxSpeed = this.maxSpeed; // applyLoadoutStats에서 설정된 값 캡처
+        }
+        this.maxSpeed = this._baseMaxSpeed * effective.baseSpeedMult;
       }
-      if (qaConfig.friction !== undefined) this.friction = qaConfig.friction;
-      if (qaConfig.stopFriction !== undefined) this.stopFriction = qaConfig.stopFriction;
-      if (qaConfig.turnAccelMult !== undefined) this.turnAccelMult = qaConfig.turnAccelMult; // [추가] QA 값 연동
-      // [CHARGING SYSTEM] QA 설정 반영
-      if (qaConfig.minDashForce !== undefined) this.minDashForce = qaConfig.minDashForce;
-      if (qaConfig.maxDashForce !== undefined) this.maxDashForce = qaConfig.maxDashForce;
-      if (qaConfig.maxChargeTime !== undefined) this.maxChargeTime = qaConfig.maxChargeTime;
-      if (qaConfig.dashCooldown !== undefined) this.cooldownMax = qaConfig.dashCooldown;
-      if (qaConfig.chargeSlowdown !== undefined) this.chargeSlowdown = qaConfig.chargeSlowdown;
-      // [JFB v2] QA 설정 반영
+    }
+
+    // Global 값 적용 (qaConfig에서 가져옴)
+    if (qaConfig) {
+      // [JFB v2] - GLOBAL
       if (qaConfig.jfbDelayMin !== undefined) this.jfbDelayMin = qaConfig.jfbDelayMin;
       if (qaConfig.jfbDelayMax !== undefined) this.jfbDelayMax = qaConfig.jfbDelayMax;
       if (qaConfig.jfbWindow !== undefined) this.jfbWindow = qaConfig.jfbWindow;
+      // 부스트 무적 - GLOBAL
+      if (qaConfig.boostInvincibleDuration !== undefined) this.boostInvincibleDuration = qaConfig.boostInvincibleDuration;
     }
 
     if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
+    if (this.boostInvincibleTimer > 0) this.boostInvincibleTimer -= dt;
     if (this.magnetTimer > 0) this.magnetTimer -= dt;
     // survivalBoosterStartTime은 타임스탬프 기반이므로 dt 감소 불필요
 
@@ -138,6 +154,8 @@ class Player {
       if (this.y <= this.boostTargetY) {
         this.isBoosting = false;
         this.vy = -200;
+        // 부스트 종료 후 무적 시간 부여
+        this.boostInvincibleTimer = this.boostInvincibleDuration;
       }
     } else {
       if (!this.isDashing) {
@@ -304,8 +322,9 @@ class Player {
     this.survivalBoosterStartTime = 0;  // 사용 후 리셋
     this.jfbActiveStartTime = 0;
 
-    // PERFECT 효과음
+    // PERFECT 효과음 + 질주 사운드
     window.Sound?.sfx('boost_perfect');
+    window.Sound?.sfx('boost_rush');
 
     return 'perfect';
   }
@@ -392,6 +411,11 @@ class Player {
     if (this.isDead || this.isDying) return;
     this.isDying = true;
     this.dyingTimer = delay;
+  }
+
+  // 부스트 관련 무적 상태 체크 (부스트 중 또는 부스트 종료 후 버퍼)
+  isBoostInvincible() {
+    return this.isBoosting || this.boostInvincibleTimer > 0;
   }
 
   draw(ctx, skin, spriteImg, options = {}) {

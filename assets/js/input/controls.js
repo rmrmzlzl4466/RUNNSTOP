@@ -262,6 +262,9 @@ function startCharging() {
   // [JFB v2] 판정 결과에 따른 피드백 (Reflex Mode)
   if (result === 'perfect') {
     window.Game?.UI?.showToast?.(window.player, 'PERFECT!!', '#00ffff', 1500);
+    // [FIX] 슬로우모션 취소를 여기서 직접 호출하지 않음
+    // loop.js의 checkCancelPolicy가 실제 부스트 시작 시점에 처리
+    // (모바일에서 터치 시작만으로 슬로우모션이 취소되는 문제 해결)
   } else if (result === 'false_start') {
     window.Game?.UI?.showToast?.(window.player, 'FALSE START!', '#e74c3c', 1000);
   }
