@@ -1,5 +1,6 @@
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let actx = new AudioCtx();
+  let isUnlocked = false;
 
   // Simple clip pool to avoid allocating <audio> on every pickup (jank on iOS Safari)
   const clipPool = new Map(); // path -> Array<HTMLAudioElement>
@@ -29,21 +30,58 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     return fallback;
   }
 
+  function safeResume() {
+    try {
+      const res = actx?.resume?.();
+      if (res?.catch) {
+        res.catch((err) => console.warn('[Sound] AudioContext resume blocked', err));
+      }
+    } catch (err) {
+      console.warn('[Sound] AudioContext resume failed', err);
+    }
+  }
+
+  function unlock() {
+    if (!actx) return false;
+    if (actx.state === 'running') {
+      isUnlocked = true;
+      return true;
+    }
+    try {
+      const res = actx.resume?.();
+      if (res?.then) {
+        res.then(() => { isUnlocked = true; }).catch((err) => console.warn('[Sound] Audio unlock blocked', err));
+        return false;
+      }
+      isUnlocked = actx.state === 'running';
+      return isUnlocked;
+    } catch (err) {
+      console.warn('[Sound] Audio unlock failed', err);
+      return false;
+    }
+  }
+
   var Sound = window.Sound = {
+    isUnlocked: () => isUnlocked,
+    unlock,
     play(freq, type, dur=0.1) {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try { const osc = actx.createOscillator(); const gain = actx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, actx.currentTime); gain.gain.setValueAtTime(0.12 * (window.qaConfig?.sfxVol ?? 1), actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+dur); osc.connect(gain); gain.connect(actx.destination); osc.start(); osc.stop(actx.currentTime+dur); } catch(e){}
     },
     playClip(path, volume) {
+      if (!isUnlocked) return;
       try {
         const audio = getPooledClip(path);
         audio.volume = volume ?? window.qaConfig?.sfxVol ?? 1;
-        audio.play().catch(() => {});
+        const res = audio.play();
+        if (res?.catch) res.catch((err) => console.warn('[Sound] playClip blocked', err));
       } catch(e) {
         console.error(`[Sound] Error playing clip: ${path}`, e);
       }
     },
     sfx(type) {
+      if (!isUnlocked) return;
       const getScorePath = './assets/sounds/stage/get_score.wav';
       const getCoinPath = './assets/sounds/stage/get_coin.wav';
       const getItemPath = './assets/sounds/stage/collect_item.wav';
@@ -100,7 +138,8 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     },
     // [JUST FRAME BOOSTER] 화음 재생 (동시에 여러 음)
     playChord(freqs, type, dur = 0.1, vol = 0.1) {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try {
         const baseVol = vol * (window.qaConfig?.sfxVol ?? 1);
         freqs.forEach(freq => {
@@ -119,7 +158,8 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     },
     // [JUST FRAME BOOSTER] 아르페지오 재생 (순차적으로 음 재생)
     playArpeggio(freqs, type, interval = 0.05, dur = 0.1) {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try {
         const baseVol = 0.12 * (window.qaConfig?.sfxVol ?? 1);
         freqs.forEach((freq, i) => {
@@ -139,7 +179,8 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     },
     // [BOOSTER] 시원하게 질주하는 바람 + 가속 사운드
     playBoostRush() {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try {
         const now = actx.currentTime;
         const duration = 0.8;
@@ -222,7 +263,8 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     },
     // [SLOWMO] 매트릭스 스타일 슬로우모션 진입 사운드
     playSlowMoEnter() {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try {
         const now = actx.currentTime;
         const duration = 0.5;
@@ -291,7 +333,8 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     },
     // [BOOSTER PICKUP] 터보 불꽃 버스트 사운드 - 강렬한 "푸아아!" 효과
     playBoosterPickup() {
-      if (actx.state === 'suspended') actx.resume();
+      if (!isUnlocked) return;
+      if (actx.state === 'suspended') safeResume();
       try {
         const now = actx.currentTime;
         const duration = 0.35;
@@ -392,8 +435,9 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
     _bgmNextTime: 0,
     _bgmRaf: null,
     bgmStart() {
+      if (!isUnlocked) return;
       if (this._bgmRaf) return;
-      if (actx.state === 'suspended') actx.resume();
+      if (actx.state === 'suspended') safeResume();
       try {
         if (!this._bgmGain) { this._bgmGain = actx.createGain(); this._bgmGain.gain.value = (window.qaConfig?.bgmVol ?? 0.15); this._bgmGain.connect(actx.destination); }
         const seq = [
@@ -443,9 +487,16 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (this._bgmGain) this._bgmGain.gain.value = vol;
     },
     toggleMute(isMuted) {
-      if (actx) {
-        if (isMuted) actx.suspend(); // 오디오 엔진 전체 일시정지 (가장 확실함)
-        else actx.resume(); // 재개
+      if (!actx) return;
+      try {
+        if (isMuted) {
+          actx.suspend?.();
+        } else {
+          const res = actx.resume?.();
+          if (res?.catch) res.catch((err) => console.warn('[Sound] resume blocked', err));
+        }
+      } catch (err) {
+        console.warn('[Sound] toggleMute failed', err);
       }
     }
 

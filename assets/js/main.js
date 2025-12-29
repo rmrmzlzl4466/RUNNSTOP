@@ -10,9 +10,6 @@
     return;
   }
 
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
-
   const qaConfig = createQAConfig();
   attachQAConfig(qaConfig);
   window.qaConfig = qaConfig;
@@ -26,18 +23,72 @@
   window.player = player;
   window.Game.player = player;
 
-  const runtime = createRuntimeState(canvas, qaConfig);
-  window.runtime = runtime;  // For StageConfig module
-  window.Game.runtime = runtime;
+  window.shouldStartTutorial = !gameData.tutorialCompleted;
+  let canvas = null;
+  let ctx = null;
+  let runtime = null;
+  let lifecycle = null;
+  let resizeHandler = null;
 
-  // Initialize subsystems
+  function updateLifecycleBindings() {
+    window.startGame = safeStartGame;
+    window.togglePause = lifecycle?.togglePause;
+    window.restartFromPause = lifecycle?.restartFromPause;
+    window.quitGame = lifecycle?.quitGame;
+    window.resetSaveData = handleResetSave;
+    if (lifecycle) {
+      window.Game.startGame = lifecycle.startGame;
+      window.Game.togglePause = lifecycle.togglePause;
+      window.Game.restartFromPause = lifecycle.restartFromPause;
+      window.Game.quitGame = lifecycle.quitGame;
+      window.Game.warpToDistance = lifecycle.warpToDistance;
+    } else {
+      window.Game.startGame = undefined;
+      window.Game.togglePause = undefined;
+      window.Game.restartFromPause = undefined;
+      window.Game.quitGame = undefined;
+      window.Game.warpToDistance = undefined;
+    }
+    window.Game.saveGame = saveGame;
+    window.Game.resetSaveData = handleResetSave;
+  }
+
+  function rebuildRuntime(isTutorialMode) {
+    const targetCanvas = document.getElementById(isTutorialMode ? 'game-canvas-tutorial' : 'gameCanvas');
+    if (!targetCanvas) {
+      console.warn('[BOOT] Target canvas missing for mode', isTutorialMode ? 'tutorial' : 'normal');
+      return false;
+    }
+    canvas = targetCanvas;
+    ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
+    runtime = createRuntimeState(canvas, qaConfig);
+    window.runtime = runtime;  // For StageConfig module
+    window.Game.runtime = runtime;
+    window.Game.Renderer?.init?.(canvas, ctx);
+    window.Game.Physics?.init?.(runtime.grid.COLS, runtime.grid.CELL_W, runtime.grid.CELL_H);
+
+    if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+    resizeHandler = () => syncCanvasSize(runtime, canvas);
+    window.syncCanvasSize = resizeHandler;
+    window.addEventListener('resize', resizeHandler);
+
+    lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
+    updateLifecycleBindings();
+    return true;
+  }
+
+  // Initialize subsystems (UI/input once)
   window.Game.UI?.init?.();
-  window.Game.Renderer?.init?.(canvas, ctx);
-  window.Game.Physics?.init?.(runtime.grid.COLS, runtime.grid.CELL_W, runtime.grid.CELL_H);
   window.Input?.initControls?.();
   window.initQASliders?.();
   window.updateUpgradeUI?.();
   window.renderSkinList?.();
+
+  let runtimeReady = rebuildRuntime(window.shouldStartTutorial);
+  if (!runtimeReady) {
+    window.shouldStartTutorial = false;
+    runtimeReady = rebuildRuntime(false);
+  }
 
   function saveGame() {
     persistGameData(gameData);
@@ -46,8 +97,6 @@
   function handleResetSave() {
     resetGameData();
   }
-
-  const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
 
   function safeStartGame(e) {
     if (e?.preventDefault) e.preventDefault();
@@ -91,6 +140,22 @@
     console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
   }
 
+  function startTutorialFlow() {
+    if (!document.getElementById('screen-tutorial')) {
+      console.warn('[BOOT] Tutorial screen not found, skipping tutorial start');
+      return;
+    }
+    const ready = rebuildRuntime(true);
+    window.TutorialUI?.init?.();
+    window.TutorialManager?.init?.();
+    if (ready) {
+      window.TutorialManager?.startTutorial?.(1, runtime);
+      if (window.Navigation?.go) window.Navigation.go('tutorial');
+      window.shouldStartTutorial = false;
+      document.body.classList.add('tutorial-lock');
+    }
+  }
+
   // Lobby character helpers
   let lobbyInterval = null;
   function performJump(el) {
@@ -132,24 +197,12 @@
   }
 
   // Expose limited API for UI bindings
-  window.startGame = safeStartGame;
-  window.togglePause = lifecycle.togglePause;
-  window.restartFromPause = lifecycle.restartFromPause;
-  window.quitGame = lifecycle.quitGame;
-  window.resetSaveData = handleResetSave;
-  window.Game.startGame = lifecycle.startGame;
-  window.Game.togglePause = lifecycle.togglePause;
-  window.Game.restartFromPause = lifecycle.restartFromPause;
-  window.Game.quitGame = lifecycle.quitGame;
-  window.Game.saveGame = saveGame;
-  window.Game.resetSaveData = handleResetSave;
   window.Game.loadData = () => {
     const fresh = loadGameData();
     Object.assign(gameData, fresh);
     window.GameData = gameData;
     return gameData;
   };
-  window.Game.warpToDistance = lifecycle.warpToDistance;
   window.Game.getState = () => ({
     gameState: runtime.gameState,
     gameActive: runtime.gameActive,
@@ -161,12 +214,31 @@
     currentLoopCount: runtime.stage.loopCount
   });
 
-  window.syncCanvasSize = () => syncCanvasSize(runtime, canvas);
-  window.addEventListener('resize', window.syncCanvasSize);
   window.startLobbyLoop = startLobbyLoop;
   window.stopLobbyLoop = stopLobbyLoop;
   window.interactLobbyChar = interactLobbyChar;
   bindStartButtons();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    window.TutorialManager?.init?.();
+    window.TutorialUI?.init?.();
+
+    const btnTutorial = document.getElementById('btn-tutorial');
+    btnTutorial?.addEventListener('click', () => {
+      startTutorialFlow();
+    });
+
+    if (window.shouldStartTutorial) {
+      startTutorialFlow();
+    }
+  });
+
+  window.onTutorialFlowComplete = () => {
+    runtime?.gameActive && (runtime.gameActive = false);
+    rebuildRuntime(false);
+    if (window.Navigation?.go) window.Navigation.go('lobby');
+    document.body.classList.remove('tutorial-lock');
+  };
 
   // Audio focus handling
   let mutedByVisibility = false;
@@ -189,6 +261,17 @@
       lifecycle.resumeIfPausedByVisibility();
     }
   });
+
+  window.addEventListener('beforeunload', () => {
+    if (window.TutorialManager?.state?.isRunning) {
+      sessionStorage.setItem('tutorialInterrupted', '1');
+    }
+  });
+
+  if (sessionStorage.getItem('tutorialInterrupted')) {
+    sessionStorage.removeItem('tutorialInterrupted');
+    window.Navigation?.go?.('lobby');
+  }
 
   window.dashOnClick = function(e) { e.preventDefault(); window.Input?.attemptDash?.(); };
   } catch (err) {

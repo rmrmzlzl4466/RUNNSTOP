@@ -23,6 +23,10 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleDeath(reason) {
+    if (runtime.tutorialMode) {
+      window.TutorialManager?.retryStep?.();
+      return;
+    }
     if (player.isDead || player.isDying) return;
     if (player.hasRevive) {
       player.hasRevive = false;

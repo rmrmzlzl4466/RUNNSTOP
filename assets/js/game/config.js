@@ -68,6 +68,8 @@ window.GameModules = window.GameModules || {};
     equippedSkin: 0,
     unlockedTreasures: [],
     equippedTreasures: [null, null],
+    tutorialCompleted: false,
+    tutorialProgress: 0,
     stats: { maxDist: 0, totalCoins: 0, totalGames: 0, totalDeaths: 0, highScore: 0 }
   };
 

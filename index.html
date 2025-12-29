@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>RUN! & STOP! : FINAL FIX</title>
   <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" href="./assets/css/tutorial.css" />
 </head>
 
 <body>
@@ -82,6 +83,16 @@
       </div>
     </div>
 
+    <!-- ========== [1.5] TUTORIAL SCREEN ========== -->
+    <div id="screen-tutorial" class="full-screen">
+      <canvas id="game-canvas-tutorial"></canvas>
+      <div id="tutorial-overlay">
+        <div id="tutorial-progress"></div>
+        <div id="tutorial-hint-container"></div>
+        <div id="tutorial-message"></div>
+      </div>
+    </div>
+
     <!-- ========== [2] LOBBY SCREEN ========== -->
     <div id="screen-lobby" class="full-screen">
       <!-- Header: Currency -->
@@ -116,6 +127,7 @@
       <!-- Footer: Buttons (vertical stack) -->
       <div class="lobby-footer">
         <button class="start-btn lobby-start" id="btn-start">GAME START</button>
+        <button id="btn-tutorial" aria-label="Tutorial">TUTORIAL</button>
         <button class="btn-shop-main" onclick="window.Navigation?.go('shop')">SHOP</button>
         <button class="btn-qa-main" onclick="window.Navigation?.go('qa')">QA</button>
       </div>
@@ -633,6 +645,9 @@
   <script src="./assets/js/game/items.js"></script>
   <script src="./assets/js/game/stage.js"></script>
   <script src="./assets/js/game/stageConfig.js"></script>
+  <script src="./assets/js/game/tutorialConfig.js"></script>
+  <script src="./assets/js/ui/tutorialUI.js"></script>
+  <script src="./assets/js/game/tutorial.js"></script>
   <script src="./assets/js/game/gimmick.js"></script>
   <script src="./assets/js/ui/debugOverlay.js"></script>
   <script src="./assets/js/game/slowMo.js"></script>
