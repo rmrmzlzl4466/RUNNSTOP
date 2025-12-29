@@ -58,6 +58,12 @@
   line-height: 1;
 }
 
+/* 튜토리얼 화면이 게임 렌더링을 가리지 않도록 투명 처리 */
+#screen-tutorial {
+  background: transparent;
+  pointer-events: none; /* 하위 요소에서만 제어 */
+}
+
 /* 기존 tutorial-hint (화살표) 스타일은 제거 */
 
 .tutorial-highlight {
