@@ -134,17 +134,27 @@
 
     if (runtime) {
       runtime.tutorialMode = false;
-      runtime.tutorialStep = 4;
+      runtime.tutorialStep = 0;
+      runtime.gameActive = false;
+      window.GameModules?.SlowMo?.forceOff?.(runtime);
     }
+
+    const goToLobby = () => {
+      const nav = window.Navigation;
+      if (nav?.go) {
+        nav.go('lobby');
+      } else if (window.GameNavigation?.goToLobby) {
+        window.GameNavigation.goToLobby();
+      }
+      window.onTutorialFlowComplete?.();
+    };
 
     if (window.TutorialUI?.showCompletionAnimation) {
       window.TutorialUI.showCompletionAnimation(() => {
-        if (window.GameNavigation?.goToLobby) {
-          window.GameNavigation.goToLobby();
-        }
+        goToLobby();
       });
-    } else if (window.GameNavigation?.goToLobby) {
-      window.GameNavigation.goToLobby();
+    } else {
+      goToLobby();
     }
 
     console.debug('[TutorialManager] Tutorial completed');
