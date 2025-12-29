@@ -58,10 +58,10 @@ window.GameModules = window.GameModules || {};
     }
   }
 
-  function resetGameData() {
+  async function resetGameData() {
     if (window.SaveManager?.reset) {
       try {
-        window.SaveManager.reset();
+        await window.SaveManager.reset();
         return;
       } catch (err) {
         console.warn('[Storage] SaveManager.reset failed, attempting localStorage fallback', err);
@@ -76,5 +76,32 @@ window.GameModules = window.GameModules || {};
     }
   }
 
-  window.GameModules.Storage = { loadGameData, persistGameData, resetGameData };
+  window.GameModules.Storage = {
+    loadGameData,
+    persistGameData,
+    resetGameData,
+    // Async versions for modern bootstrap flow
+    async loadGameDataAsync() {
+      if (window.SaveManager?.loadAsync) {
+        try {
+          return await window.SaveManager.loadAsync();
+        } catch (err) {
+          console.error('[Storage] loadGameDataAsync failed, falling back to sync.', err);
+          return loadGameData();
+        }
+      }
+      return loadGameData();
+    },
+    async persistGameDataAsync(data) {
+      if (window.SaveManager?.persistAsync) {
+        try {
+          await window.SaveManager.persistAsync(data);
+          return;
+        } catch (err) {
+          console.error('[Storage] persistGameDataAsync failed, falling back to sync.', err);
+        }
+      }
+      persistGameData(data);
+    }
+  };
 })();

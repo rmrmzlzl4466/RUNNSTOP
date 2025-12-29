@@ -73,4 +73,7 @@ window.addEventListener('load', () => {
     }, { passive: false });
   }
   window.Navigation.go('title');
+  
+  // [STEP 8] Mark game as ready for interaction after title screen is set up.
+  window.markGameReady?.();
 });

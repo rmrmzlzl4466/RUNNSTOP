@@ -51,7 +51,7 @@ window.GameModules = window.GameModules || {};
     window.Sound?.sfx('die');
   }
 
-  function handleGameOver() {
+  async function handleGameOver() {
     if (!runtime.gameActive) return;
     runtime.gameActive = false;
     // Force off slow motion
@@ -74,7 +74,18 @@ window.GameModules = window.GameModules || {};
     const isNewRecord = totalScore > previousHigh;
     if (isNewRecord) gameData.stats.highScore = totalScore;
 
-    saveGameData(gameData);
+    // [STEP 4] Send score and save data asynchronously.
+    if (window.ytgame?.IN_PLAYABLES_ENV) {
+      (async () => {
+        try {
+          await window.ytgame.engagement.sendScore({ value: totalScore });
+        } catch (e) {
+          console.error('[Playables] Failed to send score.', e);
+        }
+      })();
+    }
+
+    await saveGameData(gameData);
     window.updateUpgradeUI?.();
     window.renderSkinList?.();
 
@@ -83,7 +94,7 @@ window.GameModules = window.GameModules || {};
     if (coinBonus > 0) {
       const bonus = Math.floor(player.sessionCoins * (coinBonus / 100));
       gameData.coins += bonus;
-      saveGameData(gameData);
+      await saveGameData(gameData);
     }
 
     window.Game.UI.updateResult({
@@ -347,7 +358,9 @@ window.GameModules = window.GameModules || {};
     quitGame,
     warpToDistance,
     pauseForVisibility,
-    resumeIfPausedByVisibility
+    resumeIfPausedByVisibility,
+    pause: pauseGame,
+    resume: resumeGame
   };
   }
 

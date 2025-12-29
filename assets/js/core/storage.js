@@ -14,6 +14,9 @@
     tutorialProgress: 0,         // 마지막 완료 단계 (재진입용)
   };
 
+  // Internal state to prevent saving before loading is complete.
+  let isLoaded = false;
+
   function normalizeSave(data) {
     const merged = Object.assign({}, defaultSave, (data || {}));
     merged.stats = Object.assign({}, defaultSave.stats, (data?.stats || {}));
@@ -31,6 +34,7 @@
     return merged;
   }
 
+  // Legacy synchronous load from localStorage
   function load() {
     try {
       const stored = localStorage.getItem(SAVE_KEY);
@@ -43,6 +47,7 @@
     }
   }
 
+  // Legacy synchronous persist to localStorage
   function persist(data = window.GameData) {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(normalizeSave(data)));
@@ -50,11 +55,57 @@
       console.error('[SaveManager] Failed to persist save data', err);
     }
   }
+  
+  // [STEP 3] Asynchronous loading with Playables support
+  async function loadAsync() {
+    let saveData = defaultSave;
+    try {
+      if (window.ytgame?.IN_PLAYABLES_ENV) {
+        console.log('[SaveManager] Loading from YT Playables...');
+        const dataStr = await window.ytgame.game.loadData();
+        saveData = normalizeSave(dataStr ? JSON.parse(dataStr) : {});
+      } else {
+        console.log('[SaveManager] Loading from localStorage...');
+        saveData = load();
+      }
+    } catch (err) {
+      console.error('[SaveManager] loadAsync failed. Falling back to default.', err);
+      saveData = normalizeSave();
+    } finally {
+      isLoaded = true;
+    }
+    return saveData;
+  }
 
-  function reset() {
+  // [STEP 3] Asynchronous persisting with Playables support
+  async function persistAsync(data = window.GameData) {
+    if (!isLoaded) {
+      console.warn('[SaveManager] Attempted to save before data was loaded. Aborting.');
+      return;
+    }
+    // [STEP 9] Add verification log
+    console.log('[SaveManager] Persisting data...', { isPlayables: window.ytgame?.IN_PLAYABLES_ENV ?? false });
+    try {
+      const normalizedData = normalizeSave(data);
+      if (window.ytgame?.IN_PLAYABLES_ENV) {
+        await window.ytgame.game.saveData(JSON.stringify(normalizedData));
+      } else {
+        persist(normalizedData);
+      }
+    } catch (err) {
+      console.error('[SaveManager] persistAsync failed.', err);
+    }
+  }
+
+
+  async function reset() {
     if (!confirm('Reset data?')) return;
     try {
       localStorage.removeItem(SAVE_KEY);
+      // YT Env doesn't have a reset, so we just overwrite with default
+      if (window.ytgame?.IN_PLAYABLES_ENV) {
+         await persistAsync(defaultSave);
+      }
       location.reload();
     } catch (err) {
       console.error('[SaveManager] Failed to reset save data', err);
@@ -64,6 +115,10 @@
   window.SaveManager = {
     key: SAVE_KEY,
     defaultSave,
+    // New async methods
+    loadAsync,
+    persistAsync,
+    // Legacy sync methods
     load,
     persist,
     reset

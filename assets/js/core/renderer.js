@@ -67,6 +67,9 @@
   preloadItemSprites();
 
   function trackFrame() {
+    // [STEP 8] Signal that the first frame has been rendered.
+    window.markFirstFrameReady?.();
+
     if (typeof performance === 'undefined' || !performance.now) return;
     const now = performance.now();
     if (lastFrameTs) {
