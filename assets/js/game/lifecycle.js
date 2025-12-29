@@ -23,6 +23,10 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleDeath(reason) {
+    if (runtime.tutorial?.active) {
+      window.GameModules?.Tutorial?.onPlayerFail?.(reason);
+      return;
+    }
     if (player.isDead || player.isDying) return;
     if (player.hasRevive) {
       player.hasRevive = false;
@@ -40,6 +44,10 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleGameOver() {
+    if (runtime.tutorial?.active) {
+      window.GameModules?.Tutorial?.onPlayerFail?.('gameover');
+      return;
+    }
     if (!runtime.gameActive) return;
     runtime.gameActive = false;
     // Force off slow motion
@@ -92,10 +100,19 @@ window.GameModules = window.GameModules || {};
     window.Navigation?.go?.('result');
   }
 
-  function startGame(e) {
-    if (e) {
-      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+  function startGame(options = {}) {
+    let startOptions = options;
+    if (options && typeof options === 'object' && typeof options.preventDefault === 'function') {
+      try { options.preventDefault(); options.stopPropagation?.(); } catch (_) {}
+      startOptions = {};
     }
+    if (!startOptions || typeof startOptions !== 'object') {
+      startOptions = {};
+    }
+    if (runtime.tutorial?.active && !startOptions.allowDuringTutorial) {
+      return;
+    }
+
     if (runtime.gameActive) {
       loop.stop();
     }

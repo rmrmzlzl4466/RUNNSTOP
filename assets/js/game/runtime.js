@@ -62,6 +62,13 @@ window.GameModules = window.GameModules || {};
       canvasSize: {
         width: canvas?.width ?? 0,
         height: canvas?.height ?? 0
+      },
+      tutorial: {
+        active: false,
+        step: 1,
+        from: null,
+        firstRunLock: false,
+        finishing: false
       }
     };
 
