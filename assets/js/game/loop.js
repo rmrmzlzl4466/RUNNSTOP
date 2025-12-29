@@ -165,12 +165,8 @@ window.GameModules = window.GameModules || {};
       stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
     };
 
-    if (isTutorial && tutorialStep === 1) {
-      runtime.gameState = STATE.RUN;
-      if (!Number.isFinite(runtime.cycleTimer) || runtime.cycleTimer <= 0) {
-        runtime.cycleTimer = effective.runPhaseDuration ?? 3.0;
-      }
-    }
+    // 튜토리얼에서도 정상적인 RUN → WARNING → STOP 사이클 허용
+    // (safeJudgmentCount 조건을 충족하려면 STOP 페이즈가 필요)
 
     // UI uses real time (not slowed)
     const applyMask = runtime.slowMo?.applyMask ?? 'world_only';
@@ -186,7 +182,8 @@ window.GameModules = window.GameModules || {};
     const prevY = player.y;
     // Pass effective config for per-stage physics (friction, baseSpeed, etc.)
     player.update(worldDt, { input: window.Input, qaConfig, effective, canvasWidth: runtime.canvasSize.width });
-    if (isTutorial && tutorialStep === 1) {
+    // 튜토리얼 모드에서 이동 감지 (모든 스텝에서 moveCount 조건 필요)
+    if (isTutorial) {
       if (player.x !== prevX || player.y !== prevY) {
         window.TutorialManager?.markMoved?.();
       }
@@ -200,6 +197,19 @@ window.GameModules = window.GameModules || {};
     if (currentDist > player.dist) {
       player.dist = currentDist;
       updateStageProgress(runtime, player.dist, qaConfig);
+    }
+
+    // 튜토리얼 거리 추적
+    if (isTutorial) {
+      const tm = window.TutorialManager;
+      if (tm) {
+        // 시작 거리가 없으면 설정
+        if (tm.state.startDistance == null) {
+          tm.setStartDistance?.(currentDist);
+        }
+        // 현재 거리 업데이트
+        tm.setCurrentDistance?.(currentDist);
+      }
     }
 
     // Update gimmicks (동적 참조로 모바일 호환성 확보)
@@ -256,7 +266,8 @@ window.GameModules = window.GameModules || {};
     runtime._prevBoosting = player.isBoosting;
     if (boostStarted) {
       getSlowMo()?.checkCancelPolicy?.(runtime, qaConfig, 'on_boost_start', nowSec);
-      if (isTutorial && tutorialStep === 1) {
+      // 튜토리얼 모드에서 대쉬 감지 (step2에서 dashCount 조건 필요)
+      if (isTutorial) {
         window.TutorialManager?.markDashed?.();
       }
     }
@@ -335,7 +346,9 @@ window.GameModules = window.GameModules || {};
     start() {
       runtime.gameActive = true;
       resetCamera(runtime);
-      syncCanvasSize(runtime, document.getElementById('gameCanvas'));
+      // 튜토리얼 모드면 튜토리얼 캔버스, 아니면 일반 캔버스 사용
+      const canvasId = runtime.tutorialMode ? 'game-canvas-tutorial' : 'gameCanvas';
+      syncCanvasSize(runtime, document.getElementById(canvasId));
       lastTime = performance.now();
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(tick);

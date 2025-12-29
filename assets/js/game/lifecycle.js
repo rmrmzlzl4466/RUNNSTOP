@@ -179,6 +179,50 @@ window.GameModules = window.GameModules || {};
     window.Sound?.sfx?.('btn');
   }
 
+  // 튜토리얼 전용 게임 시작 함수
+  function startTutorialGame() {
+    if (runtime.gameActive) {
+      loop.stop();
+    }
+
+    // 캔버스 크기 동기화
+    syncCanvasSize(runtime, canvas);
+
+    // 런타임 초기화 (tutorialMode는 이미 설정됨)
+    resetRuntime(runtime, qaConfig);
+    runtime.tutorialMode = true;
+    runtime.tutorialStep = window.TutorialManager?.getCurrentStep?.() ?? 1;
+    runtime._lastPauseReason = null;
+    qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
+
+    // 플레이어 초기화
+    player.reset(canvas.width / 2, 550);
+    player.sessionScore = 0;
+    player.sessionBits = 0;
+    player.sessionCoins = 0;
+    player.sessionGems = 0;
+
+    // 레벨 생성
+    prepareLevel();
+
+    // 스톰 위치 (튜토리얼에서는 멀리)
+    runtime.storm.y = player.y + 5000;
+    runtime.gameState = STATE.RUN;
+    runtime.cycleTimer = 3.0;
+    runtime.isFirstWarning = true;
+
+    // UI 초기화 (튜토리얼 화면은 유지)
+    window.Game.UI.setPhase(STATE.RUN, 3.0, 3.0, STATE);
+    window.Game.UI.setStateGlow(STATE.RUN, STATE);
+    window.Game.UI.resetForGameStart();
+    window.Game.UI.updateScore(0, formatNumber, true);
+
+    // 게임 루프 시작!
+    loop.start();
+
+    console.log('[Lifecycle] Tutorial game started');
+  }
+
   function warpToDistance(targetDistance) {
     if (!runtime.gameActive) startGame();
 
@@ -262,6 +306,7 @@ window.GameModules = window.GameModules || {};
 
   return {
     startGame,
+    startTutorialGame,
     togglePause,
     restartFromPause,
     quitGame,

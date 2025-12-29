@@ -39,12 +39,14 @@
     window.resetSaveData = handleResetSave;
     if (lifecycle) {
       window.Game.startGame = lifecycle.startGame;
+      window.Game.startTutorialGame = lifecycle.startTutorialGame;
       window.Game.togglePause = lifecycle.togglePause;
       window.Game.restartFromPause = lifecycle.restartFromPause;
       window.Game.quitGame = lifecycle.quitGame;
       window.Game.warpToDistance = lifecycle.warpToDistance;
     } else {
       window.Game.startGame = undefined;
+      window.Game.startTutorialGame = undefined;
       window.Game.togglePause = undefined;
       window.Game.restartFromPause = undefined;
       window.Game.quitGame = undefined;
@@ -61,7 +63,32 @@
       return false;
     }
     canvas = targetCanvas;
-    ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
+
+    // 튜토리얼 모드일 때 캔버스 크기 설정 (canvas.js는 gameCanvas만 처리함)
+    if (isTutorialMode) {
+      const surface = document.getElementById('game-surface') || document.getElementById('game-container');
+      const containerWidth = surface?.clientWidth || window.innerWidth || 400;
+      const containerHeight = surface?.clientHeight || window.innerHeight || 700;
+      const rawDpr = window.devicePixelRatio || 1;
+      const cappedDpr = Math.min(rawDpr, 2);
+
+      canvas.width = Math.floor(containerWidth * cappedDpr);
+      canvas.height = Math.floor(containerHeight * cappedDpr);
+      canvas.style.width = `${containerWidth}px`;
+      canvas.style.height = `${containerHeight}px`;
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+
+      ctx = canvas.getContext('2d', { alpha: false });
+      ctx.setTransform(cappedDpr, 0, 0, cappedDpr, 0, 0);
+
+      // CanvasSize 업데이트 (튜토리얼 캔버스용)
+      window.CanvasSize = { width: containerWidth, height: containerHeight, dpr: cappedDpr, ctx };
+    } else {
+      ctx = (window.CanvasSize?.ctx) ?? canvas.getContext('2d', { alpha: false });
+    }
+
     runtime = createRuntimeState(canvas, qaConfig);
     window.runtime = runtime;  // For StageConfig module
     window.Game.runtime = runtime;
@@ -145,6 +172,7 @@
   function startTutorialFlow() {
     let navigationSucceeded = false;
     let tutorialStarted = false;
+    let gameLoopStarted = false;
     document.body.classList.remove('tutorial-lock');
     window.pendingAutoTutorial = false;
     if (!document.getElementById('screen-tutorial')) {
@@ -152,30 +180,54 @@
       return;
     }
     try {
+      // 1. 먼저 튜토리얼 화면으로 전환 (display: flex로 변경되어야 캔버스 크기 계산 가능)
+      if (window.Navigation?.go) {
+        try {
+          window.Navigation.go('tutorial');
+          navigationSucceeded = true;
+        } catch (err) {
+          console.error('[BOOT] Tutorial navigation failed', err);
+        }
+      }
+
+      if (!navigationSucceeded) {
+        throw new Error('Navigation to tutorial failed');
+      }
+
+      // 2. 화면이 표시된 후 런타임 재구성 (캔버스 크기가 올바르게 계산됨)
       const ready = rebuildRuntime(true);
+      if (!ready) {
+        throw new Error('Runtime rebuild failed');
+      }
+
+      // 3. 튜토리얼 UI/Manager 초기화
       window.TutorialUI?.init?.();
       window.TutorialManager?.init?.();
-      if (ready) {
+
+      // 4. 튜토리얼 시작
+      try {
+        window.TutorialManager?.startTutorial?.(1, runtime);
+        tutorialStarted = true;
+      } catch (err) {
+        console.error('[BOOT] Tutorial start failed', err);
+        tutorialStarted = false;
+      }
+
+      // 5. 게임 루프 시작 (핵심!)
+      if (tutorialStarted && lifecycle?.startTutorialGame) {
         try {
-          window.TutorialManager?.startTutorial?.(1, runtime);
-          tutorialStarted = true;
+          lifecycle.startTutorialGame();
+          gameLoopStarted = true;
+          console.log('[BOOT] Tutorial game loop started successfully');
         } catch (err) {
-          console.error('[BOOT] Tutorial start failed', err);
-          tutorialStarted = false;
-        }
-        if (tutorialStarted && window.Navigation?.go) {
-          try {
-            window.Navigation.go('tutorial');
-            navigationSucceeded = true;
-          } catch (err) {
-            console.error('[BOOT] Tutorial navigation failed', err);
-          }
+          console.error('[BOOT] Tutorial game loop start failed', err);
+          gameLoopStarted = false;
         }
       }
     } catch (err) {
       console.error('[BOOT] Tutorial flow error', err);
     }
-    if (navigationSucceeded && tutorialStarted) {
+    if (navigationSucceeded && tutorialStarted && gameLoopStarted) {
       window.shouldStartTutorial = false;
       document.body.classList.add('tutorial-lock');
       return;
