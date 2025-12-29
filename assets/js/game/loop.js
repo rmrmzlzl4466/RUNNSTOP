@@ -80,7 +80,11 @@ window.GameModules = window.GameModules || {};
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
-      handlers.onDie?.('FALL');
+      if (runtime.tutorialMode) {
+        window.GameModules.Tutorial.retryStep();
+      } else {
+        handlers.onDie?.('FALL');
+      }
     }
   }
 
@@ -92,7 +96,11 @@ window.GameModules = window.GameModules || {};
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
-      handlers.onDie?.('FALL_DURING_STOP');
+      if (runtime.tutorialMode) {
+        window.GameModules.Tutorial.retryStep();
+      } else {
+        handlers.onDie?.('FALL_DURING_STOP');
+      }
     }
   }
 

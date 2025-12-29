@@ -117,11 +117,9 @@
    * createQAConfig - GLOBAL + STAGE_DEFAULTS 병합하여 qaConfig 생성
    */
   function createFullConfig() {
-    return {
-      ...GLOBAL_CONFIG,
-      ...STAGE_DEFAULTS,
-      camera: { ...GLOBAL_CONFIG.camera }
-    };
+    const config = Object.assign({}, GLOBAL_CONFIG, STAGE_DEFAULTS);
+    config.camera = Object.assign({}, GLOBAL_CONFIG.camera);
+    return config;
   }
 
   // Export

@@ -104,13 +104,20 @@ window.GameModules = window.GameModules || {};
     window.Navigation?.go?.('result');
   }
 
-  function startGame(e) {
+  function startGame(e, options = {}) {
     if (e) {
       try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
     }
     if (runtime.gameActive) {
       loop.stop();
     }
+
+    if (options.isTutorial) {
+      window.GameModules.Tutorial.setupTutorial(1); // 튜토리얼 상태 및 설정 준비
+    } else {
+      runtime.tutorialMode = false; // 일반 게임 모드임을 명시
+    }
+
     window.Input?.setIgnoreInputUntil?.(performance.now() + 250);
     window.Sound?.bgmStart?.();
     window.Sound?.sfx?.('btn');
@@ -134,7 +141,7 @@ window.GameModules = window.GameModules || {};
       magnetRangeMult: 1.0,
       shieldDropChanceBonus: 0
     };
-    runtime.itemUpgrades = { ...effectiveUpgrades };
+    runtime.itemUpgrades = Object.assign({}, effectiveUpgrades);
 
     // 스킨/보물 효과 적용 (runtime 전달로 보물 효과가 캐시에 추가됨)
     applyLoadoutStats(player, qaConfig, gameData, runtime);
@@ -183,7 +190,7 @@ window.GameModules = window.GameModules || {};
     const tutorialPauseHtml = `
       <div class="pause-box">
         <div class="pause-title">PAUSED</div>
-        <button class="btn-common pause-btn" onclick="window.GameModules.Lifecycle.resumeGame()">RESUME</button>
+        <button class="btn-common pause-btn" onclick="window.resumeGame()">RESUME</button>
         <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.GameModules.Tutorial.quitTutorial()">튜토리얼 나가기</button>
       </div>
     `;

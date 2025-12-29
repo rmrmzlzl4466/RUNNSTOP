@@ -186,7 +186,7 @@ window.GameModules = window.GameModules || {};
     const DEFAULT = { barrier: 0.2, booster: 0.4, magnet: 0.4 };
 
     if (!weights || typeof weights !== 'object') {
-      return { ...DEFAULT };
+      return Object.assign({}, DEFAULT);
     }
 
     let barrier = Math.max(0, Number(weights.barrier) || 0);
@@ -196,7 +196,7 @@ window.GameModules = window.GameModules || {};
     const total = barrier + booster + magnet;
 
     if (total === 0) {
-      return { ...DEFAULT };
+      return Object.assign({}, DEFAULT);
     }
 
     return {
@@ -283,7 +283,7 @@ window.GameModules = window.GameModules || {};
     // Get stage config and tuning
     const stageConfig = runtime?.stage?.currentConfig;
     const stageTuningDefaults = window.STAGE_TUNING_DEFAULTS ?? {};
-    const stageTuning = { ...stageTuningDefaults, ...(stageConfig?.tuning ?? {}) };
+    const stageTuning = Object.assign({}, stageTuningDefaults, (stageConfig?.tuning ?? {}));
     const stageOverride = stageOverrides[stageIdStr] ?? {};
 
     // Get defaults from core/config.js
@@ -428,7 +428,7 @@ window.GameModules = window.GameModules || {};
     cachedOverrideHash = overrideHash;
 
     // Store sources for debug overlay
-    lastEffectiveDebugSources = { ...sources };
+    lastEffectiveDebugSources = Object.assign({}, sources);
 
     return effective;
   }
@@ -456,7 +456,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function getEffectiveSources() {
-    return { ...lastEffectiveDebugSources };
+    return Object.assign({}, lastEffectiveDebugSources);
   }
 
   // ====================================
@@ -583,11 +583,11 @@ window.GameModules = window.GameModules || {};
   }
 
   function getGlobalOnlyKeys() {
-    return [...GLOBAL_ONLY_KEYS, STORM_BASE_SPEED_KEY];
+    return Array.from(GLOBAL_ONLY_KEYS).concat([STORM_BASE_SPEED_KEY]);
   }
 
   function getStageOnlyKeys() {
-    return [...STAGE_ONLY_KEYS];
+    return Array.from(STAGE_ONLY_KEYS);
   }
 
   // ====================================

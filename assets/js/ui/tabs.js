@@ -37,10 +37,7 @@ window.initQASliders = function() {
   if (!defaults && !window.qaConfig) return;
 
   // 현재 적용 중인 설정을 우선 사용하고, 없을 경우 기본값으로 채운다
-  const activeConfig = {
-    ...(defaults || {}),
-    ...(window.qaConfig || {}),
-  };
+  const activeConfig = Object.assign({}, (defaults || {}), (window.qaConfig || {}));
 
   const setValue = (id, value) => {
     const el = document.getElementById(id);
@@ -442,10 +439,7 @@ window.refreshStageTuningUI = function() {
   const override = StageConfig.getQAOverride?.(stageId) ?? {};
   const stageData = window.STAGE_CONFIG?.[parseInt(stageId, 10) - 1] ?? {};
   const stageTuning = stageData.tuning ?? {};  // 새 구조: stage.tuning
-  const defaults = {
-    ...(window.GameConfig?.STAGE_DEFAULTS ?? {}),  // core/config.js 기본값
-    ...(window.qaConfig ?? {})                     // qaConfig overrides (global)
-  };
+  const defaults = Object.assign({}, (window.GameConfig?.STAGE_DEFAULTS ?? {}), (window.qaConfig ?? {}));
 
   // Helper: get value with fallback chain
   // QA Override → Stage Tuning → qaConfig/global defaults

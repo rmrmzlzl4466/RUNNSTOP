@@ -60,19 +60,14 @@
    */
   function load() {
     try {
-      const stored = localStorage.getItem(ITEM_UPGRADES_KEY);
-      if (!stored) return { ...defaultItemUpgrades };
+      const stored = localStorage.getItem(SAVE_KEY);
+      if (!stored) return Object.assign({}, defaultItemUpgrades);
       const parsed = JSON.parse(stored);
-      // 스키마 검증 및 기본값 병합
-      return {
-        boosterDistanceLv: Math.max(0, Math.min(parsed.boosterDistanceLv ?? 0, UPGRADE_CONFIG.boosterDistance.maxLevel)),
-        magnetDurationLv: Math.max(0, Math.min(parsed.magnetDurationLv ?? 0, UPGRADE_CONFIG.magnetDuration.maxLevel)),
-        magnetRangeLv: Math.max(0, Math.min(parsed.magnetRangeLv ?? 0, UPGRADE_CONFIG.magnetRange.maxLevel)),
-        shieldDropChanceLv: Math.max(0, Math.min(parsed.shieldDropChanceLv ?? 0, UPGRADE_CONFIG.shieldDropChance.maxLevel))
-      };
+      // Ensure all default keys exist
+      return Object.assign({}, defaultItemUpgrades, parsed);
     } catch (e) {
-      console.warn('[ItemUpgrades] Load failed, using defaults', e);
-      return { ...defaultItemUpgrades };
+      console.warn('Failed to load item upgrades', e);
+      return Object.assign({}, defaultItemUpgrades);
     }
   }
 

@@ -23,7 +23,7 @@
       return isMobile ? 'mobile' : 'pc';
     },
 
-    startTutorial(step = 1) {
+    setupTutorial(step = 1) {
       this.state.step = step;
       this.state.subStep = 1; // 첫 번째 하위 단계부터 시작
       this.state.isActive = true;
@@ -41,8 +41,8 @@
       window.TutorialUI?.showStep(step, this.state.subStep); // subStep 정보 추가 전달
       window.TutorialUI?.showHint(step, this.state.subStep, this.state.platform); // 플랫폼 정보 전달
 
-      // 게임 시작
-      this.startGameForStep(step);
+      // 게임 시작을 위한 설정 준비
+      this.setupStepConfig(step);
     },
 
     checkStepCondition() {
@@ -180,9 +180,9 @@
       }
     },
 
-    startGameForStep(step) {
+    setupStepConfig(step) {
       // 튜토리얼 전용 StageConfig 오버라이드 적용
-      const baseConfig = window.GameConfig.createFullConfig();
+      const baseConfig = Object.assign({}, window.GameConfig.createFullConfig());
       const tutorialStageConfig = window.TutorialConfig.applyOverrides(
         baseConfig, // 전역 config 복사
         step

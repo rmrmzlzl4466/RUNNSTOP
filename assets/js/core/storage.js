@@ -15,8 +15,8 @@
   };
 
   function normalizeSave(data) {
-    const merged = { ...defaultSave, ...(data || {}) };
-    merged.stats = { ...defaultSave.stats, ...(data?.stats || {}) };
+    const merged = Object.assign({}, defaultSave, (data || {}));
+    merged.stats = Object.assign({}, defaultSave.stats, (data?.stats || {}));
     // 보물 필드 보정 (기존 세이브에 없을 경우 기본값)
     if (!Array.isArray(merged.unlockedTreasures)) merged.unlockedTreasures = [];
     if (!Array.isArray(merged.equippedTreasures) || merged.equippedTreasures.length !== 2) {

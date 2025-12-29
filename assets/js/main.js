@@ -98,53 +98,9 @@
     
     // 튜토리얼 버튼 핸들러
     btnTutorial?.addEventListener('click', () => {
-      window.GameModules.Tutorial.startTutorial(1);
       window.Navigation.go('tutorial');
-      safeStartGame(); // 튜토리얼 게임 루프 시작
+      lifecycle.startGame(null, { isTutorial: true });
     });
-
-    console.log('[BOOT] window.startGame type=', typeof safeStartGame);
-    console.log('[BOOT] lifecycle.startGame type=', typeof lifecycle?.startGame);
-  }
-
-  // Lobby character helpers
-  let lobbyInterval = null;
-  function performJump(el) {
-    if (el.classList.contains('anim-jump')) return;
-    el.classList.add('anim-jump');
-    setTimeout(() => el.classList.remove('anim-jump'), 500);
-  }
-
-  function performMove(el) {
-    const randomX = 20 + Math.random() * 60;
-    el.style.left = `${randomX}%`;
-    el.classList.add('anim-walk');
-    setTimeout(() => el.classList.remove('anim-walk'), 1000);
-  }
-
-  function startLobbyLoop() {
-    if (lobbyInterval) clearInterval(lobbyInterval);
-    lobbyInterval = null;
-
-    // 캐릭터 위치 초기화 - flexbox 중앙정렬 사용
-    const charEl = document.getElementById('lobby-char');
-    if (charEl) {
-      charEl.style.left = '';
-      charEl.style.transform = '';
-    }
-  }
-
-  function stopLobbyLoop() {
-    if (lobbyInterval) clearInterval(lobbyInterval);
-    lobbyInterval = null;
-  }
-
-  function interactLobbyChar() {
-    const el = document.getElementById('lobby-char');
-    if (el) {
-      performJump(el);
-      window.Sound?.sfx('jump');
-    }
   }
 
   let titleTransitioning = false;
@@ -161,14 +117,12 @@
   
     setTimeout(() => {
       if (window.shouldStartTutorial) {
-        window.GameModules.Tutorial.startTutorial(1);
         window.Navigation.go('tutorial');
-        safeStartGame(); // 튜토리얼 게임 루프 시작
+        lifecycle.startGame(null, { isTutorial: true });
       } else {
         window.Navigation.go('lobby');
       }
       titleTransitioning = false;
-      // titleScreen.classList.remove('active-screen', 'glitch-out'); // Navigation.go가 처리
     }, 600); // Glitch-out 애니메이션 시간과 맞춤
   }
 
@@ -179,6 +133,7 @@
   window.quitGame = lifecycle.quitGame;
   window.resetSaveData = handleResetSave;
   window.handleTitleTouch = handleTitleTouch; // Expose to global scope for navigation.js
+  window.resumeGame = lifecycle.resumeGame; // Expose for tutorial pause menu
   
   window.Game.startGame = lifecycle.startGame;
   window.Game.togglePause = lifecycle.togglePause;
