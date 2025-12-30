@@ -120,6 +120,9 @@
         '#buff-container': { 1: false, 2: false, 3: true, 4: true },
         '#target-display': { 1: false, 2: true, 3: true, 4: true },
         '#status-bar-container': { 1: false, 2: true, 3: true, 4: true },
+        '#phase-bar': { 1: false, 2: true, 3: true, 4: true },
+        '#phase-bar-fill': { 1: false, 2: true, 3: true, 4: true },
+        '#status-msg': { 1: false, 2: true, 3: true, 4: true },
         '#btn-pause': { 1: true, 2: true, 3: true, 4: true },
         '#chase-ui': { 1: false, 2: false, 3: true, 4: true },
         '#hud': { 1: true, 2: true, 3: true, 4: true }

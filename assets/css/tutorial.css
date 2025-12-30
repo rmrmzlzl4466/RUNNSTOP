@@ -67,8 +67,8 @@
 /* 기존 tutorial-hint (화살표) 스타일은 제거 */
 
 .tutorial-highlight {
-  animation: highlight-glow 1.5s infinite alternate;
-  box-shadow: 0 0 15px 5px rgba(0,255,65,0.7), inset 0 0 10px rgba(0,255,65,0.5);
+  animation: none;
+  box-shadow: none;
   border-radius: 12px; /* 강조할 요소에 따라 유연하게 적용 */
   z-index: 100; /* 강조되는 요소가 맨 위로 오도록 */
   position: relative; /* z-index 적용을 위해 */
