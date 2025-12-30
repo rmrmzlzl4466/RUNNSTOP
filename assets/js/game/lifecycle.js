@@ -220,7 +220,7 @@ window.GameModules = window.GameModules || {};
       <div class="pause-box">
         <div class="pause-title">PAUSED</div>
         <button class="btn-common pause-btn" onclick="window.resumeGame()">RESUME</button>
-        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.GameModules.Tutorial.quitTutorial()">EXIT TUTORIAL</button>
+        <button class="btn-common pause-btn" style="background:#e74c3c;" onclick="window.quitGame()">EXIT TUTORIAL</button>
       </div>
     `;
     const overlayElement = document.getElementById('overlay-pause');
@@ -255,6 +255,10 @@ window.GameModules = window.GameModules || {};
   function quitGame() {
     if (runtime.tutorialMode) {
       window.Navigation?.hideOverlay?.('overlay-pause');
+      const overlayElement = document.getElementById('overlay-pause');
+      if (overlayElement) {
+        overlayElement.innerHTML = `<div class="pause-box">${_originalPauseBoxHtml}</div>`;
+      }
       loop.stop();
       runtime.gameActive = false;
       window.Sound?.bgmStop?.();

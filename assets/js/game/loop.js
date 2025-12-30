@@ -56,7 +56,7 @@ window.GameModules = window.GameModules || {};
 
     if (player.isBoosting) {
       runtime._stopJudgmentDebug = 'SKIPPED: Player is boosting';
-      return;
+      return false;
     }
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Genuine: ${result.genuineSafe}, Action: ${result.action}`;
@@ -84,15 +84,16 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        window.GameModules.Tutorial?.retryStep();
+        return !!window.GameModules.Tutorial?.retryStep();
       } else {
         handlers.onDie?.('FALL');
       }
     }
+    return false;
   }
 
   function checkFallDie() {
-    if (player.isBoosting) return;
+    if (player.isBoosting) return false;
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     if (result.action === 'barrier_save') {
       window.Game.Physics.applyBarrierSave(player);
@@ -100,11 +101,12 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        window.GameModules.Tutorial?.retryStep();
+        return !!window.GameModules.Tutorial?.retryStep();
       } else {
         handlers.onDie?.('FALL_DURING_STOP');
       }
     }
+    return false;
   }
 
   function handleItems() {
@@ -175,7 +177,7 @@ window.GameModules = window.GameModules || {};
     // 튜토리얼 Step 1-2: 스톰 비활성화
     const stormEnabled = !runtime.tutorialMode || runtime._tutorialStormEnabled;
     if (!stormEnabled) {
-      runtime.storm.y = player.y - 2000;
+      runtime.storm.y = player.y + 2000;
     }
 
     // UI uses real time (not slowed)
@@ -281,6 +283,10 @@ window.GameModules = window.GameModules || {};
       }
     } else if (runtime.gameState === STATE.WARNING) {
       window.Game.UI.onWarningUpdate(runtime.cycleTimer);
+      if (runtime.targetColorIndex === -1) {
+        runtime.targetColorIndex = window.Game.LevelManager.pickSafeTargetColor(player.y, runtime.currentThemeIdx);
+        window.Game.UI.onWarningStart(getTargetColor(runtime, runtime.targetColorIndex));
+      }
       const bigGemTriggerTime = (runtime.currentWarningMax || 6.0) * 0.3;
       if (!runtime.bigGemSpawned && runtime.cycleTimer <= bigGemTriggerTime) {
         spawnBigGem(runtime, player, runtime.targetColorIndex);
@@ -294,10 +300,10 @@ window.GameModules = window.GameModules || {};
           player.vx *= 0.1;
           player.vy *= 0.1;
         }
-        checkStopJudgment(nowSec);
+        if (checkStopJudgment(nowSec)) return;
       }
     } else if (runtime.gameState === STATE.STOP) {
-      if (!player.isBoosting) checkFallDie();
+      if (!player.isBoosting && checkFallDie()) return;
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.RUN;
         runtime.cycleTimer = effective.runPhaseDuration;

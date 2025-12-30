@@ -123,9 +123,11 @@
       next.colorPalette = tutorialConfig.colorPalette;
     }
 
-    // Tutorial uses a dedicated palette and no gimmicks for stability
+    // Tutorial uses a dedicated palette; disable gimmicks only when obstacles are off
     next.theme = { paletteId: 'TUTORIAL' };
-    next.gimmick = { id: 'NONE', params: {} };
+    if (tutorialConfig.obstaclesEnabled === false) {
+      next.gimmick = { id: 'NONE', params: {} };
+    }
 
     // Additional tutorial-only flags for loop.js to branch on
     next._tutorialRules = {

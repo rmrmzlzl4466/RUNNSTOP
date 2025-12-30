@@ -120,17 +120,17 @@
         }
 
         if (conditionMet) {
-          this.handleEventTrigger(trigger.action);
+          this.handleEventTrigger(trigger);
           trigger.triggered = true;
         }
       });
     },
 
-    handleEventTrigger(action) {
+    handleEventTrigger(trigger) {
       const runtime = window.runtime;
       const player = window.player;
 
-      switch (action) {
+      switch (trigger.action) {
         case 'start_run_stop_cycle':
           if (runtime) {
             runtime._tutorialHoldCycle = false;
@@ -141,8 +141,11 @@
           break;
         case 'spawn_item_shield':
           if (runtime && player) {
-            const rowIdx = Math.floor(player.y / (runtime.grid?.CELL_H || 100)) - 5;
-            window.Game.LevelManager.generateRow(rowIdx, (type, col) => window.GameModules.Items.spawnItemAtCol(runtime, rowIdx, type, col));
+            const cellH = runtime.grid?.CELL_H || 100;
+            const baseY = 550;
+            const targetDist = Math.max(0, Number(trigger.value) || 0);
+            const rowIdx = Math.floor((baseY - targetDist * 10) / cellH);
+            window.Game.LevelManager.generateRow(rowIdx);
             window.GameModules.Items.spawnItemAtCol(runtime, rowIdx, 'barrier', Math.floor((runtime.grid?.COLS ?? 5) / 2));
             window.TutorialUI?.showMessage('Shield item spawned', 1600);
           }
@@ -188,7 +191,7 @@
     },
 
     retryStep() {
-      if (!this.state.isActive || this.state.isRestarting) return;
+      if (!this.state.isActive || this.state.isRestarting) return false;
       this.state.retryCount++;
       this.state.isRestarting = true;
       this.resetStepProgress();
@@ -200,6 +203,7 @@
       window.TutorialUI?.showRetryMessage();
       window.TutorialUI?.updateUIVisibility(this.state.step);
       window.Game.startGame?.(null, { isTutorial: true, tutorialStep: this.state.step, isRetry: true });
+      return true;
     },
 
     onTutorialComplete() {
@@ -222,8 +226,9 @@
       this.state.moveDetected = false;
       this.state.dashDetected = false;
       this.state.safeJudgmentCount = 0;
-      this.state.startDistance = window.player?.y || 0;
-      this.state.startDistValue = window.player?.dist ?? 0;
+      const startDist = window.player?.dist ?? 0;
+      this.state.startDistance = startDist;
+      this.state.startDistValue = startDist;
 
       const config = window.TutorialConfig.getConfig(this.state.step);
       const triggers = resetTriggers ? (config.eventTriggers || []) : (this.state.activeTriggers || []);
@@ -282,6 +287,7 @@
       this.deactivateRuntime();
       window.TutorialUI?.removeHighlights();
       window.TutorialUI?.setActive?.(false);
+      window.Navigation?.hideOverlay?.('overlay-pause');
       window.Navigation?.go('lobby');
     }
   };

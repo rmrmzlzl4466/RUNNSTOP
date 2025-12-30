@@ -66,10 +66,14 @@
 
     const palette = tutorialColors || (getThemes()[themeIdx]?.colors ?? []);
     const rowColors = [];
+    const tutorialStep = window.runtime?.tutorialStep ?? 1;
     for (let i = 0; i < COLS; i++) {
-      // Tutorial mode: use single color (index 0) for all tiles to avoid visual noise
-      if (isTutorialMode) {
+      // Tutorial Step 1: single color to keep the screen calm
+      if (isTutorialMode && tutorialStep === 1) {
         rowColors.push(0);
+      } else if (isTutorialMode && tutorialStep === 2) {
+        const bandColor = Math.floor(Math.abs(rowIndex) / 4) % 2;
+        rowColors.push(bandColor);
       } else {
         rowColors.push(Math.floor(Math.random() * palette.length));
       }
