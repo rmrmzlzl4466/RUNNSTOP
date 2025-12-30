@@ -186,6 +186,14 @@
         window.runtime.tutorialStep = nextStep;
         window.runtime.tutorialSubStep = this.state.subStep;
       }
+      if (completedStep === 1 && nextStep === 2) {
+        this.resetStepProgress(true);
+        window.TutorialUI?.updateUIVisibility(nextStep);
+        window.TutorialUI?.showStepTransition(nextStep);
+        window.TutorialUI?.showStep(nextStep, this.state.subStep);
+        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
+        return;
+      }
       window.TutorialUI?.showStepTransition(nextStep);
       window.Game.startGame?.(null, { isTutorial: true, tutorialStep: nextStep });
     },

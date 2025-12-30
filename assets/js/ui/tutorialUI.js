@@ -136,7 +136,10 @@
           const fallback = (computed === 'none')
             ? (selector === '#mobile-controls' ? 'flex' : 'block')
             : computed;
-          this.defaultDisplays[selector] = element.style.display || fallback || 'block';
+          const explicit = element.style.display;
+          this.defaultDisplays[selector] = (!explicit || explicit === 'none')
+            ? (fallback || 'block')
+            : explicit;
         }
         const shouldShow = UI_VISIBILITY_CONFIG[selector][step] !== false;
         element.style.display = shouldShow ? this.defaultDisplays[selector] : 'none';
