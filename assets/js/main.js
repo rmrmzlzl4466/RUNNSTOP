@@ -14,8 +14,6 @@
   let gameReadySent = false;
   window.markGameReady = () => {
     if (gameReadySent) return;
-    // [STEP 8] Ensure firstFrameReady is called before gameReady.
-    window.markFirstFrameReady();
     gameReadySent = true;
     if (window.ytgame?.IN_PLAYABLES_ENV) {
       console.log('[Playables] Marking game ready.');
