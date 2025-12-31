@@ -310,7 +310,9 @@
       if (!player.isDead && runtime.gameState !== STATE.PAUSE) {
         rafId = requestAnimationFrame(tick);
       } else if (player.isDead) {
-        handlers.onGameOver?.();
+        if (!runtime.tutorialMode) {
+          handlers.onGameOver?.();
+        }
       }
     } catch (e) {
       console.error('[LOOP] fatal', e);

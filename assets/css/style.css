@@ -1116,7 +1116,7 @@
       96% { opacity: 0.6; transform: translate(-2px, 0); }
       98% { opacity: 0; }
     }
-    @keyframes glitchBottom {
+            @keyframes glitchBottom {
       0%, 90%, 100% { opacity: 0; transform: translate(0); }
       91% { opacity: 0; }
       93% { opacity: 0.8; transform: translate(3px, 0); }
@@ -1124,8 +1124,40 @@
       97% { opacity: 0.6; transform: translate(2px, 0); }
       99% { opacity: 0; }
     }
+    /* Lobby start button idle glitch */
+        .lobby-start.glitch-idle {
+      position: relative;
+      overflow: hidden;
+      animation: logoGlitch 4s ease-in-out infinite;
+    }
+    .lobby-start.glitch-idle::before,
+    .lobby-start.glitch-idle::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: inherit;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .lobby-start.glitch-idle::before {
+      color: #ff0040;
+      animation: glitchTop 4s ease-in-out infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    }
+    .lobby-start.glitch-idle::after {
+      color: #00d4ff;
+      animation: glitchBottom 4s ease-in-out infinite;
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    }
 
-    .touch-prompt {
+
+.touch-prompt {
       margin-top: 50px; font-size: 16px; color: #00ff41; font-weight: 700;
       text-transform: uppercase; letter-spacing: 3px;
       animation: promptPulse 2s ease-in-out infinite;

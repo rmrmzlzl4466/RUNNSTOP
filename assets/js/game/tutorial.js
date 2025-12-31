@@ -211,6 +211,25 @@
       };
 
       const behavior = this.getRetryBehavior(this.state.step);
+
+      if (behavior.type === 'death_fade') {
+        const deathDelaySec = behavior.deathDelaySec ?? (window.qaConfig?.deathDelay ?? 1.0);
+        if (window.player?.die) {
+          window.player.die(deathDelaySec);
+        }
+        const restartAfterDeath = () => {
+          if (behavior.message) {
+            this.emit('ui', { action: 'showMessage', text: behavior.message, duration: behavior.messageMs ?? 1500 });
+          } else {
+            this.emit('ui', { action: 'showRetryMessage' });
+          }
+          this.emit('ui', { action: 'fadeOutIn', outMs: behavior.outMs ?? 400, inMs: behavior.inMs ?? 400, holdMs: behavior.holdMs ?? 120, callback: restart });
+        };
+        const delayMs = Math.max(0, Math.round(deathDelaySec * 1000));
+        setTimeout(restartAfterDeath, delayMs);
+        return true;
+      }
+
       if (behavior.type === 'fade') {
         if (behavior.message) {
           this.emit('ui', { action: 'showMessage', text: behavior.message, duration: behavior.messageMs ?? 1500 });
@@ -224,7 +243,6 @@
       }
       return true;
     },
-
     onTutorialComplete() {
       this.state.isActive = false;
       this.persistProgress(MAX_TUTORIAL_STEP, true);
@@ -484,12 +502,13 @@
 
     retryBehaviors: {
       2: {
-        type: 'fade',
+        type: 'death_fade',
         message: 'OUT! Stand on the safe color.',
         messageMs: 1500,
         outMs: 400,
         inMs: 400,
-        holdMs: 120
+        holdMs: 120,
+        deathDelaySec: 0.8
       }
     },
 
