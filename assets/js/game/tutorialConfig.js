@@ -20,7 +20,7 @@
       warningTimeBase: 10.0,
       stopPhaseDuration: 2.0,
       colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
-      successCondition: { safeJudgmentCount: 2 },
+      successCondition: { type: 'safe_judgments', value: 2 },
       eventTriggers: [
         { type: 'distance', value: 50, action: 'start_run_stop_cycle', triggered: false }
       ],
@@ -32,7 +32,7 @@
       obstaclesEnabled: true,
       itemsEnabled: true,
       colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
-      successCondition: { distance: 300 },
+      successCondition: { type: 'distance_relative', value: 300 },
       eventTriggers: [
         { type: 'fixed_position', value: 100, action: 'spawn_item_shield', triggered: false },
         { type: 'distance', value: 150, action: 'activate_storm', triggered: false }
@@ -45,7 +45,7 @@
       obstaclesEnabled: true,
       itemsEnabled: true,
       colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
-      successCondition: { distance: 700 },
+      successCondition: { type: 'stage_end' },
       eventTriggers: [], // 4단계는 즉시 모든 요소 활성화
     },
   };

@@ -1,16 +1,16 @@
-// Navigation System - Screen transitions
+﻿// Navigation System - Screen transitions
 window.Navigation = {
   current: 'title',
 
-  // 화면 이동 함수
+  // ?붾㈃ ?대룞 ?⑥닔
   go(screenId) {
-    // 1. 모든 .full-screen 숨기기
+    // 1. 紐⑤뱺 .full-screen ?④린湲?
     document.querySelectorAll('.full-screen').forEach(el => {
       el.style.display = 'none';
       el.classList.remove('active-screen');
     });
 
-    // 2. 대상 화면 보이기
+    // 2. ????붾㈃ 蹂댁씠湲?
     const target = document.getElementById(`screen-${screenId}`);
     if (target) {
       target.style.display = 'flex';
@@ -18,7 +18,7 @@ window.Navigation = {
     }
     this.current = screenId;
 
-    // 3. 화면별 초기화 로직
+    // 3. ?붾㈃蹂?珥덇린??濡쒖쭅
     if (screenId === 'lobby') {
       window.updateLobbyUI?.();
       window.startLobbyLoop?.();
@@ -26,8 +26,7 @@ window.Navigation = {
       window.stopLobbyLoop?.();
     }
     if (screenId === 'shop') {
-      window.updateShopUI?.();
-      window.switchTab?.('skin'); // 기본 탭
+      window.openShop?.('upgrade');
     }
     if (screenId === 'qa') {
       window.initQASliders?.();
@@ -37,7 +36,7 @@ window.Navigation = {
     window.Sound?.sfx('btn');
   },
 
-  // 팝업 열기/닫기
+  // ?앹뾽 ?닿린/?リ린
   showOverlay(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'flex';
@@ -47,7 +46,7 @@ window.Navigation = {
     if (el) el.style.display = 'none';
   },
 
-  // 모든 화면 숨기기 (게임 시작 시)
+  // 紐⑤뱺 ?붾㈃ ?④린湲?(寃뚯엫 ?쒖옉 ??
   hideAll() {
     document.querySelectorAll('.full-screen').forEach(el => {
       el.style.display = 'none';
@@ -57,13 +56,13 @@ window.Navigation = {
   }
 };
 
-// 앱 시작 시 타이틀 화면 보이기
+// ???쒖옉 ????댄? ?붾㈃ 蹂댁씠湲?
 window.addEventListener('load', () => {
   const titleScreen = document.getElementById('screen-title');
   if (titleScreen) {
     const onTitleTouch = () => {
-      // 이 로직은 이제 main.js의 triggerTitleGlitchOut에서 처리됩니다.
-      // 이 이벤트 리스너는 여전히 필요하지만, 실제 로직은 main.js에 있습니다.
+      // ??濡쒖쭅? ?댁젣 main.js??triggerTitleGlitchOut?먯꽌 泥섎━?⑸땲??
+      // ???대깽??由ъ뒪?덈뒗 ?ъ쟾???꾩슂?섏?留? ?ㅼ젣 濡쒖쭅? main.js???덉뒿?덈떎.
       window.handleTitleTouch?.(); 
     };
     titleScreen.addEventListener('click', onTitleTouch);
@@ -77,3 +76,4 @@ window.addEventListener('load', () => {
   // [STEP 8] Mark game as ready for interaction after title screen is set up.
   window.markGameReady?.();
 });
+

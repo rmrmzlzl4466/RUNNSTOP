@@ -63,14 +63,11 @@
       }
 
       const config = window.TutorialConfig.getConfig(targetStep);
-      const hasStormTrigger = (config.eventTriggers || []).some((t) => t.action === 'activate_storm');
 
       if (window.runtime) {
         window.runtime.tutorialMode = true;
-        window.runtime.tutorialStep = targetStep;
-        window.runtime.tutorialSubStep = this.state.subStep;
-        window.runtime._tutorialHoldCycle = targetStep === 2;
-        window.runtime._tutorialStormEnabled = config.stormEnabled !== false && !hasStormTrigger;
+        this.setRuntimeStep(targetStep, this.state.subStep);
+        this.applyRuntimeFlags(config);
         const baseStageLength = window.STAGE_CONFIG?.[0]?.length ?? window.qaConfig?.stageLength ?? 2000;
         window.runtime._tutorialStageGoal = baseStageLength + 200;
         window.runtime.currentLevelGoal = window.runtime._tutorialStageGoal;
@@ -89,34 +86,9 @@
     checkStepCondition() {
       if (!this.state.isActive) return false;
       const config = window.TutorialConfig.getConfig(this.state.step);
-      const condition = config.successCondition;
-
-      if (this.state.step === 1) {
-        if (this.state.subStep === 1) {
-          return this.state.moveDetected;
-        }
-        if (this.state.subStep === 2) {
-          return this.state.dashDetected;
-        }
-      }
-
-      if (this.state.step === 2) {
-        return this.state.safeJudgmentCount >= condition.safeJudgmentCount;
-      }
-      if (this.state.step === 3 || this.state.step === 4) {
-        const dist = window.player?.dist ?? 0;
-        const traveled = this.getTraveledDistance();
-        if (this.state.step === 4) {
-          const minHoldMs = 2000;
-          const elapsed = performance.now() - (this.state.stepStartedAt || 0);
-          if (elapsed < minHoldMs) return false;
-        }
-        if (this.state.stepTargetDist > 0) {
-          return dist >= this.state.stepTargetDist;
-        }
-        return traveled >= condition.distance;
-      }
-      return false;
+      const condition = this.getSuccessCondition(config);
+      const handler = this.getStepHandler(this.state.step);
+      return handler?.checkSuccess ? handler.checkSuccess(this, condition) : false;
     },
 
     checkEventTriggers() {
@@ -177,12 +149,9 @@
     },
 
     onStepComplete() {
-      if (this.state.step === 1 && this.state.subStep === 1) {
-        this.state.subStep++;
-        if (window.runtime) window.runtime.tutorialSubStep = this.state.subStep;
-        this.resetStepProgress(false);
-        window.TutorialUI?.showStep(this.state.step, this.state.subStep);
-        window.TutorialUI?.showHint(this.state.step, this.state.subStep, this.state.platform);
+      const nextSubStep = this.getNextSubStep(this.state.step, this.state.subStep);
+      if (nextSubStep) {
+        this.enterSubStep(nextSubStep);
         return;
       }
 
@@ -195,68 +164,9 @@
       }
 
       const nextStep = completedStep + 1;
-      this.state.step = nextStep;
-      this.state.subStep = 1;
-      this.state.retryCount = 0;
-      const runtime = window.runtime;
-      if (runtime) {
-        runtime.tutorialStep = nextStep;
-        runtime.tutorialSubStep = this.state.subStep;
-      }
-      if (completedStep === 1 && nextStep === 2) {
-        this.resetStepProgress(true);
-        window.TutorialUI?.updateUIVisibility(nextStep);
-        window.TutorialUI?.showStepTransition(nextStep);
-        window.TutorialUI?.showStep(nextStep, this.state.subStep);
-        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
-        return;
-      }
-      if (completedStep === 2 && nextStep === 3) {
-        this.resetStepProgress(true);
-        window.TutorialUI?.updateUIVisibility(nextStep);
-        window.TutorialUI?.showStepTransition(nextStep);
-        window.TutorialUI?.showStep(nextStep, this.state.subStep);
-        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
-        if (runtime) {
-          const STATE = window.GameModules.Runtime?.STATE;
-          if (STATE) {
-            runtime.gameState = STATE.RUN;
-            runtime.cycleTimer = 3.0;
-            runtime.isFirstWarning = true;
-            runtime.targetColorIndex = -1;
-            runtime.currentWarningMax = 6.0;
-          }
-        }
-        return;
-      }
-      if (completedStep === 3 && nextStep === 4) {
-        this.resetStepProgress(true);
-        this.state.stepStartedAt = performance.now();
-        window.TutorialUI?.updateUIVisibility(nextStep);
-        window.TutorialUI?.showStepTransition(nextStep);
-        window.TutorialUI?.showStep(nextStep, this.state.subStep);
-        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
-        if (runtime) {
-          const STATE = window.GameModules.Runtime?.STATE;
-          if (STATE) {
-            runtime.gameState = STATE.RUN;
-            runtime.cycleTimer = 3.0;
-            runtime.isFirstWarning = true;
-            runtime.targetColorIndex = -1;
-            runtime.currentWarningMax = 6.0;
-          }
-          runtime._tutorialHoldCycle = false;
-          runtime._tutorialStormEnabled = true;
-        }
-        if (window.player) {
-          window.player.isBoosting = false;
-          window.player.vx = 0;
-          window.player.vy = 0;
-        }
-        return;
-      }
-      window.TutorialUI?.showStepTransition(nextStep);
-      window.Game.startGame?.(null, { isTutorial: true, tutorialStep: nextStep });
+      const transition = this.getStepTransition(completedStep, nextStep);
+      this.onExitStep(completedStep, nextStep, transition);
+      this.enterStep(nextStep, transition);
     },
 
     retryStep() {
@@ -274,9 +184,14 @@
         window.Game.startGame?.(null, { isTutorial: true, tutorialStep: this.state.step, isRetry: true });
       };
 
-      if (this.state.step === 2) {
-        window.TutorialUI?.showMessage('OUT! Stand on the safe color.', 1500);
-        window.TutorialUI?.fadeOutIn(400, 400, 120, restart);
+      const behavior = this.getRetryBehavior(this.state.step);
+      if (behavior.type === 'fade') {
+        if (behavior.message) {
+          window.TutorialUI?.showMessage(behavior.message, behavior.messageMs ?? 1500);
+        } else {
+          window.TutorialUI?.showRetryMessage();
+        }
+        window.TutorialUI?.fadeOutIn(behavior.outMs ?? 400, behavior.inMs ?? 400, behavior.holdMs ?? 120, restart);
       } else {
         window.TutorialUI?.showRetryMessage();
         restart();
@@ -334,12 +249,17 @@
       this.state.startDistValue = startDist;
       this.state.stepStartedAt = performance.now();
       const config = window.TutorialConfig.getConfig(this.state.step);
+      const condition = this.getSuccessCondition(config);
       if (this.state.step === 3 || this.state.step === 4) {
-        if (this.state.step === 4 && window.runtime?._tutorialStageGoal) {
-          this.state.stepTargetDist = window.runtime._tutorialStageGoal;
-        } else {
-          const goal = Number(config.successCondition?.distance ?? 0);
+        if (condition.type === 'distance_absolute') {
+          this.state.stepTargetDist = Number(condition.value ?? 0);
+        } else if (condition.type === 'distance_relative') {
+          const goal = Number(condition.value ?? 0);
           this.state.stepTargetDist = goal > 0 ? startDist + goal : 0;
+        } else if (condition.type === 'stage_end') {
+          this.state.stepTargetDist = window.runtime?._tutorialStageGoal ?? window.runtime?.currentLevelGoal ?? 0;
+        } else {
+          this.state.stepTargetDist = 0;
         }
       } else {
         this.state.stepTargetDist = 0;
@@ -348,15 +268,233 @@
       this.state.activeTriggers = (triggers || []).map((t) => ({ ...t, triggered: false }));
 
       if (window.runtime) {
-        const hasStormTrigger = (config.eventTriggers || []).some((t) => t.action === 'activate_storm');
-        window.runtime._tutorialStormEnabled = config.stormEnabled !== false && !hasStormTrigger;
-        window.runtime._tutorialHoldCycle = this.state.step === 2;
+        this.applyRuntimeFlags(config);
       }
     },
 
     getTraveledDistance() {
       const dist = window.player?.dist ?? 0;
       return Math.max(0, dist - (this.state.startDistValue || 0));
+    },
+
+    tick() {
+      if (!this.state.isActive) return false;
+      this.checkEventTriggers();
+      if (this.checkStepCondition()) {
+        this.onStepComplete();
+        return true;
+      }
+      return false;
+    },
+
+    dispatchEvent(type, payload) {
+      return this.handleEvent(type, payload);
+    },
+
+    handleEvent(type) {
+      if (!this.state.isActive) return false;
+      const handler = this.getStepHandler(this.state.step);
+      return handler?.onEvent ? handler.onEvent(this, type) : false;
+    },
+
+    enterSubStep(subStep) {
+      this.state.subStep = subStep;
+      this.setRuntimeStep(this.state.step, this.state.subStep);
+      this.resetStepProgress(false);
+      window.TutorialUI?.showStep(this.state.step, this.state.subStep);
+      window.TutorialUI?.showHint(this.state.step, this.state.subStep, this.state.platform);
+    },
+
+    enterStep(step, options = {}) {
+      const { showTransition = true } = options;
+      this.state.step = step;
+      this.state.subStep = 1;
+      this.state.retryCount = 0;
+      this.setRuntimeStep(step, this.state.subStep);
+      this.applyRuntimeFlags(window.TutorialConfig.getConfig(step));
+      this.resetStepProgress(true);
+      window.TutorialUI?.updateUIVisibility(step);
+      if (showTransition) window.TutorialUI?.showStepTransition(step);
+      window.TutorialUI?.showStep(step, this.state.subStep);
+      window.TutorialUI?.showHint(step, this.state.subStep, this.state.platform);
+      this.onEnterStep(step, options);
+    },
+
+    resetRunState() {
+      const runtime = window.runtime;
+      if (!runtime) return;
+      const STATE = window.GameModules.Runtime?.STATE;
+      if (!STATE) return;
+      runtime.gameState = STATE.RUN;
+      runtime.cycleTimer = 3.0;
+      runtime.isFirstWarning = true;
+      runtime.targetColorIndex = -1;
+      runtime.currentWarningMax = 6.0;
+    },
+
+    resetPlayerMomentum() {
+      if (!window.player) return;
+      window.player.isBoosting = false;
+      window.player.vx = 0;
+      window.player.vy = 0;
+    },
+
+    getStepTransition(fromStep, toStep) {
+      return this.stepTransitions?.[fromStep]?.[toStep] || { showTransition: true };
+    },
+
+    getNextSubStep(step, subStep) {
+      return this.subStepTransitions?.[step]?.[subStep] || 0;
+    },
+
+    onEnterStep(step, transition) {
+      if (transition?.applyRunReset) {
+        this.resetRunState();
+      }
+      if (transition?.resetMomentum) {
+        this.resetPlayerMomentum();
+      }
+      const hooks = this.stepHooks?.[step];
+      hooks?.onEnter?.(this, transition);
+    },
+
+    onExitStep(step, nextStep, transition) {
+      const hooks = this.stepHooks?.[step];
+      hooks?.onExit?.(this, nextStep, transition);
+    },
+
+    getRetryBehavior(step) {
+      return this.retryBehaviors?.[step] || { type: 'instant' };
+    },
+
+    getStepHandler(step) {
+      return this.stepHandlers[step] || this.stepHandlers.default;
+    },
+
+    checkDistanceSuccess(condition, enforceHold = false) {
+      const dist = window.player?.dist ?? 0;
+      const traveled = this.getTraveledDistance();
+      if (enforceHold) {
+        const minHoldMs = 2000;
+        const elapsed = performance.now() - (this.state.stepStartedAt || 0);
+        if (elapsed < minHoldMs) return false;
+      }
+      if (this.state.stepTargetDist > 0) {
+        return dist >= this.state.stepTargetDist;
+      }
+      if (condition.type === 'distance_absolute') {
+        return dist >= Number(condition.value ?? 0);
+      }
+      if (condition.type === 'distance_relative') {
+        return traveled >= Number(condition.value ?? 0);
+      }
+      return traveled >= Number(condition.distance ?? 0);
+    },
+
+    stepHandlers: {
+      1: {
+        onEvent(manager, type) {
+          if (type === 'move' && manager.state.subStep === 1) manager.state.moveDetected = true;
+          if (type === 'dash' && manager.state.subStep === 2) manager.state.dashDetected = true;
+          return true;
+        },
+        checkSuccess(manager) {
+          if (manager.state.subStep === 1) return manager.state.moveDetected;
+          if (manager.state.subStep === 2) return manager.state.dashDetected;
+          return false;
+        }
+      },
+      2: {
+        onEvent(manager, type) {
+          if (type === 'safe_judgment') manager.state.safeJudgmentCount += 1;
+          return true;
+        },
+        checkSuccess(manager, condition) {
+          const target = Number(condition.value ?? condition.safeJudgmentCount ?? 0);
+          return manager.state.safeJudgmentCount >= target;
+        }
+      },
+      3: {
+        onEvent() {
+          return false;
+        },
+        checkSuccess(manager, condition) {
+          return manager.checkDistanceSuccess(condition, false);
+        }
+      },
+      4: {
+        onEvent() {
+          return false;
+        },
+        checkSuccess(manager, condition) {
+          return manager.checkDistanceSuccess(condition, true);
+        }
+      },
+      default: {
+        onEvent() {
+          return false;
+        },
+        checkSuccess() {
+          return false;
+        }
+      }
+    },
+
+    stepTransitions: {
+      1: { 2: { showTransition: true } },
+      2: { 3: { showTransition: true, applyRunReset: true } },
+      3: { 4: { showTransition: true, applyRunReset: true, resetMomentum: true } }
+    },
+
+    subStepTransitions: {
+      1: { 1: 2 }
+    },
+
+    stepHooks: {
+      4: {
+        onEnter(manager) {
+          if (window.runtime) {
+            window.runtime._tutorialHoldCycle = false;
+            window.runtime._tutorialStormEnabled = true;
+          }
+        }
+      }
+    },
+
+    retryBehaviors: {
+      2: {
+        type: 'fade',
+        message: 'OUT! Stand on the safe color.',
+        messageMs: 1500,
+        outMs: 400,
+        inMs: 400,
+        holdMs: 120
+      }
+    },
+
+    setRuntimeStep(step, subStep) {
+      if (!window.runtime) return;
+      window.runtime.tutorialStep = step;
+      window.runtime.tutorialSubStep = subStep;
+    },
+
+    applyRuntimeFlags(config) {
+      if (!window.runtime) return;
+      const hasStormTrigger = (config.eventTriggers || []).some((t) => t.action === 'activate_storm');
+      window.runtime._tutorialHoldCycle = this.state.step === 2;
+      window.runtime._tutorialStormEnabled = config.stormEnabled !== false && !hasStormTrigger;
+    },
+
+    getSuccessCondition(config) {
+      const condition = config?.successCondition || {};
+      if (condition.type) return condition;
+      if (this.state.step === 2 && condition.safeJudgmentCount !== undefined) {
+        return { type: 'safe_judgments', value: condition.safeJudgmentCount };
+      }
+      if ((this.state.step === 3 || this.state.step === 4) && condition.distance !== undefined) {
+        return { type: 'distance_relative', value: condition.distance };
+      }
+      return condition;
     },
 
     persistProgress(step, isCompleted = false) {
@@ -371,20 +509,6 @@
       window.SaveManager.persist(gameData);
     },
 
-    onSafeJudgmentSuccess() {
-      if (!this.state.isActive) return;
-      this.state.safeJudgmentCount += 1;
-    },
-
-    onPlayerMove() {
-      if (!this.state.isActive) return;
-      if (this.state.step === 1 && this.state.subStep === 1) this.state.moveDetected = true;
-    },
-
-    onPlayerDash() {
-      if (!this.state.isActive) return;
-      if (this.state.step === 1 && this.state.subStep === 2) this.state.dashDetected = true;
-    },
 
     deactivateRuntime() {
       if (!window.runtime) return;

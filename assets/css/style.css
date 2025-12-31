@@ -1,11 +1,11 @@
-/* === [1. 기본 설정] === */
+﻿/* === [1. 湲곕낯 ?ㅼ젙] === */
     * {
       box-sizing: border-box;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       -webkit-font-smoothing: antialiased;
       user-select: none; -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: none; /* 브라우저 기본 제스처 차단 */
+      touch-action: none; /* 釉뚮씪?곗? 湲곕낯 ?쒖뒪泥?李⑤떒 */
     }
 
     html {
@@ -13,7 +13,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      /* iOS Safari에서 주소창 숨김 시에도 전체 화면 채우기 */
+      /* iOS Safari?먯꽌 二쇱냼李??④? ?쒖뿉???꾩껜 ?붾㈃ 梨꾩슦湲?*/
       height: -webkit-fill-available;
       overflow: hidden;
     }
@@ -24,7 +24,7 @@
       background-color: #050505;
       background-image: radial-gradient(ellipse at center, #2c3e50 0%, #050505 60%);
       color: white;
-      /* 모바일에서 전체 화면 채우기 */
+      /* 紐⑤컮?쇱뿉???꾩껜 ?붾㈃ 梨꾩슦湲?*/
       min-height: 100vh;
       min-height: -webkit-fill-available;
       overflow: hidden;
@@ -57,31 +57,31 @@
 
     canvas { display: block; width: 100%; height: 100%; }
 
-    /* === [모바일 컨트롤러 (전체 화면 덮개)] === */
+    /* === [紐⑤컮??而⑦듃濡ㅻ윭 (?꾩껜 ?붾㈃ ??컻)] === */
     #mobile-controls {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       z-index: 50; display: flex;
-      /* 처음엔 숨김 (메뉴 화면) */
+      /* 泥섏쓬???④? (硫붾돱 ?붾㈃) */
       display: none; 
     }
 
-    /* 왼쪽: 이동 조이스틱 구역 */
+    /* ?쇱そ: ?대룞 議곗씠?ㅽ떛 援ъ뿭 */
     #joystick-zone {
       width: 50%; height: 100%; 
       position: relative; 
     }
     
-    /* 조이스틱 UI */
+    /* 議곗씠?ㅽ떛 UI */
     #joystick-base {
       width: 120px; height: 120px;
       background: rgba(255, 255, 255, 0.1);
       border: 2px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       position: absolute;
-      display: none; /* 기본: PC에서는 숨김, 터치 기기 anchor는 JS에서 제어 */
+      display: none; /* 湲곕낯: PC?먯꽌???④?, ?곗튂 湲곌린 anchor??JS?먯꽌 ?쒖뼱 */
       opacity: 0.35;
       transition: opacity 0.15s, background 0.15s, border-color 0.15s, transform 0.15s;
-      pointer-events: none; /* 터치 이벤트는 zone이 받음 */
+      pointer-events: none; /* ?곗튂 ?대깽?몃뒗 zone??諛쏆쓬 */
     }
     #joystick-base.active{
       opacity: 0.95;
@@ -106,7 +106,7 @@
       box-shadow: 0 0 20px rgba(241, 196, 15, 0.85);
     }
 
-    /* 오른쪽: 대쉬 구역 */
+    /* ?ㅻⅨ履? ???援ъ뿭 */
     #dash-zone {
       width: 50%; height: 100%; 
       position: relative;
@@ -140,7 +140,7 @@
       transition: all 0.1s;
       overflow: visible;
     }
-    /* Dash button label - 정중앙 정렬 */
+    /* Dash button label - ?뺤쨷???뺣젹 */
     #dash-label {
       display: block;
       text-align: center;
@@ -165,7 +165,7 @@
       );
       pointer-events: none;
     }
-    /* 터치 시 글리치 반응 */
+    /* ?곗튂 ??湲由ъ튂 諛섏쓳 */
     #dash-zone.active #btn-dash-visual {
       background: rgba(0, 255, 65, 0.15);
       transform: scale(0.95);
@@ -179,7 +179,7 @@
       100% { transform: scale(0.95); filter: hue-rotate(0deg); text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41; }
     }
 
-    /* DASH 쿨타임 표시 */
+    /* DASH 荑⑦????쒖떆 */
     #dash-cooldown-text{
       font-size: 12px;
       font-weight: 900;
@@ -203,7 +203,7 @@
       display: block;
     }
 
-    /* [JFB v2] WAIT Phase - 회색/노란색 경고 */
+    /* [JFB v2] WAIT Phase - ?뚯깋/?몃???寃쎄퀬 */
     #btn-dash-visual.boost-wait {
       background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 50%, #bdc3c7 100%);
       border: 3px solid rgba(241, 196, 15, 0.7);
@@ -213,7 +213,7 @@
       opacity: 1 !important;
       filter: none !important;
     }
-    /* boost-wait는 JS에서 텍스트 처리 - ::after 제거 */
+    /* boost-wait??JS?먯꽌 ?띿뒪??泥섎━ - ::after ?쒓굅 */
     @keyframes boost-wait-pulse {
       0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
       50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(241, 196, 15, 0.5); }
@@ -224,7 +224,7 @@
       animation: none;
     }
 
-    /* [JFB v2] ACTIVE Phase - 강렬한 Cyan, 크기 확대, 글로우 */
+    /* [JFB v2] ACTIVE Phase - 媛뺣젹??Cyan, ?ш린 ?뺣?, 湲濡쒖슦 */
     #btn-dash-visual.boost-active {
       background: linear-gradient(135deg, #00ffff 0%, #00e5ff 30%, #00bcd4 60%, #0097a7 100%);
       border: 4px solid rgba(0, 255, 255, 1);
@@ -242,7 +242,7 @@
       font-weight: 900;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
     }
-    /* boost-active는 JS에서 텍스트 처리 - ::after 제거 */
+    /* boost-active??JS?먯꽌 ?띿뒪??泥섎━ - ::after ?쒓굅 */
     @keyframes boost-active-pulse {
       0%, 100% {
         transform: scale(1.15);
@@ -263,7 +263,7 @@
       animation: none;
     }
 
-    /* 토스트(짧은 피드백) */
+    /* ?좎뒪??吏㏃? ?쇰뱶諛? */
     #toast-msg{
       position: absolute;
       top: 220px;
@@ -288,7 +288,7 @@
     }
     #toast-msg.level-warn{ border-color: rgba(241, 196, 15, 0.5); }
     #toast-msg.level-danger{ border-color: rgba(231, 76, 60, 0.6); }
-    /* 상태별 컨테이너 강조 */
+    /* ?곹깭蹂?而⑦뀒?대꼫 媛뺤“ */
     #game-container.state-stop,
     #game-surface.state-stop{ box-shadow: 0 0 60px rgba(231, 76, 60, 0.35); }
     #game-container.state-warning,
@@ -300,15 +300,15 @@
       pointer-events: none; z-index: 60;
     }
 
-    /* HUD 아이콘 공통 */
+    /* HUD ?꾩씠肄?怨듯넻 */
     .hud-icon {
       width: 24px; height: 24px; object-fit: contain;
     }
 
-    /* 좌측 상단: 점수/코인/보석 */
+    /* 醫뚯륫 ?곷떒: ?먯닔/肄붿씤/蹂댁꽍 */
     .hud-left {
       position: absolute;
-      /* Safe Area: Notch 대응 */
+      /* Safe Area: Notch ???*/
       top: calc(20px + env(safe-area-inset-top, 0px));
       left: calc(20px + env(safe-area-inset-left, 0px));
       display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
@@ -346,7 +346,7 @@
       line-height: 1;
     }
 
-    /* 통화 아이콘 스타일 */
+    /* ?듯솕 ?꾩씠肄??ㅽ???*/
     .currency-icon {
       width: 24px;
       height: 24px;
@@ -373,16 +373,16 @@
       gap: 4px;
     }
 
-    /* 기존 score-display (숨김 처리용) */
+    /* 湲곗〈 score-display (?④? 泥섎━?? */
     .score-display {
       display: none;
     }
 
-    /* === [NEW] 버프 아이콘 컨테이너 (원형 아이콘) === */
+    /* === [NEW] 踰꾪봽 ?꾩씠肄?而⑦뀒?대꼫 (?먰삎 ?꾩씠肄? === */
     #buff-container {
       position: absolute;
       top: 200px;
-      /* Safe Area: Notch 대응 */
+      /* Safe Area: Notch ???*/
       left: calc(20px + env(safe-area-inset-left, 0px));
       display: flex;
       flex-direction: column;
@@ -393,7 +393,7 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      display: none; /* 기본 숨김 - 활성화 시 표시 */
+      display: none; /* 湲곕낯 ?④? - ?쒖꽦?????쒖떆 */
       justify-content: center;
       align-items: center;
       border: 2px solid rgba(255,255,255,0.25);
@@ -416,7 +416,7 @@
     #buff-booster { background: rgba(231, 76, 60, 0.85); }
     #buff-magnet { background: rgba(160, 76, 199, 0.85); }
 
-    /* 버프 만료 경고 깜빡임 */
+    /* 踰꾪봽 留뚮즺 寃쎄퀬 源쒕묀??*/
     .buff-icon.expiring {
       animation: buff-blink 0.3s infinite alternate;
     }
@@ -440,10 +440,10 @@
       to { opacity: 0.2; }
     }
 
-    /* === [NEW] 중앙 상단: 색상 패널 === */
+    /* === [NEW] 以묒븰 ?곷떒: ?됱긽 ?⑤꼸 === */
     #target-display {
       position: absolute;
-      /* Safe Area: Notch 대응 */
+      /* Safe Area: Notch ???*/
       top: calc(26px + env(safe-area-inset-top, 0px));
       left: 50%;
       transform: translateX(-50%);
@@ -477,10 +477,10 @@
     }
 
 
-    /* === [NEW] 상태 바 컨테이너 (중앙) === */
+    /* === [NEW] ?곹깭 諛?而⑦뀒?대꼫 (以묒븰) === */
     #status-bar-container {
       position: absolute;
-      /* Safe Area: Notch 대응 (target-display 아래에 위치하므로 간격 조정) */
+      /* Safe Area: Notch ???(target-display ?꾨옒???꾩튂?섎?濡?媛꾧꺽 議곗젙) */
       top: calc(160px + env(safe-area-inset-top, 0px));
       left: 50%;
       transform: translateX(-50%);
@@ -523,10 +523,10 @@
       pointer-events: none;
     }
 
-    /* === [NEW] 우측 상단: 일시정지 버튼 === */
+    /* === [NEW] ?곗륫 ?곷떒: ?쇱떆?뺤? 踰꾪듉 === */
     .hud-pause-btn {
       position: absolute;
-      /* Safe Area: Notch 대응 */
+      /* Safe Area: Notch ???*/
       top: calc(20px + env(safe-area-inset-top, 0px));
       right: calc(20px + env(safe-area-inset-right, 0px));
       width: 44px;
@@ -560,14 +560,14 @@
       border-radius: 2px;
     }
 
-    /* === [NEW] 우측: 스테이지 게이지 바 === */
+    /* === [NEW] ?곗륫: ?ㅽ뀒?댁? 寃뚯씠吏 諛?=== */
     #chase-ui {
       position: absolute;
       /* Safe Area: Notch and side-screen compatibility */
       top: calc(79px + env(safe-area-inset-top, 0px));
       right: max(34px, env(safe-area-inset-right, 14px));
       width: 12px;
-      height: 240px; /* 총 길이 240px */
+      height: 240px; /* 珥?湲몄씠 240px */
     }
 
     #chase-bar {
@@ -580,7 +580,7 @@
       overflow: visible;
     }
 
-    /* 게이지 공통 스타일 */
+    /* 寃뚯씠吏 怨듯넻 ?ㅽ???*/
     .chase-gauge {
       position: absolute;
       bottom: 0;
@@ -592,19 +592,19 @@
       transition: height 0.15s linear;
     }
 
-    /* 플레이어 게이지 (하단 레이어) */
+    /* ?뚮젅?댁뼱 寃뚯씠吏 (?섎떒 ?덉씠?? */
     .player-gauge {
       background: linear-gradient(to top, #DCFF89 0%, rgba(220, 255, 137, 0.6) 100%);
       z-index: 5;
     }
 
-    /* 스톰 게이지 (상단 레이어 - 플레이어를 가림) */
+    /* ?ㅽ넱 寃뚯씠吏 (?곷떒 ?덉씠??- ?뚮젅?댁뼱瑜?媛由? */
     .storm-gauge {
       background: linear-gradient(to top, #FF465F 0%, rgba(255, 70, 95, 0.5) 100%);
       z-index: 10;
     }
 
-    /* 핀 마커 공통 */
+    /* ? 留덉빱 怨듯넻 */
     .chase-pin {
       position: absolute;
       top: 0;
@@ -625,12 +625,12 @@
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     }
 
-    /* 스톰 핀은 더 높은 z-index */
+    /* ?ㅽ넱 ?? ???믪? z-index */
     .storm-gauge .chase-pin {
       z-index: 20;
     }
 
-    /* 위험 모드 (스톰이 가까울 때) */
+    /* ?꾪뿕 紐⑤뱶 (?ㅽ넱??媛源뚯슱 ?? */
     #chase-ui.danger-mode #chase-bar {
       border-color: #e74c3c;
       box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
@@ -645,7 +645,7 @@
       to { opacity: 1; }
     }
 
-    /* 상단 단계 타이머 바 - 컨테이너 내부용 */
+    /* ?곷떒 ?④퀎 ??대㉧ 諛?- 而⑦뀒?대꼫 ?대???*/
     #phase-bar {
       height: 14px;
       background: rgba(255,255,255,0.12);
@@ -677,18 +677,18 @@
     }
     @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
 
-    /* === [메뉴 & 상점] === */
+    /* === [硫붾돱 & ?곸젏] === */
     #menu-screen {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(10, 10, 15, 0.98); display: flex; flex-direction: column; /* no blur */
       align-items: center; justify-content: flex-start; z-index: 100;
-      /* 모바일 스크롤 허용 */
+      /* 紐⑤컮???ㅽ겕濡??덉슜 */
       overflow-y: auto;
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
       padding: 40px 0;
     }
-    /* 메뉴 내부 요소들도 스크롤 제스처를 막지 않게 설정 */
+    /* 硫붾돱 ?대? ?붿냼?ㅻ룄 ?ㅽ겕濡??쒖뒪泥섎? 留됱? ?딄쾶 ?ㅼ젙 */
     #menu-screen * {
       touch-action: pan-y;
     }
@@ -801,8 +801,8 @@
       box-sizing: border-box;
     }
 
-    /* === [모바일 스크롤 허용] ===
-       터치 드래그로 스크롤 가능하도록 설정
+    /* === [紐⑤컮???ㅽ겕濡??덉슜] ===
+       ?곗튂 ?쒕옒洹몃줈 ?ㅽ겕濡?媛?ν븯?꾨줉 ?ㅼ젙
     */
     .shop-content,
     .qa-content {
@@ -810,12 +810,12 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
-    /* 내부 요소도 스크롤 전파 허용 */
+    /* ?대? ?붿냼???ㅽ겕濡??꾪뙆 ?덉슜 */
     .shop-content > *,
     .qa-content > * {
       touch-action: pan-y !important;
     }
-    /* 버튼/슬라이더 등 인터랙티브 요소는 모든 터치 허용 */
+    /* 踰꾪듉/?щ씪?대뜑 ???명꽣?숉떚釉??붿냼??紐⑤뱺 ?곗튂 ?덉슜 */
     .shop-content button,
     .shop-content input,
     .qa-content button,
@@ -840,7 +840,7 @@
       background: rgba(0, 255, 65, 0.1);
     }
 
-    /* 아이템 공통 스타일 - cyber theme */
+    /* ?꾩씠??怨듯넻 ?ㅽ???- cyber theme */
     .upgrade-item, .setting-item, .skin-list-item {
       background: rgba(0, 255, 65, 0.05);
       padding: 14px;
@@ -908,7 +908,7 @@
       box-shadow: none;
     }
 
-    /* 스킨 리스트 - cyber theme */
+    /* ?ㅽ궓 由ъ뒪??- cyber theme */
     .skin-list-item {
       display: flex;
       flex-direction: column;
@@ -981,7 +981,7 @@
     }
     .start-btn:active { transform: translateY(6px); box-shadow: none; }
 
-    /* QA 폰트 - cyber theme */
+    /* QA ?고듃 - cyber theme */
     .vol-row {
       display: flex;
       justify-content: space-between;
@@ -1012,7 +1012,7 @@
       outline: none;
     }
 
-    /* === [NEW] 화면 전환 시스템 === */
+    /* === [NEW] ?붾㈃ ?꾪솚 ?쒖뒪??=== */
     .full-screen {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       display: none; flex-direction: column; align-items: center;
@@ -1138,7 +1138,7 @@
 
     /* === START GLITCH TRANSITION === */
     #screen-title.glitch-out {
-      /* 배경은 유지, 내부 콘텐츠만 애니메이션 */
+      /* 諛곌꼍? ?좎?, ?대? 肄섑뀗痢좊쭔 ?좊땲硫붿씠??*/
     }
     #screen-title.glitch-out .title-content {
       animation: contentGlitchOut 0.6s ease-out forwards;
@@ -1231,7 +1231,7 @@
       margin: 0 0 12px;
     }
     .lobby-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; padding-top: 60px; }
-    /* 무대 컨테이너: 캐릭터가 이 안에서만 움직임 */
+    /* 臾대? 而⑦뀒?대꼫: 罹먮┃?곌? ???덉뿉?쒕쭔 ?吏곸엫 */
     .lobby-stage {
       position: relative;
       width: 100%;
@@ -1243,7 +1243,7 @@
       margin-bottom: 4px;
     }
 
-    /* 캐릭터 본체 - cyber neon style */
+    /* 罹먮┃??蹂몄껜 - cyber neon style */
     .lobby-char-box {
       position: relative;
       width: 140px; height: 140px;
@@ -1294,7 +1294,8 @@
       background: rgba(0, 255, 65, 0.1);
       box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
     }
-    .slot-icon { font-size: 28px; color: rgba(0, 255, 65, 0.4); }
+    .slot-icon { font-size: 28px; color: rgba(0, 255, 65, 0.4); display: flex; align-items: center; justify-content: center; }
+    .slot-icon img { width: 20px; height: 20px; display: block; }
     .lobby-slot.filled .slot-icon { color: #00ff41; }
     .lobby-footer {
       display: flex;
@@ -1915,20 +1916,21 @@
     .treasure-item.equipped { border-color: #f1c40f; background: rgba(241, 196, 15, 0.15); }
     .treasure-info { display: flex; flex-direction: column; gap: 4px; }
     .treasure-name { font-size: 15px; font-weight: 800; color: #ecf0f1; }
+    .treasure-icon { width: 18px; height: 18px; margin-right: 6px; vertical-align: -3px; }
     .treasure-desc { font-size: 12px; color: #bdc3c7; }
     .treasure-actions { display: flex; gap: 8px; }
 
-    /* === [FIX] QA 화면 높이 제한 해제 === */
+    /* === [FIX] QA ?붾㈃ ?믪씠 ?쒗븳 ?댁젣 === */
     .qa-group {
       max-height: none !important;
       height: auto !important;
     }
 
-/* === [MOBILE UI 조정] - 터치 디바이스 또는 좁은 화면 === */
+/* === [MOBILE UI 議곗젙] - ?곗튂 ?붾컮?댁뒪 ?먮뒗 醫곸? ?붾㈃ === */
 @media screen and (max-width: 768px), screen and (hover: none) and (pointer: coarse) {
   #target-display {
     top: calc(76px + env(safe-area-inset-top, 0px));
-    /* 모바일에서 80% 크기로 축소 */
+    /* 紐⑤컮?쇱뿉??80% ?ш린濡?異뺤냼 */
     width: 96px !important;   /* 120px * 0.8 */
     height: 96px !important;  /* 120px * 0.8 */
     border-width: 5px !important;  /* 6px * 0.8 */
@@ -1940,21 +1942,21 @@
     font-size: 26px !important;  /* 32px * 0.8 */
   }
   #status-bar-container {
-    top: calc(185px + env(safe-area-inset-top, 0px)); /* 색상 패널 축소로 위치 조정 */
+    top: calc(185px + env(safe-area-inset-top, 0px)); /* ?됱긽 ?⑤꼸 異뺤냼濡??꾩튂 議곗젙 */
   }
   #status-bar-container #phase-bar {
     width: 96px !important;  /* 120px * 0.8 */
   }
   #status-bar-container #status-msg {
-    font-size: 90%;  /* 약간 축소 */
+    font-size: 90%;  /* ?쎄컙 異뺤냼 */
     padding: 5px 11px;  /* 6px 14px * 0.8 */
   }
   #toast-msg {
-    top: calc(240px + env(safe-area-inset-top, 0px)); /* 위치 조정 */
+    top: calc(240px + env(safe-area-inset-top, 0px)); /* ?꾩튂 議곗젙 */
   }
 }
 
-/* === [WIDE SCREEN / TABLET 대응] === */
+/* === [WIDE SCREEN / TABLET ??? === */
 @media screen and (min-width: 500px) {
   #screen-result {
     justify-content: center;
@@ -2478,3 +2480,5 @@
     display: none !important;
   }
 }
+
+

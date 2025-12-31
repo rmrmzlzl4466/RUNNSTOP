@@ -1,4 +1,4 @@
-window.GameModules = window.GameModules || {};
+﻿window.GameModules = window.GameModules || {};
 
 (function() {
   const { STATE, syncCanvasSize } = window.GameModules.Runtime;
@@ -17,7 +17,7 @@ window.GameModules = window.GameModules || {};
   let rafId = null;
   let lastTime = 0;
 
-  // SlowMo와 Gimmick은 동적으로 참조 (모바일에서 로딩 순서 문제 방지)
+  // SlowMo? Gimmick? ?숈쟻?쇰줈 李몄“ (紐⑤컮?쇱뿉??濡쒕뵫 ?쒖꽌 臾몄젣 諛⑹?)
   const getSlowMo = () => window.GameModules.SlowMo;
   const getGimmick = () => window.GameModules.Gimmick;
 
@@ -51,7 +51,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function checkStopJudgment(nowSec) {
-    // [DEBUG] 디버그 정보 저장
+    // [DEBUG] ?붾쾭洹??뺣낫 ???
     runtime._stopJudgmentDebug = `isBoosting: ${player.isBoosting}`;
 
     if (player.isBoosting) {
@@ -61,10 +61,10 @@ window.GameModules = window.GameModules || {};
     const result = window.Game.Physics.checkSafeZone(player, runtime.targetColorIndex);
     runtime._stopJudgmentDebug = `Safe: ${result.isSafe}, Genuine: ${result.genuineSafe}, Action: ${result.action}`;
 
-    // genuineSafe: 실제로 안전 지대 위에서 생존한 경우만 JFB 보상
+    // genuineSafe: ?ㅼ젣濡??덉쟾 吏? ?꾩뿉???앹〈??寃쎌슦留?JFB 蹂댁긽
     if (result.genuineSafe) {
       if (runtime.tutorialMode) {
-        window.GameModules.Tutorial?.onSafeJudgmentSuccess();
+        window.GameModules.Tutorial?.dispatchEvent?.('safe_judgment');
       }
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
@@ -76,7 +76,7 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('boost_ready');
       window.Game.UI.showToast(player, 'GET READY...', '#f1c40f', 600);
     } else if (result.action === 'invincible_save') {
-      // 무적으로 생존 - JFB 보상 없음, 죽지도 않음
+      // 臾댁쟻?쇰줈 ?앹〈 - JFB 蹂댁긽 ?놁쓬, 二쎌????딆쓬
       runtime._stopJudgmentDebug = 'Invincible save - No JFB reward';
     } else if (result.action === 'barrier_save') {
       window.Game.Physics.applyBarrierSave(player);
@@ -84,10 +84,9 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        return !!window.GameModules.Tutorial?.retryStep();
-      } else {
-        handlers.onDie?.('FALL');
+        return !!window.GameModules.Tutorial?.retryStep?.();
       }
+      handlers.onDie?.('FALL');
     }
     return false;
   }
@@ -101,16 +100,15 @@ window.GameModules = window.GameModules || {};
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
       if (runtime.tutorialMode) {
-        return !!window.GameModules.Tutorial?.retryStep();
-      } else {
-        handlers.onDie?.('FALL_DURING_STOP');
+        return !!window.GameModules.Tutorial?.retryStep?.();
       }
+      handlers.onDie?.('FALL_DURING_STOP');
     }
     return false;
   }
 
   function handleItems() {
-    // 마그넷 범위 업그레이드 적용
+    // 留덇렇??踰붿쐞 ?낃렇?덉씠???곸슜
     const rangeMult = runtime.itemUpgrades?.magnetRangeMult ?? 1.0;
     const baseRange = player.magnetTimer > 0 ? qaConfig.magnetRange : player.baseMagnetRange;
     const activeRange = baseRange * rangeMult;
@@ -139,10 +137,8 @@ window.GameModules = window.GameModules || {};
 
     // 튜토리얼 모드 분기 처리
     if (runtime.tutorialMode) {
-      window.GameModules.Tutorial?.checkEventTriggers?.(); // 이벤트 트리거 체크
-      if (window.GameModules.Tutorial?.checkStepCondition?.()) { // 단계 성공 조건 체크
-        window.GameModules.Tutorial?.onStepComplete?.(); // 단계 완료 처리
-        return; // 현재 프레임은 여기까지만 처리하고 다음 프레임에 새로운 단계 시작
+      if (window.GameModules.Tutorial?.tick?.()) {
+        return;
       }
     }
 
@@ -156,25 +152,23 @@ window.GameModules = window.GameModules || {};
       stopPhaseDuration: qaConfig.stopPhaseDuration ?? 1.5
     };
 
-    // 튜토리얼 오버라이드 적용
-    if (runtime.tutorialMode) {
-      effective = window.TutorialConfig.applyOverrides({ ...effective }, runtime.tutorialStep);
-    }
+    // ?쒗넗由ъ뼹 ?ㅻ쾭?쇱씠???곸슜
+    
     const tutorialRules = effective._tutorialRules || {};
 
-    // 튜토리얼 Step 1: RUN 상태 고정
+    // ?쒗넗由ъ뼹 Step 1: RUN ?곹깭 怨좎젙
     if (runtime.tutorialMode && tutorialRules.lockGameState === 'RUN') {
       runtime.gameState = STATE.RUN;
       runtime.cycleTimer = Number.isFinite(runtime.cycleTimer) ? Math.max(runtime.cycleTimer, 999) : 999;
     }
 
-    // 튜토리얼 Step 2: 사이클 지연 (트리거 발생 시까지)
+    // ?쒗넗由ъ뼹 Step 2: ?ъ씠??吏??(?몃━嫄?諛쒖깮 ?쒓퉴吏)
     if (runtime.tutorialMode && runtime._tutorialHoldCycle) {
       runtime.gameState = STATE.RUN;
       runtime.cycleTimer = Infinity;
     }
 
-    // 튜토리얼 Step 1-2: 스톰 비활성화
+    // ?쒗넗由ъ뼹 Step 1-2: ?ㅽ넱 鍮꾪솢?깊솕
     const stormEnabled = !runtime.tutorialMode || runtime._tutorialStormEnabled;
     if (!stormEnabled) {
       runtime.storm.y = player.y + 2000;
@@ -203,7 +197,7 @@ window.GameModules = window.GameModules || {};
       updateStageProgress(runtime, player.dist, qaConfig);
     }
 
-    // Update gimmicks (동적 참조로 모바일 호환성 확보)
+    // Update gimmicks (?숈쟻 李몄“濡?紐⑤컮???명솚???뺣낫)
     getGimmick()?.updateGlitchSwap?.(runtime.gameState, nowSec, { player, grid: runtime.grid });
     const stormPulseMult = getGimmick()?.updateStormPulse?.(worldDt, runtime.gameState) ?? 1.0;
 
@@ -214,7 +208,7 @@ window.GameModules = window.GameModules || {};
       runtime.storm.y -= stormSpeed * worldDt;
       if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
         if (runtime.tutorialMode) {
-          window.GameModules.Tutorial?.retryStep();
+          window.GameModules.Tutorial?.retryStep?.();
           return;
         }
         handlers.onDie?.('STORM');
@@ -364,3 +358,6 @@ window.GameModules = window.GameModules || {};
 
   window.GameModules.Loop = { createGameLoop };
 })();
+
+
+
