@@ -21,6 +21,32 @@
       isRestarting: false
     },
 
+    listeners: {},
+
+    on(event, handler) {
+      if (!event || typeof handler != 'function') return;
+      this.listeners[event] = this.listeners[event] || [];
+      this.listeners[event].push(handler);
+    },
+
+    off(event, handler) {
+      const list = this.listeners[event];
+      if (!list || !list.length) return;
+      this.listeners[event] = list.filter((fn) => fn != handler);
+    },
+
+    emit(event, payload) {
+      const list = this.listeners[event];
+      if (!list || !list.length) return;
+      list.forEach((fn) => {
+        try {
+          fn(payload);
+        } catch (err) {
+          console.error('[Tutorial] Event handler error', err);
+        }
+      });
+    },
+
     init() {
       this.state = {
         step: 0,
@@ -77,10 +103,10 @@
       if (window.Navigation?.current !== 'tutorial') {
         window.Navigation?.go?.('tutorial');
       }
-      window.TutorialUI?.setActive?.(true);
-      window.TutorialUI?.updateUIVisibility(targetStep);
-      window.TutorialUI?.showStep(targetStep, this.state.subStep);
-      window.TutorialUI?.showHint(targetStep, this.state.subStep, this.state.platform);
+      this.emit('ui', { action: 'setActive', value: true });
+      this.emit('ui', { action: 'updateUIVisibility', step: targetStep });
+      this.emit('ui', { action: 'showStep', step: targetStep, subStep: this.state.subStep });
+      this.emit('ui', { action: 'showHint', step: targetStep, subStep: this.state.subStep, platform: this.state.platform });
     },
 
     checkStepCondition() {
@@ -125,7 +151,7 @@
             runtime.isFirstWarning = true;
             runtime.cycleTimer = 0.01;
           }
-          window.TutorialUI?.showMessage('Cycle starting now', 1600);
+          this.emit('ui', { action: 'showMessage', text: 'Cycle starting now', duration: 1600 });
           break;
         case 'spawn_item_shield':
           if (runtime && player) {
@@ -135,14 +161,14 @@
             const rowIdx = Math.floor((baseY - targetDist * 10) / cellH);
             window.Game.LevelManager.generateRow(rowIdx);
             window.GameModules.Items.spawnItemAtCol(runtime, rowIdx, 'barrier', Math.floor((runtime.grid?.COLS ?? 5) / 2));
-            window.TutorialUI?.showMessage('Shield item spawned', 1600);
+            this.emit('ui', { action: 'showMessage', text: 'Shield item spawned', duration: 1600 });
           }
           break;
         case 'activate_storm':
           if (runtime && player) {
             runtime._tutorialStormEnabled = true;
             runtime.storm.y = player.y + 800;
-            window.TutorialUI?.showMessage('Storm approaching', 1600);
+            this.emit('ui', { action: 'showMessage', text: 'Storm approaching', duration: 1600 });
           }
           break;
       }
@@ -176,24 +202,24 @@
       this.resetStepProgress();
 
       if (this.state.retryCount >= 2) {
-        window.TutorialUI?.showHint(this.state.step, this.state.subStep, this.state.platform);
+        this.emit('ui', { action: 'showHint', step: this.state.step, subStep: this.state.subStep, platform: this.state.platform });
       }
 
       const restart = () => {
-        window.TutorialUI?.updateUIVisibility(this.state.step);
+        this.emit('ui', { action: 'updateUIVisibility', step: this.state.step });
         window.Game.startGame?.(null, { isTutorial: true, tutorialStep: this.state.step, isRetry: true });
       };
 
       const behavior = this.getRetryBehavior(this.state.step);
       if (behavior.type === 'fade') {
         if (behavior.message) {
-          window.TutorialUI?.showMessage(behavior.message, behavior.messageMs ?? 1500);
+          this.emit('ui', { action: 'showMessage', text: behavior.message, duration: behavior.messageMs ?? 1500 });
         } else {
-          window.TutorialUI?.showRetryMessage();
+          this.emit('ui', { action: 'showRetryMessage' });
         }
-        window.TutorialUI?.fadeOutIn(behavior.outMs ?? 400, behavior.inMs ?? 400, behavior.holdMs ?? 120, restart);
+        this.emit('ui', { action: 'fadeOutIn', outMs: behavior.outMs ?? 400, inMs: behavior.inMs ?? 400, holdMs: behavior.holdMs ?? 120, callback: restart });
       } else {
-        window.TutorialUI?.showRetryMessage();
+        this.emit('ui', { action: 'showRetryMessage' });
         restart();
       }
       return true;
@@ -229,15 +255,10 @@
 
       const finish = () => {
         this.deactivateRuntime();
-        window.TutorialUI?.setActive?.(false);
+        this.emit('ui', { action: 'setActive', value: false });
         window.Navigation.go('lobby');
       };
-
-      if (window.TutorialUI?.showCompletionSequence) {
-        window.TutorialUI.showCompletionSequence({ isNewRecord, onDone: finish });
-      } else {
-        finish();
-      }
+      this.emit('ui', { action: 'showCompletionSequence', isNewRecord, onDone: finish });
     },
 
     resetStepProgress(resetTriggers = true) {
@@ -301,8 +322,8 @@
       this.state.subStep = subStep;
       this.setRuntimeStep(this.state.step, this.state.subStep);
       this.resetStepProgress(false);
-      window.TutorialUI?.showStep(this.state.step, this.state.subStep);
-      window.TutorialUI?.showHint(this.state.step, this.state.subStep, this.state.platform);
+      this.emit('ui', { action: 'showStep', step: this.state.step, subStep: this.state.subStep });
+      this.emit('ui', { action: 'showHint', step: this.state.step, subStep: this.state.subStep, platform: this.state.platform });
     },
 
     enterStep(step, options = {}) {
@@ -313,10 +334,10 @@
       this.setRuntimeStep(step, this.state.subStep);
       this.applyRuntimeFlags(window.TutorialConfig.getConfig(step));
       this.resetStepProgress(true);
-      window.TutorialUI?.updateUIVisibility(step);
-      if (showTransition) window.TutorialUI?.showStepTransition(step);
-      window.TutorialUI?.showStep(step, this.state.subStep);
-      window.TutorialUI?.showHint(step, this.state.subStep, this.state.platform);
+      this.emit('ui', { action: 'updateUIVisibility', step });
+      if (showTransition) this.emit('ui', { action: 'showStepTransition', step });
+      this.emit('ui', { action: 'showStep', step, subStep: this.state.subStep });
+      this.emit('ui', { action: 'showHint', step, subStep: this.state.subStep, platform: this.state.platform });
       this.onEnterStep(step, options);
     },
 
@@ -523,8 +544,8 @@
     quitTutorial() {
       this.state.isActive = false;
       this.deactivateRuntime();
-      window.TutorialUI?.removeHighlights();
-      window.TutorialUI?.setActive?.(false);
+      this.emit('ui', { action: 'removeHighlights' });
+      this.emit('ui', { action: 'setActive', value: false });
       window.Navigation?.hideOverlay?.('overlay-pause');
       window.Navigation?.go('lobby');
     }

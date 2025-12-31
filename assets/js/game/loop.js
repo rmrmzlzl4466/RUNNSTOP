@@ -63,9 +63,7 @@
 
     // genuineSafe: ?ㅼ젣濡??덉쟾 吏? ?꾩뿉???앹〈??寃쎌슦留?JFB 蹂댁긽
     if (result.genuineSafe) {
-      if (runtime.tutorialMode) {
-        window.GameModules.Tutorial?.dispatchEvent?.('safe_judgment');
-      }
+      window.GameModules.Tutorial?.dispatchEvent?.('safe_judgment');
       player.grantSurvivalBooster();
       // Trigger slow motion on survival success
       const slowMoModule = getSlowMo();
@@ -83,10 +81,8 @@
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
-      if (runtime.tutorialMode) {
-        return !!window.GameModules.Tutorial?.retryStep?.();
-      }
-      handlers.onDie?.('FALL');
+      const handled = handlers.onDie?.('FALL');
+      return !!handled;
     }
     return false;
   }
@@ -99,10 +95,8 @@
       window.Game.UI.showBarrierSaved();
       window.Sound?.sfx('jump');
     } else if (result.action === 'die') {
-      if (runtime.tutorialMode) {
-        return !!window.GameModules.Tutorial?.retryStep?.();
-      }
-      handlers.onDie?.('FALL_DURING_STOP');
+      const handled = handlers.onDie?.('FALL_DURING_STOP');
+      return !!handled;
     }
     return false;
   }
@@ -136,10 +130,8 @@
     const worldDt = dt * worldScale;
 
     // 튜토리얼 모드 분기 처리
-    if (runtime.tutorialMode) {
-      if (window.GameModules.Tutorial?.tick?.()) {
-        return;
-      }
+    if (window.GameModules.Tutorial?.tick?.()) {
+      return;
     }
 
     // Get effective config (stage-specific values with QA overrides)
@@ -207,11 +199,8 @@
       const stormSpeed = baseStormSpeed * stormPulseMult;
       runtime.storm.y -= stormSpeed * worldDt;
       if (window.Game.Physics.checkStormCollision(player, runtime.storm)) {
-        if (runtime.tutorialMode) {
-          window.GameModules.Tutorial?.retryStep?.();
-          return;
-        }
-        handlers.onDie?.('STORM');
+        const handled = handlers.onDie?.('STORM');
+        if (handled) return;
         return;
       }
     }

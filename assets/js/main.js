@@ -58,7 +58,7 @@
       window.runtime = runtime;
       window.Game.runtime = runtime;
       
-      // 튜토리얼 완료 여부 확인 (최초 실행 시 튜토리얼로 자동 진입 위함)
+      // ?�토리얼 ?�료 ?��? ?�인 (최초 ?�행 ???�토리얼�??�동 진입 ?�함)
       window.shouldStartTutorial = !gameData.tutorialCompleted;
 
       // 4. Subsystem Initializations (after data is ready)
@@ -70,10 +70,27 @@
       window.updateUpgradeUI?.();
       window.renderSkinList?.();
       
-      // 튜토리얼 모듈 초기화
-      window.GameModules.Tutorial?.init();
+      // ?�토리얼 모듈 초기??      window.GameModules.Tutorial?.init();
       window.GameModules.TutorialUI?.init();
       const tutorialResumeStep = window.GameModules.Tutorial?.getResumeStep?.() ?? 1;
+
+      if (window.Navigation?.register) {
+        window.Navigation.register('lobby', {
+          onEnter: () => {
+            window.updateLobbyUI?.();
+            window.startLobbyLoop?.();
+          },
+          onExit: () => {
+            window.stopLobbyLoop?.();
+          }
+        });
+        window.Navigation.register('shop', {
+          onEnter: () => window.openShop?.('upgrade')
+        });
+        window.Navigation.register('qa', {
+          onEnter: () => window.initQASliders?.()
+        });
+      }
 
       // 5. Game Logic and Lifecycle
       async function saveGame() {

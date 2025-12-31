@@ -5,6 +5,7 @@
     elements: {},
     messageTimeout: null,
     defaultDisplays: {},
+    _uiHandler: null,
 
     init() {
       this.elements = {
@@ -35,13 +36,61 @@
         host.appendChild(overlay);
         this.elements.fade = overlay;
       }
+      const manager = window.GameModules?.Tutorial;
+      if (manager?.on) {
+        if (this._uiHandler) manager.off('ui', this._uiHandler);
+        this._uiHandler = (evt) => this.handleEvent(evt);
+        manager.on('ui', this._uiHandler);
+      }
       this.setActive(false);
+    },
+
+    handleEvent(evt) {
+      if (!evt || !evt.action) return;
+      switch (evt.action) {
+        case 'setActive':
+          this.setActive(!!evt.value);
+          break;
+        case 'updateUIVisibility':
+          this.updateUIVisibility(evt.step);
+          break;
+        case 'showStep':
+          this.showStep(evt.step, evt.subStep);
+          break;
+        case 'showHint':
+          this.showHint(evt.step, evt.subStep, evt.platform);
+          break;
+        case 'showMessage':
+          this.showMessage(evt.text, evt.duration, evt.iconHtml || '');
+          break;
+        case 'showRetryMessage':
+          this.showRetryMessage();
+          break;
+        case 'fadeOutIn':
+          this.fadeOutIn(evt.outMs, evt.inMs, evt.holdMs, evt.callback);
+          break;
+        case 'showCompletionSequence':
+          if (this.showCompletionSequence) {
+            this.showCompletionSequence({ isNewRecord: !!evt.isNewRecord, onDone: evt.onDone });
+          } else if (evt.onDone) {
+            evt.onDone();
+          }
+          break;
+        case 'showStepTransition':
+          this.showStepTransition(evt.step);
+          break;
+        case 'removeHighlights':
+          this.removeHighlights();
+          break;
+        default:
+          break;
+      }
     },
 
     showStep(step, subStep) {
       const texts = window.TutorialConfig.getTexts?.(step) ?? window.TutorialConfig.TEXTS?.[step];
       if (this.elements.progress) {
-        this.elements.progress.textContent = `Step ${step}-${subStep}/4`;
+        this.elements.progress.textContent = `Step ${step}`;
       }
       if (texts?.description) {
         this.showMessage(texts.description, 3000);
@@ -79,7 +128,7 @@
         }
       }
       
-      this.removeHighlights(); // 기존 하이라이트 제거
+      this.removeHighlights(); // 기존 ?�이?�이???�거
       if (highlightSelector) {
         this.highlightElement(highlightSelector);
       }
@@ -109,7 +158,7 @@
     showStepTransition(nextStep) {
       const texts = window.TutorialConfig.getTexts?.(nextStep) ?? window.TutorialConfig.TEXTS?.[nextStep];
       const desc = texts?.description ? ` ${texts.description}` : '';
-      this.showMessage(`Step ${nextStep} 시작!${desc}`, 2000);
+      this.showMessage(`Step ${nextStep} ?�작!${desc}`, 2000);
     },
 
     showCompletionAnimation(callback) {

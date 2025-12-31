@@ -8,7 +8,7 @@ window.GameModules = window.GameModules || {};
   const { applyLoopDifficultyScaling, showStageNotification } = window.GameModules.Stage;
 
   function createLifecycle(canvas, player, qaConfig, gameData, saveGameData, runtime) {
-    let _originalPauseBoxHtml = ''; // 초기 HTML 저장 변수
+    let _originalPauseBoxHtml = ''; // 초기 HTML ?�??변??
     const pauseBoxElement = document.querySelector('#overlay-pause .pause-box');
     if (pauseBoxElement) {
       _originalPauseBoxHtml = pauseBoxElement.innerHTML;
@@ -29,26 +29,27 @@ window.GameModules = window.GameModules || {};
   }
 
   function handleDeath(reason) {
-    // 튜토리얼 모드에서는 사망 시 재시도
+    // Tutorial mode retries on death.
     if (runtime.tutorialMode) {
       window.GameModules.Tutorial?.retryStep();
-      return;
+      return true;
     }
 
-    if (player.isDead || player.isDying) return;
+    if (player.isDead || player.isDying) return false;
     if (player.hasRevive) {
       player.hasRevive = false;
       player.hasBarrier = true;
       player.vy = -1000;
       player.invincibleTimer = 2.0;
       window.Sound?.sfx('item');
-      return;
+      return false;
     }
     // Force off slow motion before death animation
     window.GameModules?.SlowMo?.forceOff?.(runtime);
     window.Sound?.bgmStop?.();
     player.die(qaConfig.deathDelay);
     window.Sound?.sfx('die');
+    return false;
   }
 
   async function handleGameOver() {
@@ -89,7 +90,7 @@ window.GameModules = window.GameModules || {};
     window.updateUpgradeUI?.();
     window.renderSkinList?.();
 
-    // 보물 코인 보너스 적용 (runtime.treasureCoinBonus 사용)
+    // 보물 코인 보너???�용 (runtime.treasureCoinBonus ?�용)
     const coinBonus = runtime.treasureCoinBonus ?? 0;
     if (coinBonus > 0) {
       const bonus = Math.floor(player.sessionCoins * (coinBonus / 100));
@@ -131,14 +132,12 @@ window.GameModules = window.GameModules || {};
     window.Sound?.sfx?.('btn');
 
     syncCanvasSize(runtime, canvas);
-    const tutorialConfig = window.TutorialConfig?.getConfig?.(targetTutorialStep) ?? {};
-    resetRuntime(runtime, qaConfig, isTutorial ? {
-      tutorialMode: true,
-      tutorialStep: targetTutorialStep,
-      tutorialSubStep: 1,
-      tutorialHoldCycle: targetTutorialStep === 2,
-      tutorialStormEnabled: tutorialConfig.stormEnabled !== false && !(tutorialConfig.eventTriggers || []).some((t) => t.action === 'activate_storm')
-    } : { tutorialMode: false, tutorialStep: 0, tutorialSubStep: 0 });
+    resetRuntime(runtime, qaConfig);
+    if (isTutorial) {
+      runtime.tutorialMode = true;
+      runtime.tutorialStep = targetTutorialStep;
+      runtime.tutorialSubStep = 1;
+    }
     runtime._lastPauseReason = null;
 
     // Set tutorial theme AFTER resetRuntime (which resets currentThemeIdx to 0)
@@ -157,7 +156,7 @@ window.GameModules = window.GameModules || {};
     player.sessionCoins = 0;
     player.sessionGems = 0;
 
-    // 아이템 업그레이드 로드 및 캐시 (런 시작 시 1회)
+    // ?�이???�그?�이??로드 �?캐시 (???�작 ??1??
     const itemUpgradesData = window.ItemUpgrades?.load?.() ?? {};
     const effectiveUpgrades = window.ItemUpgrades?.getEffectiveValues?.(itemUpgradesData) ?? {
       boosterDistanceMult: 1.0,
@@ -167,7 +166,7 @@ window.GameModules = window.GameModules || {};
     };
     runtime.itemUpgrades = Object.assign({}, effectiveUpgrades);
 
-    // 스킨/보물 효과 적용 (runtime 전달로 보물 효과가 캐시에 추가됨)
+    // ?�킨/보물 ?�과 ?�용 (runtime ?�달�?보물 ?�과가 캐시??추�???
     applyLoadoutStats(player, qaConfig, gameData, runtime);
 
     const skin = getSkins().find((s) => s.id === gameData.equippedSkin);
@@ -200,7 +199,7 @@ window.GameModules = window.GameModules || {};
     loop.start();
   }
 
-  // 기존 quitGame 로직을 별도 함수로 래핑
+  // 기존 quitGame 로직??별도 ?�수�??�핑
   function _quitGameOriginal() {
     window.Navigation?.hideOverlay?.('overlay-pause');
     loop.stop();
@@ -211,14 +210,14 @@ window.GameModules = window.GameModules || {};
     window.Sound?.sfx?.('btn');
   }
 
-  // 튜토리얼 전용 일시정지 메뉴 표시
+  // ?�토리얼 ?�용 ?�시?��? 메뉴 ?�시
   function _showTutorialPauseMenu() {
     runtime.previousState = runtime.gameState || STATE.RUN;
     runtime.gameState = STATE.PAUSE;
     window.Sound?.bgmStop?.();
     loop.pause();
 
-    // 튜토리얼 전용 일시정지 UI 생성
+    // ?�토리얼 ?�용 ?�시?��? UI ?�성
     const tutorialPauseHtml = `
       <div class="pause-box">
         <div class="pause-title">PAUSED</div>
@@ -249,7 +248,7 @@ window.GameModules = window.GameModules || {};
   }
 
   function restartFromPause() {
-    // 튜토리얼 모드에서는 재시작 버튼을 숨겼으므로, 이 함수는 튜토리얼에선 호출되지 않음
+    // ?�토리얼 모드?�서???�시??버튼???�겼?��?�? ???�수???�토리얼?�선 ?�출?��? ?�음
     window.Navigation?.hideOverlay?.('overlay-pause');
     loop.stop();
     startGame();
@@ -332,7 +331,7 @@ window.GameModules = window.GameModules || {};
     runtime.gameState = targetState;
     runtime.previousState = STATE.RUN;
     window.Navigation?.hideOverlay?.('overlay-pause');
-    // 튜토리얼 일시정지 메뉴를 닫을 때 원래대로 복구
+    // ?�토리얼 ?�시?��? 메뉴�??�을 ???�래?��?복구
     const overlayElement = document.getElementById('overlay-pause');
     if (overlayElement) {
       overlayElement.innerHTML = `<div class="pause-box">${_originalPauseBoxHtml}</div>`;
