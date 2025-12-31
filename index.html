@@ -139,16 +139,18 @@
       <div class="screen-header">
         <button class="btn-back" onclick="window.Navigation?.go('lobby')">< Back</button>
         <span class="header-title">SHOP</span>
-        <div class="currency-row header-currency">
-          <span class="currency-item"><img src="./assets/images/icons/coin.png" class="currency-icon-sm" alt="coin"> <span id="shop-coins" class="numeric-val">0</span></span>
-          <span class="currency-item"><img src="./assets/images/icons/gem.png" class="currency-icon-sm" alt="gem"> <span id="shop-gems" class="numeric-val">0</span></span>
-        </div>
+        <div style="width:80px;"></div>
+      </div>
+
+      <div class="currency-row lobby-currency shop-currency">
+        <div class="currency-item"><img src="./assets/images/icons/coin.png" class="currency-icon" alt="coin"> <span id="shop-coins" class="numeric-val">0</span></div>
+        <div class="currency-item"><img src="./assets/images/icons/gem.png" class="currency-icon" alt="gem"> <span id="shop-gems" class="numeric-val">0</span></div>
       </div>
 
       <div class="tab-container">
         <div class="tab-btn active" id="tab-upgrade" onclick="window.switchTab('upgrade')">UPGRADES</div>
-        <div class="tab-btn" id="tab-skin" onclick="window.switchTab('skin')">SKINS</div>
         <div class="tab-btn" id="tab-treasure" onclick="window.switchTab('treasure')">TREASURES</div>
+        <div class="tab-btn" id="tab-skin" onclick="window.switchTab('skin')">SKINS</div>
       </div>
 
       <!-- Item Upgrades Tab -->
