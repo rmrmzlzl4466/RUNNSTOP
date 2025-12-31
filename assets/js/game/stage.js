@@ -28,6 +28,15 @@ window.GameModules = window.GameModules || {};
   }
 
   function updateStageProgress(runtime, playerDist, qaConfig) {
+    if (runtime.tutorialMode && runtime._tutorialStageGoal) {
+      runtime.currentLevelGoal = runtime._tutorialStageGoal;
+      if (runtime.stage.currentStageId !== 1) {
+        runtime.stage.previousStageId = runtime.stage.currentStageId;
+        runtime.stage.currentStageId = 1;
+        runtime.stage.loopCount = 0;
+      }
+      return;
+    }
     const stageInfo = window.Game.LevelManager.getStageInfo(playerDist);
     runtime.currentLevelGoal = (window.STAGE_CUMULATIVE?.[stageInfo.stageIndex] ?? 0) + stageInfo.stageConfig.length;
 

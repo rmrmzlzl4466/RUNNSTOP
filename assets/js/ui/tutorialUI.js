@@ -12,6 +12,29 @@
         progress: document.getElementById('tutorial-progress'),
         message: document.getElementById('tutorial-message'),
       };
+      const complete = document.getElementById('tutorial-complete');
+      if (complete) {
+        this.elements.complete = complete;
+      } else if (this.elements.container) {
+        const completeEl = document.createElement('div');
+        completeEl.id = 'tutorial-complete';
+        completeEl.innerHTML = `
+          <div class="tutorial-complete-title">GOOD JOB</div>
+          <div class="tutorial-complete-sub">Tutorial complete</div>
+        `;
+        this.elements.container.appendChild(completeEl);
+        this.elements.complete = completeEl;
+      }
+      const fade = document.getElementById('tutorial-fade');
+      if (fade) {
+        this.elements.fade = fade;
+      } else {
+        const overlay = document.createElement('div');
+        overlay.id = 'tutorial-fade';
+        const host = document.getElementById('game-surface') || document.getElementById('game-container') || document.body;
+        host.appendChild(overlay);
+        this.elements.fade = overlay;
+      }
       this.setActive(false);
     },
 
@@ -92,6 +115,56 @@
     showCompletionAnimation(callback) {
       this.showMessage('Tutorial complete!', 3000);
       setTimeout(callback, 3000);
+    },
+
+    showCompletionSequence({ isNewRecord = false, onDone } = {}) {
+      const completeEl = this.elements.complete;
+      if (!completeEl) {
+        if (onDone) onDone();
+        return;
+      }
+
+      const titleEl = completeEl.querySelector('.tutorial-complete-title');
+      const subEl = completeEl.querySelector('.tutorial-complete-sub');
+      if (titleEl) titleEl.textContent = 'GOOD JOB';
+      if (subEl) subEl.textContent = isNewRecord ? 'NEW RECORD!' : 'Tutorial complete';
+
+      this.removeHighlights();
+      this.setActive(true);
+      this.elements.message?.classList.remove('visible');
+      completeEl.classList.add('show');
+
+      window.Sound?.sfx?.('boost_ready');
+      if (isNewRecord) {
+        window.Sound?.sfx?.('boost_perfect');
+        window.Game?.UI?.spawnConfetti?.();
+      }
+
+      const holdMs = 1600;
+      const fadeOutMs = 400;
+      const fadeHoldMs = 150;
+      setTimeout(() => {
+        this.fadeOutIn(fadeOutMs, fadeOutMs, fadeHoldMs, () => {
+          completeEl.classList.remove('show');
+          if (onDone) onDone();
+        });
+      }, holdMs);
+    },
+
+    fadeOutIn(outMs = 200, inMs = 200, holdMs = 80, callback) {
+      if (!this.elements.fade) {
+        if (callback) callback();
+        return;
+      }
+      this.elements.fade.style.transitionDuration = `${outMs}ms`;
+      this.elements.fade.classList.add('active');
+      setTimeout(() => {
+        if (callback) callback();
+        this.elements.fade.style.transitionDuration = `${inMs}ms`;
+        setTimeout(() => {
+          this.elements.fade.classList.remove('active');
+        }, holdMs);
+      }, outMs);
     },
 
     highlightElement(selector) {

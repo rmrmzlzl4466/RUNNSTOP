@@ -14,6 +14,8 @@
       safeJudgmentCount: 0,
       startDistance: 0,
       startDistValue: 0,
+      stepTargetDist: 0,
+      stepStartedAt: 0,
       platform: 'unknown',
       activeTriggers: [],
       isRestarting: false
@@ -30,6 +32,8 @@
         safeJudgmentCount: 0,
         startDistance: 0,
         startDistValue: 0,
+        stepTargetDist: 0,
+        stepStartedAt: 0,
         platform: this.detectPlatform(),
         activeTriggers: [],
         isRestarting: false
@@ -67,6 +71,9 @@
         window.runtime.tutorialSubStep = this.state.subStep;
         window.runtime._tutorialHoldCycle = targetStep === 2;
         window.runtime._tutorialStormEnabled = config.stormEnabled !== false && !hasStormTrigger;
+        const baseStageLength = window.STAGE_CONFIG?.[0]?.length ?? window.qaConfig?.stageLength ?? 2000;
+        window.runtime._tutorialStageGoal = baseStageLength + 200;
+        window.runtime.currentLevelGoal = window.runtime._tutorialStageGoal;
       }
 
       this.resetStepProgress(true);
@@ -97,7 +104,16 @@
         return this.state.safeJudgmentCount >= condition.safeJudgmentCount;
       }
       if (this.state.step === 3 || this.state.step === 4) {
+        const dist = window.player?.dist ?? 0;
         const traveled = this.getTraveledDistance();
+        if (this.state.step === 4) {
+          const minHoldMs = 2000;
+          const elapsed = performance.now() - (this.state.stepStartedAt || 0);
+          if (elapsed < minHoldMs) return false;
+        }
+        if (this.state.stepTargetDist > 0) {
+          return dist >= this.state.stepTargetDist;
+        }
         return traveled >= condition.distance;
       }
       return false;
@@ -182,9 +198,10 @@
       this.state.step = nextStep;
       this.state.subStep = 1;
       this.state.retryCount = 0;
-      if (window.runtime) {
-        window.runtime.tutorialStep = nextStep;
-        window.runtime.tutorialSubStep = this.state.subStep;
+      const runtime = window.runtime;
+      if (runtime) {
+        runtime.tutorialStep = nextStep;
+        runtime.tutorialSubStep = this.state.subStep;
       }
       if (completedStep === 1 && nextStep === 2) {
         this.resetStepProgress(true);
@@ -192,6 +209,50 @@
         window.TutorialUI?.showStepTransition(nextStep);
         window.TutorialUI?.showStep(nextStep, this.state.subStep);
         window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
+        return;
+      }
+      if (completedStep === 2 && nextStep === 3) {
+        this.resetStepProgress(true);
+        window.TutorialUI?.updateUIVisibility(nextStep);
+        window.TutorialUI?.showStepTransition(nextStep);
+        window.TutorialUI?.showStep(nextStep, this.state.subStep);
+        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
+        if (runtime) {
+          const STATE = window.GameModules.Runtime?.STATE;
+          if (STATE) {
+            runtime.gameState = STATE.RUN;
+            runtime.cycleTimer = 3.0;
+            runtime.isFirstWarning = true;
+            runtime.targetColorIndex = -1;
+            runtime.currentWarningMax = 6.0;
+          }
+        }
+        return;
+      }
+      if (completedStep === 3 && nextStep === 4) {
+        this.resetStepProgress(true);
+        this.state.stepStartedAt = performance.now();
+        window.TutorialUI?.updateUIVisibility(nextStep);
+        window.TutorialUI?.showStepTransition(nextStep);
+        window.TutorialUI?.showStep(nextStep, this.state.subStep);
+        window.TutorialUI?.showHint(nextStep, this.state.subStep, this.state.platform);
+        if (runtime) {
+          const STATE = window.GameModules.Runtime?.STATE;
+          if (STATE) {
+            runtime.gameState = STATE.RUN;
+            runtime.cycleTimer = 3.0;
+            runtime.isFirstWarning = true;
+            runtime.targetColorIndex = -1;
+            runtime.currentWarningMax = 6.0;
+          }
+          runtime._tutorialHoldCycle = false;
+          runtime._tutorialStormEnabled = true;
+        }
+        if (window.player) {
+          window.player.isBoosting = false;
+          window.player.vx = 0;
+          window.player.vy = 0;
+        }
         return;
       }
       window.TutorialUI?.showStepTransition(nextStep);
@@ -208,9 +269,18 @@
         window.TutorialUI?.showHint(this.state.step, this.state.subStep, this.state.platform);
       }
 
-      window.TutorialUI?.showRetryMessage();
-      window.TutorialUI?.updateUIVisibility(this.state.step);
-      window.Game.startGame?.(null, { isTutorial: true, tutorialStep: this.state.step, isRetry: true });
+      const restart = () => {
+        window.TutorialUI?.updateUIVisibility(this.state.step);
+        window.Game.startGame?.(null, { isTutorial: true, tutorialStep: this.state.step, isRetry: true });
+      };
+
+      if (this.state.step === 2) {
+        window.TutorialUI?.showMessage('OUT! Stand on the safe color.', 1500);
+        window.TutorialUI?.fadeOutIn(400, 400, 120, restart);
+      } else {
+        window.TutorialUI?.showRetryMessage();
+        restart();
+      }
       return true;
     },
 
@@ -218,16 +288,41 @@
       this.state.isActive = false;
       this.persistProgress(MAX_TUTORIAL_STEP, true);
       window.shouldStartTutorial = false;
-      this.deactivateRuntime();
-      if (window.runtime) {
-        window.runtime.gameActive = false;
-        window.runtime.gameState = window.GameModules.Runtime?.STATE?.PAUSE ?? window.runtime.gameState;
+      const runtime = window.runtime;
+      if (runtime) {
+        runtime.gameActive = false;
+        runtime.gameState = window.GameModules.Runtime?.STATE?.PAUSE ?? runtime.gameState;
       }
 
-      window.TutorialUI?.showCompletionAnimation(() => {
+      const player = window.player;
+      const qaConfig = window.qaConfig || {};
+      const dist = player?.dist ?? 0;
+      const distanceBonus = dist * (qaConfig.scorePerMeter ?? 0);
+      const totalScore = Math.floor((player?.sessionScore ?? 0) + distanceBonus);
+      const gameData = window.GameData || window.SaveManager?.load?.();
+      let isNewRecord = false;
+      if (gameData?.stats) {
+        const previousHigh = gameData.stats.highScore || 0;
+        isNewRecord = totalScore > previousHigh;
+        if (isNewRecord) {
+          gameData.stats.highScore = totalScore;
+          window.GameData = gameData;
+          window.Game.data = gameData;
+          window.SaveManager?.persist?.(gameData);
+        }
+      }
+
+      const finish = () => {
+        this.deactivateRuntime();
         window.TutorialUI?.setActive?.(false);
         window.Navigation.go('lobby');
-      });
+      };
+
+      if (window.TutorialUI?.showCompletionSequence) {
+        window.TutorialUI.showCompletionSequence({ isNewRecord, onDone: finish });
+      } else {
+        finish();
+      }
     },
 
     resetStepProgress(resetTriggers = true) {
@@ -237,8 +332,18 @@
       const startDist = window.player?.dist ?? 0;
       this.state.startDistance = startDist;
       this.state.startDistValue = startDist;
-
+      this.state.stepStartedAt = performance.now();
       const config = window.TutorialConfig.getConfig(this.state.step);
+      if (this.state.step === 3 || this.state.step === 4) {
+        if (this.state.step === 4 && window.runtime?._tutorialStageGoal) {
+          this.state.stepTargetDist = window.runtime._tutorialStageGoal;
+        } else {
+          const goal = Number(config.successCondition?.distance ?? 0);
+          this.state.stepTargetDist = goal > 0 ? startDist + goal : 0;
+        }
+      } else {
+        this.state.stepTargetDist = 0;
+      }
       const triggers = resetTriggers ? (config.eventTriggers || []) : (this.state.activeTriggers || []);
       this.state.activeTriggers = (triggers || []).map((t) => ({ ...t, triggered: false }));
 
@@ -288,6 +393,7 @@
       window.runtime.tutorialSubStep = 0;
       window.runtime._tutorialHoldCycle = false;
       window.runtime._tutorialStormEnabled = true;
+      window.runtime._tutorialStageGoal = null;
     },
 
     quitTutorial() {

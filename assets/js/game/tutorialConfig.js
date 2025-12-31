@@ -45,7 +45,7 @@
       obstaclesEnabled: true,
       itemsEnabled: true,
       colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
-      successCondition: { distance: 500 },
+      successCondition: { distance: 700 },
       eventTriggers: [], // 4단계는 즉시 모든 요소 활성화
     },
   };
@@ -91,11 +91,11 @@
     },
     4: {
       name: 'Simulation',
-      description: 'Finish 500m to clear',
+      description: 'Reach the end of the stage',
       hints: {
         completeRun: {
-          pc: 'Complete the tutorial run!',
-          mobile: 'Complete the tutorial run!',
+          pc: 'Reach the end of the stage!',
+          mobile: 'Reach the end of the stage!',
         }
       },
     },

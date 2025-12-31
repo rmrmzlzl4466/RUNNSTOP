@@ -148,7 +148,10 @@ window.GameModules = window.GameModules || {};
     }
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
 
-    player.reset(canvas.width / 2, 550);
+    const centerX = runtime.canvasSize?.width
+      ? runtime.canvasSize.width / 2
+      : canvas.width / 2;
+    player.reset(centerX, 550);
     player.sessionScore = 0;
     player.sessionBits = 0;
     player.sessionCoins = 0;
