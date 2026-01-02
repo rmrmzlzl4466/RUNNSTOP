@@ -5,12 +5,25 @@ let joystick = { active: false, id: null, startX: 0, startY: 0, curX: 0, curY: 0
 const JOYSTICK_BASE_RADIUS = 60;
 const JOYSTICK_STICK_MAX_DIST = 50;
 const JOYSTICK_HOME_PADDING = 40;
+const JOYSTICK_DEADZONE = 0.08;
 let joystickHome = { x: null, y: null };
 const joystickBase = document.getElementById('joystick-base');
 const joystickStick = document.getElementById('joystick-stick');
 const joystickZone = document.getElementById('joystick-zone');
 const dashZone = document.getElementById('dash-zone');
 const dashVisual = document.getElementById('btn-dash-visual');
+
+const DASH_TAP_WINDOW_MS = 160;
+const DASH_BUFFER_WINDOW_MS = 220;
+const dashState = {
+  holdActive: false,
+  holdPending: false,
+  holdQueued: false,
+  jfbHold: false,
+  holdStartTime: 0,
+  tapWindowMs: DASH_TAP_WINDOW_MS,
+  bufferWindowMs: DASH_BUFFER_WINDOW_MS
+};
 
 let ignoreInputUntil = 0;
 // [FIX] 이벤트 리스너 중복 등록 방지 플래그
@@ -68,28 +81,28 @@ function onWindowMouseUp(e) {
 function onDashTouchStart(e) {
   e.preventDefault();
   dashZone.classList.add('active');
-  startCharging();
+  beginDashHold();
 }
 
 // [CHARGING SYSTEM] 대쉬 터치 종료 - 대쉬 발동
 function onDashTouchEnd(e) {
   e.preventDefault();
   dashZone.classList.remove('active');
-  releaseDash();
+  endDashHold();
 }
 
 // [CHARGING SYSTEM] 대쉬 마우스 누름 - 차징 시작
 function onDashMouseDown(e) {
   e.preventDefault();
   dashZone.classList.add('active');
-  startCharging();
+  beginDashHold();
 }
 
 // [CHARGING SYSTEM] 대쉬 마우스 뗌 - 대쉬 발동
 function onDashMouseUp(e) {
   e.preventDefault();
   dashZone.classList.remove('active');
-  releaseDash();
+  endDashHold();
 }
 
 // [CHARGING SYSTEM] 키보드 스페이스 차징 상태 추적
@@ -99,7 +112,7 @@ function onKeyDown(e) {
   // [CHARGING SYSTEM] Space 키로 차징 시작 (반복 입력 무시)
   if (e.code === 'Space' && !e.repeat) {
     spaceCharging = true;
-    startCharging();
+    beginDashHold();
   }
   if (e.code === 'KeyW') keys.w = true;
   if (e.code === 'KeyA') keys.a = true;
@@ -111,7 +124,7 @@ function onKeyUp(e) {
   // [CHARGING SYSTEM] Space 키 뗌 - 대쉬 발동
   if (e.code === 'Space' && spaceCharging) {
     spaceCharging = false;
-    releaseDash();
+    endDashHold();
   }
   if (e.code === 'KeyW') keys.w = false;
   if (e.code === 'KeyA') keys.a = false;
@@ -230,8 +243,13 @@ function handleJoyMove(input) {
   const stickY = Math.sin(angle) * clampDist;
   joystickStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
   const sens = window.qaConfig?.joystickSens ?? 1.0;
-  joystick.vectorX = Math.max(-1, Math.min(1, (stickX / JOYSTICK_STICK_MAX_DIST) * sens));
-  joystick.vectorY = stickY / JOYSTICK_STICK_MAX_DIST;
+  const rawX = stickX / JOYSTICK_STICK_MAX_DIST;
+  const rawY = stickY / JOYSTICK_STICK_MAX_DIST;
+  const scaledX = rawX * sens;
+  const scaledY = rawY * sens;
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  joystick.vectorX = Math.abs(scaledX) < JOYSTICK_DEADZONE ? 0 : clamp(scaledX);
+  joystick.vectorY = Math.abs(scaledY) < JOYSTICK_DEADZONE ? 0 : clamp(scaledY);
 }
 
 function handleJoyEnd() {
@@ -251,7 +269,14 @@ function handleJoyEnd() {
 // [LEGACY] 기존 즉시 대쉬 (하위 호환용)
 function attemptDash() {
   if (performance.now() < ignoreInputUntil) return;
-  window.player?.dash?.();
+  const player = window.player;
+  if (!player) return;
+  const dir = getDashIntentDir();
+  if (player.canDash && !player.isDead && !player.isBoosting && !player.isDying) {
+    player.dash?.(dir);
+  } else {
+    player.queueDash?.(player.minDashForce, dir, dashState.bufferWindowMs / 1000);
+  }
 }
 
 // [CHARGING SYSTEM] 차징 시작
@@ -271,14 +296,70 @@ function startCharging() {
 }
 
 // [CHARGING SYSTEM] 차징 해제 및 대쉬 발동
-function releaseDash() {
+function releaseDash(dirOverride) {
   if (performance.now() < ignoreInputUntil) return;
-  window.player?.releaseDash?.();
+  window.player?.releaseDash?.(dirOverride);
+}
+
+function getDashIntentDir() {
+  let dx = 0;
+  let dy = 0;
+  if (joystick.active) {
+    dx = joystick.vectorX || 0;
+    dy = joystick.vectorY || 0;
+  } else {
+    if (keys.w) dy -= 1;
+    if (keys.s) dy += 1;
+    if (keys.a) dx -= 1;
+    if (keys.d) dx += 1;
+  }
+  const len = Math.hypot(dx, dy);
+  if (len < 0.1) return null;
+  return { x: dx / len, y: dy / len };
+}
+
+function beginDashHold() {
+  if (performance.now() < ignoreInputUntil) return;
+  dashState.holdActive = true;
+  dashState.holdPending = true;
+  dashState.holdQueued = false;
+  dashState.holdStartTime = performance.now();
+  dashState.jfbHold = false;
+
+  const boosterState = window.player?.getSurvivalBoosterState?.();
+  if (boosterState === 'wait' || boosterState === 'active') {
+    dashState.holdPending = false;
+    dashState.holdQueued = false;
+    dashState.jfbHold = true;
+    startCharging();
+  }
+}
+
+function endDashHold() {
+  if (performance.now() < ignoreInputUntil) return;
+  const wasPending = dashState.holdPending;
+  const wasQueued = dashState.holdQueued;
+  const wasJfbHold = dashState.jfbHold;
+  dashState.holdActive = false;
+  dashState.holdPending = false;
+  dashState.holdQueued = false;
+  dashState.jfbHold = false;
+
+  if (wasJfbHold) {
+    releaseDash(getDashIntentDir());
+    return;
+  }
+  if (wasPending || wasQueued) {
+    attemptDash();
+    return;
+  }
+  releaseDash(getDashIntentDir());
 }
 
 window.Input = {
   keys,
   joystick,
+  dashState,
   initControls,
   destroyControls,
   handleJoyStart,
@@ -287,6 +368,7 @@ window.Input = {
   attemptDash,        // [LEGACY] 기존 즉시 대쉬
   startCharging,      // [CHARGING SYSTEM] 차징 시작
   releaseDash,        // [CHARGING SYSTEM] 차징 해제 및 대쉬 발동
+  getDashIntentDir,
   setIgnoreInputUntil,
   getIgnoreInputUntil: () => ignoreInputUntil,
   isInitialized: () => controlsInitialized

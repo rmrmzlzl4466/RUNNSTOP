@@ -47,6 +47,12 @@
     this.turnAccelMult = 2.0; // [異붽?] 珥덇린媛??ㅼ젙
     this.hasRevive = false; // 蹂대Ъ: 遺??
     this.history = [];
+    this.lastInputDir = { x: 0, y: -1 };
+    this.lastInputTime = 0;
+    this.dashBufferTimer = 0;
+    this.dashBufferWindow = 0.22;
+    this.dashBufferForce = 0;
+    this.dashBufferDir = null;
     this._lastDashParticleTs = 0;
 
     // [JFB v2] ??ㅽ듃 ?꾨젅??遺?ㅽ꽣 (Reflex Mode)
@@ -94,6 +100,13 @@
     this.jfbRandomDelay = 0;
     this.jfbActiveStartTime = 0;
     this.history = [];
+    this.lastInputDir = { x: 0, y: -1 };
+    this.lastInputTime = 0;
+    this.dashBufferTimer = 0;
+    this.dashBufferWindow = 0.22;
+    this.dashBufferForce = 0;
+    this.dashBufferDir = null;
+    this._lastDashParticleTs = 0;
     this._baseMaxSpeed = null;  // ?ㅽ뀒?댁? 諛곗닔 由ъ뀑
   }
 
@@ -104,6 +117,26 @@
     const qaConfig = options.qaConfig;
     const effective = options.effective;  // ?ㅽ뀒?댁?蹂??ㅼ젙
     const boundsWidth = options.canvasWidth || this.boundsWidth;
+    const dashState = input.dashState;
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+
+    if (dashState?.holdActive && dashState.holdPending) {
+      const heldMs = now - dashState.holdStartTime;
+      if (heldMs >= dashState.tapWindowMs) {
+        dashState.holdPending = false;
+        if (this.canDash && !this.isCharging) {
+          const started = this.startCharging();
+          if (started !== false) dashState.holdQueued = false;
+        } else {
+          dashState.holdQueued = true;
+        }
+      }
+    }
+
+    if (dashState?.holdQueued && dashState.holdActive && this.canDash && !this.isCharging) {
+      const started = this.startCharging();
+      if (started !== false) dashState.holdQueued = false;
+    }
 
     // ?쒗넗由ъ뼹 ?대룞 媛먯?
     if (window.runtime?.tutorialMode && (joystick.vectorX !== 0 || joystick.vectorY !== 0 || keys.a || keys.d || keys.w || keys.s)) {
@@ -175,6 +208,12 @@
           if (keys.d) ax += 1;
         }
 
+        const inputMag = Math.sqrt(ax * ax + ay * ay);
+        if (inputMag > 0.05) {
+          this.lastInputDir = { x: ax / inputMag, y: ay / inputMag };
+          this.lastInputTime = now;
+        }
+
         // [CHARGING SYSTEM] 李⑥쭠 以묒씪 ??媛?띾룄 媛먯냼 (臾닿굅?뚯????④낵)
         let accelMult = 1.0;
         if (this.isCharging) {
@@ -231,6 +270,19 @@
     if (!this.canDash) {
       this.cooldownTimer -= dt;
       if (this.cooldownTimer <= 0) this.canDash = true;
+    }
+
+    if (this.dashBufferTimer > 0) {
+      this.dashBufferTimer -= dt;
+      if (this.dashBufferTimer < 0) this.dashBufferTimer = 0;
+      if (this.dashBufferTimer > 0 && this.canDash && !this.isCharging && !this.isBoosting && !this.isDead && !this.isDying && !dashState?.holdActive) {
+        const force = this.dashBufferForce || this.minDashForce;
+        const dir = this.dashBufferDir;
+        this.dashBufferTimer = 0;
+        this.dashBufferForce = 0;
+        this.dashBufferDir = null;
+        this._executeDash(force, dir);
+      }
     }
 
     this.x += this.vx * dt;
@@ -365,8 +417,23 @@
     return true;
   }
 
+  queueDash(force, dir, bufferWindow) {
+    if (this.isDead || this.isBoosting || this.isDying) return false;
+    const windowSec = bufferWindow ?? this.dashBufferWindow;
+    if (!windowSec || windowSec <= 0) return false;
+
+    this.dashBufferTimer = windowSec;
+    this.dashBufferForce = force ?? this.minDashForce;
+    if (dir && (dir.x || dir.y)) {
+      this.dashBufferDir = { x: dir.x, y: dir.y };
+    } else {
+      this.dashBufferDir = null;
+    }
+    return true;
+  }
+
   // [CHARGING SYSTEM] 李⑥쭠 ?댁젣 諛????諛쒕룞 (踰꾪듉 ??
-  releaseDash() {
+  releaseDash(dirOverride) {
     if (!this.isCharging) return;
 
     const holdDuration = (performance.now() - this.chargeStartTime) / 1000; // 珥??⑥쐞
@@ -379,17 +446,35 @@
     const chargeRatio = Math.min(holdDuration / this.maxChargeTime, 1.0);
     const force = this.minDashForce + (this.maxDashForce - this.minDashForce) * chargeRatio;
 
-    this._executeDash(force);
+    this._executeDash(force, dirOverride);
 
     // ?쒗넗由ъ뼹 ???媛먯?
     window.GameModules.Tutorial?.dispatchEvent?.('dash');
   }
 
   // [INTERNAL] ?ㅼ젣 ????ㅽ뻾 (媛蹂 ??
-  _executeDash(force) {
-    let dx = this.vx;
-    let dy = this.vy;
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) dy = -1;
+  _executeDash(force, dirOverride) {
+    let dx = 0;
+    let dy = 0;
+    const hasOverride = dirOverride && (dirOverride.x || dirOverride.y);
+    if (hasOverride) {
+      dx = dirOverride.x;
+      dy = dirOverride.y;
+    } else {
+      dx = this.vx;
+      dy = this.vy;
+      const speedSq = dx * dx + dy * dy;
+      if (speedSq < 100) {
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (this.lastInputTime && (now - this.lastInputTime) <= 200) {
+          dx = this.lastInputDir.x;
+          dy = this.lastInputDir.y;
+        }
+      }
+      if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
+        dy = -1;
+      }
+    }
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len === 0) return;
 
@@ -403,9 +488,9 @@
   }
 
   // [LEGACY] 湲곗〈 dash() ?명솚??- 理쒖냼 ?섏쑝濡?利됱떆 諛쒕룞
-  dash() {
+  dash(dirOverride) {
     if (this.isDead || this.isBoosting || this.isDying || !this.canDash) return;
-    this._executeDash(this.minDashForce);
+    this._executeDash(this.minDashForce, dirOverride);
   }
 
   // [CHARGING SYSTEM] ?꾩옱 李⑥쭠 吏꾪뻾瑜?諛섑솚 (0.0 ~ 1.0)

@@ -178,7 +178,8 @@ function lerpColorToBlack(hex, t) {
       const endRow = startRow + Math.ceil((canvasHeight * zoomFactor) / CELL_H) + extraRows + 2;
 
       let morphAlpha = 0;
-      let targetColor = null;
+      const currentThemeColors = getThemes()[currentThemeIdx]?.colors ?? [];
+      const targetColor = targetColorIndex !== -1 ? currentThemeColors[targetColorIndex] : null;
 
       if (gameState === STATE.WARNING && targetColorIndex !== -1) {
         const remaining = cycleTimer;
@@ -187,13 +188,13 @@ function lerpColorToBlack(hex, t) {
           morphAlpha = elapsed / qaConfig.morphDuration;
           morphAlpha = Math.max(0, Math.min(1, morphAlpha));
         }
-        targetColor = getThemes()[currentThemeIdx]?.colors?.[targetColorIndex];
       }
 
       // Get gimmick module for effects
       const Gimmick = window.GameModules?.Gimmick;
       const safeFadeIntensity = Gimmick?.getSafeFadeIntensity?.(gameState, cycleTimer, qaConfig.stopPhaseDuration) ?? 0;
       const safeFadeGlowColor = Gimmick?.getSafeFadeGlowColor?.() ?? '#00ff00';
+      const safeGlowColor = targetColor ?? safeFadeGlowColor;
 
       for (let r = startRow; r <= endRow; r++) {
         const rowData = window.Game.LevelManager.getRow(r);
@@ -214,17 +215,34 @@ function lerpColorToBlack(hex, t) {
           }
           ctx.fillRect(x, y, CELL_W, CELL_H);
 
+          // Base glow to make safe tiles pop during STOP
+          if (gameState === STATE.STOP && colorIdx === targetColorIndex && safeGlowColor) {
+            ctx.save();
+            ctx.globalAlpha = 0.10;
+            ctx.fillStyle = safeGlowColor;
+            ctx.fillRect(x, y, CELL_W, CELL_H);
+            ctx.globalAlpha = useSoftShadows ? 0.22 : 0.16;
+            ctx.strokeStyle = safeGlowColor;
+            ctx.lineWidth = useSoftShadows ? 1.5 : 1;
+            if (useSoftShadows) {
+              ctx.shadowBlur = 6;
+              ctx.shadowColor = safeGlowColor;
+            }
+            ctx.strokeRect(x + 2, y + 2, CELL_W - 4, CELL_H - 4);
+            ctx.restore();
+          }
+
           // SAFE_FADE: Glow effect on safe tiles during STOP phase
           if (gameState === STATE.STOP && colorIdx === targetColorIndex && safeFadeIntensity > 0) {
             ctx.save();
             ctx.globalAlpha = safeFadeIntensity * 0.6;
-            ctx.fillStyle = safeFadeGlowColor;
+            ctx.fillStyle = safeGlowColor;
             ctx.fillRect(x, y, CELL_W, CELL_H);
             // Add border glow
-            ctx.strokeStyle = safeFadeGlowColor;
+            ctx.strokeStyle = safeGlowColor;
             ctx.lineWidth = 2 + safeFadeIntensity * 4;
             ctx.shadowBlur = 10 + safeFadeIntensity * 15;
-            ctx.shadowColor = safeFadeGlowColor;
+            ctx.shadowColor = safeGlowColor;
             ctx.strokeRect(x + 2, y + 2, CELL_W - 4, CELL_H - 4);
             ctx.restore();
           }

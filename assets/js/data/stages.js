@@ -32,7 +32,7 @@
  * ====================================
  *
  * theme: {
- *   paletteId: 'NEON_CITY' | 'CIRCUIT' | 'GLITCH' | 'VOID' | 'SUNSET' | 'STORM' | 'DEFAULT',
+ *   paletteId: 'NEON_BASE' | 'NEON_CITY' | 'CIRCUIT' | 'GLITCH' | 'VOID' | 'SUNSET' | 'STORM' | 'DEFAULT',
  *   safeColorBias?: number (0-1, optional emphasis on safe color)
  * }
  *
@@ -77,10 +77,17 @@ window.STAGE_TUNING_DEFAULTS = {
 window.STAGE_PALETTES = {
   DEFAULT: {
     id: 'DEFAULT',
-    name: 'Default',
-    colors: ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c'],
-    safeColor: '#2ecc71',
-    dangerColor: '#e74c3c'
+    name: 'Neon Base',
+    colors: ['#00ff41', '#00d4ff', '#ff0040', '#8b00ff', '#11ff9a', '#0d2b1f'],
+    safeColor: '#00ff41',
+    dangerColor: '#ff0040'
+  },
+  NEON_BASE: {
+    id: 'NEON_BASE',
+    name: 'Neon Base',
+    colors: ['#00ff41', '#00d4ff', '#ff0040', '#8b00ff', '#11ff9a', '#0d2b1f'],
+    safeColor: '#00ff41',
+    dangerColor: '#ff0040'
   },
   NEON_CITY: {
     id: 'NEON_CITY',
@@ -174,7 +181,7 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 2000,
     name: "BOOT SEQUENCE",
-    theme: { paletteId: 'DEFAULT' },
+    theme: { paletteId: 'NEON_BASE' },
     gimmick: { id: 'NONE', params: {} },
     tuning: {
       // Tutorial - use defaults
@@ -185,7 +192,7 @@ window.STAGE_CONFIG = [
     themeIdx: 0,
     length: 2300,
     name: "DIGITAL CIRCUIT",
-    theme: { paletteId: 'CIRCUIT' },
+    theme: { paletteId: 'NEON_BASE' },
     gimmick: { id: 'NONE', params: {} },
     tuning: {
       stormSpeedMult: 1.05
