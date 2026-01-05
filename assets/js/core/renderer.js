@@ -447,13 +447,15 @@ function lerpColorToBlack(hex, t) {
       const baseOuter = Math.max(canvasWidth, canvasHeight) * 0.82;
       const inner = baseInner * (1 - 0.35 * intensity);
       const outer = baseOuter + (Math.max(canvasWidth, canvasHeight) * 0.1 * intensity);
-      const alpha = 0.22 + 0.55 * intensity;
+      const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const pulse = 0.85 + 0.15 * Math.sin(nowMs * 0.008);
+      const alpha = (0.22 + 0.58 * intensity) * pulse;
 
       ctx.save();
       ctx.globalAlpha = alpha;
       const gradient = ctx.createRadialGradient(centerX, centerY, inner, centerX, centerY, outer);
       gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      gradient.addColorStop(1, `rgba(255, 60, 60, ${0.35 + 0.55 * intensity})`);
+      gradient.addColorStop(1, `rgba(255, 80, 80, ${0.4 + 0.6 * intensity})`);
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       ctx.restore();
@@ -483,9 +485,7 @@ function lerpColorToBlack(hex, t) {
       const strength = Math.max(0, Math.min(1, fx.strength ?? 0.5));
       const maxRadius = isSuccess ? 170 : (isCharge ? (60 + 90 * strength) : 80);
       const radius = player.radius + 6 + maxRadius * eased;
-      const color = isCharge
-        ? 'rgba(255, 200, 120, 1)'
-        : ((fx.type === 'booster') ? 'rgba(255, 160, 90, 1)' : (isSuccess ? 'rgba(90, 255, 240, 1)' : 'rgba(255, 90, 90, 1)'));
+      const color = 'rgba(255, 160, 90, 1)';
       const widthScale = isCharge ? (0.8 + 0.6 * strength) : 1;
 
       ctx.save();

@@ -122,14 +122,14 @@
       runtime._heartbeatNextAt = 0;
       return;
     }
-    const minInterval = 0.35;
-    const maxInterval = 0.9;
+    const minInterval = 0.32;
+    const maxInterval = 0.85;
     const interval = maxInterval - (maxInterval - minInterval) * intensity;
     const nextAt = runtime._heartbeatNextAt || 0;
     if (nowSec >= nextAt) {
-      const freq = 90 + 60 * intensity;
-      const dur = 0.1 + 0.08 * intensity;
-      const gain = 0.45 + 0.65 * intensity;
+      const freq = 120 + 80 * intensity;
+      const dur = 0.12 + 0.1 * intensity;
+      const gain = 0.9 + 1.1 * intensity;
       window.Sound.play(freq, 'triangle', dur, gain);
       runtime._heartbeatNextAt = nowSec + interval;
     }
@@ -202,6 +202,10 @@
     window.Game.UI.updateDash(player);
     // Pass effective config for per-stage physics (friction, baseSpeed, etc.)
     player.update(worldDt, { input: window.Input, qaConfig, effective, canvasWidth: runtime.canvasSize.width });
+    const speed = Math.hypot(player.vx, player.vy);
+    const maxSpeed = Math.max(1, player.maxSpeed || 1);
+    const speedRatio = speed / maxSpeed;
+    window.Sound?.updateSpeedFeedback?.(speedRatio, nowSec, runtime.gameState, STATE);
     // Apply scoreMult from effective config (includes loopScale)
     player.sessionScore += (qaConfig.scorePerSecond ?? 0) * worldDt * effective.scoreMult;
     window.Game.UI.updateScore(player.sessionScore, formatNumber);

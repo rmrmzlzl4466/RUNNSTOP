@@ -20,6 +20,15 @@ const soundMap = {
   'move_Dash': './assets/sounds/player/move_Dash'
 };
 const resolvedSoundUrls = new Map();
+const SPEED_AUDIO = {
+  ready: false,
+  windSrc: null,
+  windFilter: null,
+  windGain: null,
+  whineOsc: null,
+  whineGain: null,
+  lastPulseAt: 0
+};
 
 async function resolveSoundUrl(name) {
   if (resolvedSoundUrls.has(name)) {
@@ -80,6 +89,15 @@ function getPooledClip(path) {
   return fallback;
 }
 
+function createNoiseBuffer() {
+  const buffer = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return buffer;
+}
+
 var Sound = window.Sound = {
   // Core play method for Web Audio API sounds
   play(freq, type, dur = 0.1, gainScale = 1) {
@@ -98,6 +116,97 @@ var Sound = window.Sound = {
       osc.start();
       osc.stop(actx.currentTime + dur);
     } catch (e) {}
+  },
+
+  ensureSpeedAudio() {
+    if (SPEED_AUDIO.ready) return;
+    try {
+      const windSrc = actx.createBufferSource();
+      windSrc.buffer = createNoiseBuffer();
+      windSrc.loop = true;
+
+      const windFilter = actx.createBiquadFilter();
+      windFilter.type = 'lowpass';
+      windFilter.frequency.value = 800;
+
+      const windGain = actx.createGain();
+      windGain.gain.value = 0;
+
+      windSrc.connect(windFilter);
+      windFilter.connect(windGain);
+      windGain.connect(masterGain);
+      windSrc.start();
+
+      const whineOsc = actx.createOscillator();
+      whineOsc.type = 'sine';
+      whineOsc.frequency.value = 600;
+
+      const whineGain = actx.createGain();
+      whineGain.gain.value = 0;
+
+      whineOsc.connect(whineGain);
+      whineGain.connect(masterGain);
+      whineOsc.start();
+
+      SPEED_AUDIO.windSrc = windSrc;
+      SPEED_AUDIO.windFilter = windFilter;
+      SPEED_AUDIO.windGain = windGain;
+      SPEED_AUDIO.whineOsc = whineOsc;
+      SPEED_AUDIO.whineGain = whineGain;
+      SPEED_AUDIO.ready = true;
+    } catch (e) {
+      console.warn('[Sound] Speed audio init failed', e);
+    }
+  },
+
+  updateSpeedFeedback(speedRatio, nowSec, gameState, STATE) {
+    if (!isAudioGloballyEnabled) return;
+    if (actx.state === 'suspended') actx.resume().catch(() => {});
+    this.ensureSpeedAudio();
+    if (!SPEED_AUDIO.ready) return;
+
+    const sr = Math.max(0, Math.min(1.2, speedRatio || 0));
+    const isActive = !STATE || gameState !== STATE.STOP;
+    const isRun = !STATE || gameState === STATE.RUN;
+
+    let windTarget = 0;
+    let windCutoff = 800;
+    let whineTarget = 0;
+    let whineFreq = 600;
+
+    if (isActive) {
+      const w = Math.max(0, Math.min(1, (sr - 0.45) / 0.55));
+      const smooth = w * w * (3 - 2 * w);
+      windTarget = (0.22 * smooth) * (window.qaConfig?.sfxVol ?? 1);
+      windCutoff = 800 + 3200 * smooth;
+
+      const a = Math.max(0, Math.min(1, (sr - 0.6) / 0.35));
+      whineTarget = (0.12 * a) * (window.qaConfig?.sfxVol ?? 1);
+      if (STATE && gameState === STATE.WARNING) {
+        whineTarget *= 0.6;
+      }
+      whineFreq = 600 + 900 * a;
+    }
+
+    if (sr < 0.08) {
+      windTarget = 0;
+      whineTarget = 0;
+    }
+
+    const now = actx.currentTime;
+    SPEED_AUDIO.windGain.gain.setTargetAtTime(windTarget, now, 0.08);
+    SPEED_AUDIO.windFilter.frequency.setTargetAtTime(windCutoff, now, 0.08);
+    SPEED_AUDIO.whineGain.gain.setTargetAtTime(whineTarget, now, 0.08);
+    SPEED_AUDIO.whineOsc.frequency.setTargetAtTime(whineFreq, now, 0.08);
+
+    if (isRun && sr > 1.0 && nowSec !== undefined) {
+      const extra = Math.min(0.2, sr - 1.0);
+      const interval = 0.6 - 0.25 * (extra / 0.2);
+      if (nowSec >= (SPEED_AUDIO.lastPulseAt + interval)) {
+        this.play(220 + 120 * sr, 'sine', 0.06, 0.18);
+        SPEED_AUDIO.lastPulseAt = nowSec;
+      }
+    }
   },
 
   // [STEP 7] Updated to be async and use the URL resolver
