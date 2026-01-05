@@ -82,7 +82,7 @@ function getPooledClip(path) {
 
 var Sound = window.Sound = {
   // Core play method for Web Audio API sounds
-  play(freq, type, dur = 0.1) {
+  play(freq, type, dur = 0.1, gainScale = 1) {
     if (!isAudioGloballyEnabled) return;
     if (actx.state === 'suspended') actx.resume().catch(() => {});
     try {
@@ -90,7 +90,8 @@ var Sound = window.Sound = {
       const gain = actx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, actx.currentTime);
-      gain.gain.setValueAtTime(0.12 * (window.qaConfig?.sfxVol ?? 1), actx.currentTime);
+      const baseGain = 0.12 * (window.qaConfig?.sfxVol ?? 1) * gainScale;
+      gain.gain.setValueAtTime(baseGain, actx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
       osc.connect(gain);
       gain.connect(masterGain); // Route through masterGain

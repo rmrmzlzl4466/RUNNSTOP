@@ -109,6 +109,12 @@ window.GameModules = window.GameModules || {};
       // 부스터 거리 업그레이드 적용
       const boostMult = runtime.itemUpgrades?.boosterDistanceMult ?? 1.0;
       player.boostTargetY = player.y - (qaConfig.boostDist * boostMult);
+      runtime._jfbFx = {
+        type: 'booster',
+        startTs: ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) / 1000,
+        x: player.x,
+        y: player.y
+      };
       window.Sound?.sfx('booster_pickup');  // 터보 불꽃 획득음
       // boost_rush는 거의 동시에 (50ms 딜레이)
       setTimeout(() => window.Sound?.sfx('boost_rush'), 50);

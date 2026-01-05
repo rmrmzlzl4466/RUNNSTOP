@@ -446,6 +446,16 @@
     const chargeRatio = Math.min(holdDuration / this.maxChargeTime, 1.0);
     const force = this.minDashForce + (this.maxDashForce - this.minDashForce) * chargeRatio;
 
+    const runtime = window.Game?.runtime;
+    if (runtime) {
+      runtime._jfbFx = {
+        type: 'charge',
+        startTs: ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) / 1000,
+        x: this.x,
+        y: this.y,
+        strength: chargeRatio
+      };
+    }
     this._executeDash(force, dirOverride);
 
     // ?쒗넗由ъ뼹 ???媛먯?
@@ -478,8 +488,18 @@
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len === 0) return;
 
-    this.vx = (dx / len) * force;
-    this.vy = (dy / len) * force;
+    const dirX = dx / len;
+    const dirY = dy / len;
+    const currentSpeedAlong = (this.vx * dirX) + (this.vy * dirY);
+    const baseSpeed = Math.max(0, currentSpeedAlong);
+    const maxSpeed = Math.max(1, this.maxSpeed || 1);
+    const maxDashSpeed = this.maxDashForce || force;
+    const minBoost = Math.max(force * 0.6, maxSpeed * 0.4);
+    let targetSpeed = Math.max(force, baseSpeed + minBoost);
+    targetSpeed = Math.min(targetSpeed, maxDashSpeed);
+
+    this.vx = dirX * targetSpeed;
+    this.vy = dirY * targetSpeed;
     this.isDashing = true;
     this.dashTimer = this.dashDuration;
     this.canDash = false;
@@ -516,9 +536,15 @@
     const useShadows = options.useShadows !== false;
 
     // Render trail effect
+    const speed = Math.hypot(this.vx, this.vy);
+    const maxSpeed = Math.max(1, this.maxSpeed);
+    const speedRatio = Math.min(1.4, speed / maxSpeed);
+    const trailOpacityScale = 1 + 0.6 * speedRatio;
+    const trailRadiusScale = 1 + 0.45 * speedRatio;
     this.history.forEach((pos, index) => {
-      const opacity = (index / this.history.length) * (qaConfig.trailOpacity || 0.9);
-      const radius = (this.radius * (index / this.history.length)); // Shrink
+      let opacity = (index / this.history.length) * (qaConfig.trailOpacity || 0.9);
+      opacity = Math.min(1, opacity * trailOpacityScale);
+      const radius = (this.radius * (index / this.history.length)) * trailRadiusScale; // Shrink
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
@@ -536,13 +562,57 @@
       ctx.lineWidth = 3;
       ctx.stroke();
     }
+
+    const safetyInfo = options.safetyInfo;
+    if (safetyInfo) {
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = safetyInfo.safe ? 0.7 : 0.85;
+      ctx.strokeStyle = safetyInfo.safe ? 'rgba(80, 255, 232, 0.9)' : 'rgba(255, 90, 90, 0.9)';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius + 3.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     if (this.isBoosting) {
+      const speed = Math.hypot(this.vx, this.vy);
+      const tailLen = 70 + Math.min(50, speed * 0.06);
+      let tx = -this.vx;
+      let ty = -this.vy;
+      const tLen = Math.hypot(tx, ty);
+      if (tLen < 1) {
+        tx = 0;
+        ty = 1;
+      } else {
+        tx /= tLen;
+        ty /= tLen;
+      }
+      const endX = this.x + tx * tailLen;
+      const endY = this.y + ty * tailLen;
+      const baseWidth = this.radius * 1.3;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      const grad = ctx.createLinearGradient(this.x, this.y, endX, endY);
+      grad.addColorStop(0, 'rgba(255, 230, 220, 0.9)');
+      grad.addColorStop(0.35, 'rgba(255, 120, 90, 0.75)');
+      grad.addColorStop(1, 'rgba(255, 80, 60, 0)');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = baseWidth * 1.8;
+      ctx.globalAlpha = 0.35;
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
-      ctx.lineTo(this.x, this.y + 60);
-      ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
-      ctx.lineWidth = this.radius * 1.5;
+      ctx.lineTo(endX, endY);
       ctx.stroke();
+
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = baseWidth;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.restore();
     }
 
     // 2. 罹먮┃??洹몃━湲?(SVG vs 湲곕낯 ??

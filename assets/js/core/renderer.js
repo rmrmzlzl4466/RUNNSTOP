@@ -119,6 +119,9 @@ function lerpColorToBlack(hex, t) {
   const Renderer = {
     ctx: null,
     canvas: null,
+    _speedLines: [],
+    _speedLineSpawnAcc: 0,
+    _lastSpeedLineTs: 0,
 
     init: function(canvas, ctx) {
       this.canvas = canvas;
@@ -286,7 +289,16 @@ function lerpColorToBlack(hex, t) {
         const skins = getSkins();
         const skin = skins.find(s => s.id === window.GameData.equippedSkin) || skins[0];
         const spriteImg = getSkinSpriteImage(skin);
-        player.draw(ctx, skin, spriteImg, { useShadows: useSoftShadows });
+        let safetyInfo = null;
+        if ((gameState === STATE.WARNING || gameState === STATE.STOP) && targetColorIndex !== -1) {
+          const Physics = window.Game.Physics;
+          if (Physics?.isPlayerOnSafeTile) {
+            const safe = Physics.isPlayerOnSafeTile(player, targetColorIndex);
+            safetyInfo = { safe };
+          }
+        }
+        player.draw(ctx, skin, spriteImg, { useShadows: useSoftShadows, safetyInfo });
+        this.drawJfbFx(ctx, player);
       }
 
       // === Floating Texts ===
@@ -295,8 +307,274 @@ function lerpColorToBlack(hex, t) {
       ctx.globalAlpha = 1.0;
       ctx.restore();
 
+      this.drawSpeedLines(ctx, player, canvasWidth, canvasHeight, cameraZoom, cameraY, pivotX, pivotY);
+      this.drawDangerOverlay(ctx, player, storm, canvasWidth, canvasHeight, cameraZoom);
+      this.drawTransitionFx(ctx, canvasWidth, canvasHeight);
+
       // === Matrix-style SlowMo Visual Effects ===
       this.drawSlowMoEffects(ctx, canvasWidth, canvasHeight);
+    },
+
+    drawSpeedLines: function(ctx, player, canvasWidth, canvasHeight, cameraZoom, cameraY, pivotX, pivotY) {
+      if (!player) return;
+      const maxSpeed = Math.max(1, player.maxSpeed || 1);
+      const speed = Math.hypot(player.vx, player.vy);
+      const speedRatio = Math.min(1.5, speed / maxSpeed);
+      const baseIntensity = Math.max(0, (speedRatio - 0.45) / 0.9);
+      const boostBonus = player.isBoosting ? 0.45 : (player.isDashing ? 0.25 : 0);
+      const intensity = Math.min(1.2, baseIntensity + boostBonus);
+      const absVx = Math.abs(player.vx);
+      const absVy = Math.abs(player.vy);
+      const diagRatio = absVy > 0 ? (absVx / absVy) : 0;
+      const isDiagonal = absVx > maxSpeed * 0.15 &&
+        absVy > maxSpeed * 0.15 &&
+        diagRatio > 0.6 && diagRatio < 1.6;
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const last = this._lastSpeedLineTs || now;
+      const dt = Math.min(0.033, Math.max(0, (now - last) / 1000));
+      this._lastSpeedLineTs = now;
+
+      const zoom = cameraZoom || 1;
+      const camY = cameraY || 0;
+      const px = player.x;
+      const py = player.y - camY;
+      const screenX = (px - pivotX) * zoom + pivotX;
+      const screenY = (py - pivotY) * zoom + pivotY;
+
+      const lines = this._speedLines;
+      const angle = Math.atan2(player.vy, player.vx) || -Math.PI / 2;
+
+      if (!isDiagonal && intensity > 0 && dt > 0) {
+        const rate = 16 + 40 * intensity;
+        this._speedLineSpawnAcc += dt * rate;
+        const spread = 160 + 160 * intensity;
+        while (this._speedLineSpawnAcc >= 1) {
+          this._speedLineSpawnAcc -= 1;
+          const offsetX = (Math.random() - 0.5) * spread;
+          const offsetY = (Math.random() - 0.5) * spread;
+          const life = 0.2 + Math.random() * 0.16;
+          const baseLen = 22 + 60 * intensity + Math.random() * 18;
+          const fatChance = player.isBoosting ? 0.45 : (player.isDashing ? 0.25 : 0.12);
+          const fatMult = (Math.random() < fatChance) ? (1.4 + 1.1 * intensity) : 1;
+          const len = baseLen * (0.85 + Math.random() * 0.6);
+          const width = (1.8 + 3.2 * intensity) * (0.7 + Math.random() * 0.9) * fatMult;
+          const alpha = (0.2 + 0.6 * intensity) * (0.65 + Math.random() * 0.7);
+          lines.push({
+            x: Math.max(-50, Math.min(canvasWidth + 50, screenX + offsetX)),
+            y: Math.max(-50, Math.min(canvasHeight + 50, screenY + offsetY)),
+            len,
+            width,
+            alpha,
+            age: 0,
+            life,
+            angle
+          });
+        }
+      } else if (this._speedLineSpawnAcc > 0) {
+        this._speedLineSpawnAcc = 0;
+      }
+
+      if (!lines.length) return;
+
+      if (isDiagonal) {
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = lines[i];
+          line.age += dt;
+          if (line.age >= line.life) lines.splice(i, 1);
+        }
+        return;
+      }
+
+      const moveSpeed = 260 + 540 * intensity;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const glowColor = player.isBoosting ? '#ff7a5c' : (player.isDashing ? '#7ffcff' : '#7cffff');
+      const coreColor = player.isBoosting ? '#ffd6c8' : (player.isDashing ? '#eaffff' : '#e7ffff');
+      ctx.lineCap = 'round';
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        line.age += dt;
+        if (line.age >= line.life) {
+          lines.splice(i, 1);
+          continue;
+        }
+        const fade = 1 - (line.age / line.life);
+        const width = line.width * (0.45 + 0.55 * fade);
+        const len = line.len * (0.7 + 0.3 * fade);
+        line.x -= Math.cos(line.angle) * moveSpeed * dt;
+        line.y -= Math.sin(line.angle) * moveSpeed * dt;
+
+        const coreAlpha = line.alpha * fade;
+        const glowAlpha = coreAlpha * 0.35;
+
+        ctx.globalAlpha = glowAlpha;
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = width * 2.2;
+        ctx.beginPath();
+        ctx.moveTo(line.x, line.y);
+        ctx.lineTo(
+          line.x - Math.cos(line.angle) * len,
+          line.y - Math.sin(line.angle) * len
+        );
+        ctx.stroke();
+
+        ctx.globalAlpha = coreAlpha;
+        ctx.strokeStyle = coreColor;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(line.x, line.y);
+        ctx.lineTo(
+          line.x - Math.cos(line.angle) * len,
+          line.y - Math.sin(line.angle) * len
+        );
+        ctx.stroke();
+      }
+      ctx.restore();
+    },
+
+    drawDangerOverlay: function(ctx, player, storm, canvasWidth, canvasHeight, cameraZoom) {
+      if (!player || !storm) return;
+      const zoom = cameraZoom || 1;
+      const warnDist = Math.max(220, (canvasHeight * 0.85) / zoom);
+      const gap = storm.y - (player.y + player.radius);
+      const raw = Math.max(0, Math.min(1, 1 - (gap / warnDist)));
+      const intensity = Math.pow(raw, 1.25);
+      if (intensity <= 0) return;
+
+      const centerX = canvasWidth / 2;
+      const centerY = canvasHeight / 2;
+      const baseInner = Math.min(canvasWidth, canvasHeight) * 0.2;
+      const baseOuter = Math.max(canvasWidth, canvasHeight) * 0.82;
+      const inner = baseInner * (1 - 0.35 * intensity);
+      const outer = baseOuter + (Math.max(canvasWidth, canvasHeight) * 0.1 * intensity);
+      const alpha = 0.22 + 0.55 * intensity;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const gradient = ctx.createRadialGradient(centerX, centerY, inner, centerX, centerY, outer);
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      gradient.addColorStop(1, `rgba(255, 60, 60, ${0.35 + 0.55 * intensity})`);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.restore();
+    },
+
+    drawJfbFx: function(ctx, player) {
+      const runtime = window.Game?.runtime;
+      const fx = runtime?._jfbFx;
+      if (!fx || !player) return;
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() / 1000 : Date.now() / 1000;
+      const elapsed = now - (fx.startTs || 0);
+      const isCharge = fx.type === 'charge';
+      const isSuccess = fx.type === 'success' || fx.type === 'booster';
+      const isFail = fx.type === 'fail';
+      const duration = isSuccess ? 0.5 : (isCharge ? 0.4 : 0.35);
+      if (elapsed >= duration) {
+        runtime._jfbFx = null;
+        return;
+      }
+
+      const t = elapsed / duration;
+      const expandT = Math.min(1, t * 1.8);
+      const eased = 1 - Math.pow(1 - expandT, 4);
+      const fade = 1 - t;
+      const baseX = fx.x ?? player.x;
+      const baseY = fx.y ?? player.y;
+      const strength = Math.max(0, Math.min(1, fx.strength ?? 0.5));
+      const maxRadius = isSuccess ? 170 : (isCharge ? (60 + 90 * strength) : 80);
+      const radius = player.radius + 6 + maxRadius * eased;
+      const color = isCharge
+        ? 'rgba(255, 200, 120, 1)'
+        : ((fx.type === 'booster') ? 'rgba(255, 160, 90, 1)' : (isSuccess ? 'rgba(90, 255, 240, 1)' : 'rgba(255, 90, 90, 1)'));
+      const widthScale = isCharge ? (0.8 + 0.6 * strength) : 1;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.95 * fade;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = (isSuccess ? 5.5 : 4.5) * widthScale;
+      ctx.beginPath();
+      ctx.arc(baseX, baseY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.55 * fade;
+      ctx.lineWidth = (isSuccess ? 11 : 8.5) * widthScale;
+      ctx.beginPath();
+      ctx.arc(baseX, baseY, radius * 0.9, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (isSuccess) {
+        const rayCount = 8;
+        const rayLen = 22 + 26 * eased;
+        ctx.globalAlpha = 0.65 * fade;
+        ctx.lineWidth = 3.6;
+        for (let i = 0; i < rayCount; i++) {
+          const a = (Math.PI * 2 * i) / rayCount + t * 1.5;
+          const rx = Math.cos(a);
+          const ry = Math.sin(a);
+          ctx.beginPath();
+          ctx.moveTo(baseX + rx * (radius * 0.6), baseY + ry * (radius * 0.6));
+          ctx.lineTo(baseX + rx * (radius * 0.6 + rayLen), baseY + ry * (radius * 0.6 + rayLen));
+          ctx.stroke();
+        }
+      } else if (isFail) {
+        ctx.globalAlpha = 0.75 * fade;
+        ctx.lineWidth = 3.6;
+        ctx.beginPath();
+        ctx.moveTo(baseX - radius * 0.5, baseY - radius * 0.5);
+        ctx.lineTo(baseX + radius * 0.5, baseY + radius * 0.5);
+        ctx.moveTo(baseX + radius * 0.5, baseY - radius * 0.5);
+        ctx.lineTo(baseX - radius * 0.5, baseY + radius * 0.5);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    },
+
+    drawTransitionFx: function(ctx, canvasWidth, canvasHeight) {
+      const runtime = window.Game?.runtime;
+      const fx = runtime?._transitionFx;
+      if (!fx) return;
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() / 1000 : Date.now() / 1000;
+      const elapsed = now - (fx.startTs || 0);
+
+      if (fx.type === 'run') {
+        const duration = 0.14;
+        if (elapsed > duration) return;
+        const t = elapsed / duration;
+        const bandHeight = canvasHeight * 0.18;
+        const y = canvasHeight - (canvasHeight + bandHeight) * t;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.35 * (1 - t);
+        const grad = ctx.createLinearGradient(0, y, 0, y + bandHeight);
+        grad.addColorStop(0, 'rgba(0, 255, 255, 0)');
+        grad.addColorStop(0.5, 'rgba(180, 255, 255, 0.6)');
+        grad.addColorStop(1, 'rgba(0, 255, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, y, canvasWidth, bandHeight);
+        ctx.restore();
+      } else if (fx.type === 'stop') {
+        const duration = 0.12;
+        if (elapsed > duration) return;
+        const t = elapsed / duration;
+        const flashAlpha = 0.5 * (1 - t);
+        ctx.save();
+        ctx.globalAlpha = flashAlpha;
+        ctx.fillStyle = 'rgba(255, 240, 240, 0.6)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.restore();
+      } else if (fx.type === 'warning') {
+        const duration = 0.12;
+        if (elapsed > duration) return;
+        const t = elapsed / duration;
+        const alpha = 0.35 * (1 - t);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(255, 210, 120, 0.45)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.restore();
+      }
     },
 
     /**

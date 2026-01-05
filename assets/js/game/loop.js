@@ -111,6 +111,30 @@
     window.Game.Physics.removeCollectedItems(runtime.items, collectedItems);
   }
 
+  function updateStormHeartbeat(nowSec) {
+    if (!window.Sound || !runtime?.storm || player.isDead || player.isDying) return;
+    const zoom = runtime.cameraZoom || 1;
+    const warnDist = Math.max(220, (runtime.canvasSize.height * 0.85) / zoom);
+    const gap = runtime.storm.y - (player.y + player.radius);
+    const raw = Math.max(0, Math.min(1, 1 - (gap / warnDist)));
+    const intensity = Math.pow(raw, 1.2);
+    if (intensity <= 0) {
+      runtime._heartbeatNextAt = 0;
+      return;
+    }
+    const minInterval = 0.35;
+    const maxInterval = 0.9;
+    const interval = maxInterval - (maxInterval - minInterval) * intensity;
+    const nextAt = runtime._heartbeatNextAt || 0;
+    if (nowSec >= nextAt) {
+      const freq = 90 + 60 * intensity;
+      const dur = 0.1 + 0.08 * intensity;
+      const gain = 0.45 + 0.65 * intensity;
+      window.Sound.play(freq, 'triangle', dur, gain);
+      runtime._heartbeatNextAt = nowSec + interval;
+    }
+  }
+
   function ensureRowsAroundPlayer() {
     const pRow = Math.floor(player.y / runtime.grid.CELL_H);
     // Calculate rows needed ahead based on boost distance (boostDist / CELL_H + buffer)
@@ -224,6 +248,7 @@
 
     runtime.cycleTimer -= worldDt;
     window.Game.UI.updateChase(player.dist, runtime.storm.y, runtime.currentLevelGoal);
+    updateStormHeartbeat(nowSec);
 
     if (runtime.gameState === STATE.RUN) {
       window.Game.UI.setPhase(runtime.gameState, runtime.cycleTimer, effective.runPhaseDuration, STATE);
@@ -251,6 +276,7 @@
     if (runtime.gameState === STATE.RUN) {
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.WARNING;
+        runtime._transitionFx = { type: 'warning', startTs: nowSec };
         // Use effective warning time values (firstWarningTimeBase for first warning, warningTimeBase with distance scaling for subsequent)
         const baseWarning = runtime.isFirstWarning
           ? effective.firstWarningTimeBase * effective.warningTimeMult
@@ -277,6 +303,7 @@
       }
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.STOP;
+        runtime._transitionFx = { type: 'stop', startTs: nowSec };
         runtime.cycleTimer = effective.stopPhaseDuration;
         window.Game.UI.onStopStart();
         if (!player.isDashing) {
@@ -289,6 +316,7 @@
       if (!player.isBoosting && checkFallDie()) return;
       if (runtime.cycleTimer <= 0) {
         runtime.gameState = STATE.RUN;
+        runtime._transitionFx = { type: 'run', startTs: nowSec };
         runtime.cycleTimer = effective.runPhaseDuration;
         window.Game.UI.onRunStart();
       }
