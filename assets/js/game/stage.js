@@ -54,6 +54,9 @@ window.GameModules = window.GameModules || {};
       }
 
       showStageNotification(stageInfo);
+      if (!runtime.tutorialMode) {
+        window.Sound?.bgmSetStage?.(stageInfo.stageConfig);
+      }
 
       if (stageInfo.isLooping && stageInfo.loopCount > 0) {
         applyLoopDifficultyScaling(runtime, qaConfig, stageInfo.loopCount);

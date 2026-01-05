@@ -146,6 +146,12 @@ window.GameModules = window.GameModules || {};
       if (idx >= 0) runtime.currentThemeIdx = idx;
     }
     qaConfig._effectiveStormSpeed = qaConfig.stormBaseSpeed ?? 150;
+    const stageConfig = runtime.stage.currentConfig ?? window.STAGE_CONFIG?.[0];
+    if (isTutorial) {
+      window.Sound?.bgmSetTheme?.('TUTORIAL');
+    } else if (stageConfig) {
+      window.Sound?.bgmSetStage?.(stageConfig);
+    }
 
     const centerX = runtime.canvasSize?.width
       ? runtime.canvasSize.width / 2
@@ -312,6 +318,9 @@ window.GameModules = window.GameModules || {};
     }
 
     showStageNotification(stageInfo);
+    if (!runtime.tutorialMode) {
+      window.Sound?.bgmSetStage?.(stageInfo.stageConfig);
+    }
     runtime.gameState = STATE.RUN;
     runtime.cycleTimer = 3.0;
     runtime.isFirstWarning = true;
@@ -372,3 +381,5 @@ window.GameModules = window.GameModules || {};
 
   window.GameModules.Lifecycle = { createLifecycle };
 })();
+
+
