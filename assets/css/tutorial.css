@@ -1,17 +1,34 @@
-/* 튜토리얼 오버레이 */
+/* Tutorial overlay layout */
 #tutorial-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* 하위 요소에만 이벤트 전달 */
-  z-index: 120; /* 게임 UI보다 높게 */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* 메시지를 하단에 배치하기 위함 */
-  align-items: center;
-  padding: 20px;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+  display: none;
+  overflow: hidden;
+}
+
+#tutorial-overlay.active {
+  display: block;
+}
+
+#tutorial-dim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--spot-x, 50%) var(--spot-y, 45%),
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) var(--spot-size, 0px),
+    rgba(0, 0, 0, 0.65) calc(var(--spot-size, 0px) + 1px)
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#tutorial-dim.active {
+  opacity: 1;
 }
 
 #tutorial-fade {
@@ -31,39 +48,284 @@
   opacity: 1;
 }
 
+#tutorial-banner {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(0, 255, 65, 0.35);
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.18);
+  z-index: 2;
+  pointer-events: auto;
+}
+
 #tutorial-progress {
-  position: relative; /* overlay 내에서 top으로 */
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-progress-bar {
+  width: 160px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+#tutorial-progress-fill {
+  height: 100%;
+  width: 25%;
+  background: linear-gradient(90deg, #00ff41, #00e5ff);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+}
+
+#tutorial-card {
+  position: absolute;
+  width: min(680px, 92%);
+  background: linear-gradient(90deg, rgba(0, 15, 18, 0.92), rgba(0, 50, 35, 0.85));
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+}
+
+#tutorial-card.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#tutorial-card.tutorial-card-fixed {
+  --tutorial-card-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  bottom: var(--tutorial-card-bottom, calc(24px + env(safe-area-inset-bottom, 0px)));
+  transform: translateX(-50%) translateY(6px);
+}
+
+#tutorial-card.tutorial-card-fixed.active {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tutorial-card-kicker {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: rgba(0, 255, 204, 0.85);
+  text-transform: uppercase;
+  grid-column: 1;
+}
+
+.tutorial-card-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  grid-column: 1;
+}
+
+.tutorial-card-body {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #dfe6e9;
+  grid-column: 1;
+}
+
+.tutorial-card-status {
+  font-size: 9px;
+  font-weight: 800;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  min-height: 10px;
+  grid-column: 1;
+}
+
+.tutorial-card-actions {
+  grid-row: 1 / span 4;
+  grid-column: 2;
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tutorial-btn-primary {
+  background: #00ffcc;
+  color: #00110c;
+  border: none;
+  min-width: 64px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.35);
+}
+
+  .tutorial-btn-primary:disabled {
+    background: #3b4a47;
+    color: #9aa9a6;
+    opacity: 1;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+.tutorial-btn-skip {
+  background: none;
+  border: none;
+  color: #b2bec3;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 4px;
+}
+
+#tutorial-card .btn-common {
+  padding: 5px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  min-width: 64px;
+}
+
+#tutorial-joystick-target {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  left: 0;
   top: 0;
-  left: auto;
-  transform: none;
-  padding: 8px 16px;
-  background: rgba(0,0,0,0.7);
-  border-radius: 20px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  box-shadow: 0 0 10px rgba(0,255,65,0.3);
+  display: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tutorial-target {
+  background: rgba(0, 255, 204, 0.08);
+}
+
+#tutorial-entry {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+#tutorial-entry.active {
+  display: flex;
+}
+
+#tutorial-entry::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.tutorial-entry-card {
+  position: relative;
+  width: min(360px, 90vw);
+  padding: 22px 22px 20px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(12, 20, 22, 0.95), rgba(6, 14, 12, 0.92));
+  border: 1px solid rgba(0, 255, 204, 0.18);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
+  text-align: center;
+}
+
+.tutorial-entry-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.tutorial-entry-meta {
+  font-size: 12px;
+  color: #b2bec3;
+  margin-bottom: 16px;
+}
+
+.tutorial-entry-goals {
+  list-style: none;
+  margin: 0 0 14px 0;
+  padding: 0;
+  color: #dfe6e9;
+  font-size: 13px;
+  line-height: 1.5;
+  display: grid;
+  gap: 6px;
+}
+
+.tutorial-entry-goals li {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tutorial-entry-goals li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 255, 204, 0.9);
+  box-shadow: 0 0 8px rgba(0, 255, 204, 0.7);
+}
+
+.tutorial-entry-note {
+  font-size: 12px;
+  color: #a4b0be;
+  margin-bottom: 18px;
+}
+
+.tutorial-entry-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
 }
 
 #tutorial-message {
   position: absolute;
-  top: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 12px 24px;
-  background: rgba(0,0,0,0.8);
-  border-radius: 8px;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
   opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none; /* 메시지는 클릭 방해하지 않음 */
-  max-width: 80%; /* 너무 길어지지 않게 */
+  transition: opacity 0.2s;
+  pointer-events: none;
+  max-width: 80%;
   text-align: center;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  z-index: 2;
 }
 
 #tutorial-message.visible {
@@ -71,7 +333,7 @@
 }
 
 .message-icon {
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
 }
 
@@ -92,6 +354,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease, transform 0.35s ease;
+  z-index: 3;
 }
 
 #tutorial-complete.show {
@@ -110,30 +373,33 @@
   opacity: 0.85;
 }
 
-/* 튜토리얼 화면이 게임 렌더링을 가리지 않도록 투명 처리 */
 #screen-tutorial {
   background: transparent;
-  pointer-events: none; /* 하위 요소에서만 제어 */
+  pointer-events: none;
+  padding: 0;
+  overflow: hidden;
 }
 
-/* 기존 tutorial-hint (화살표) 스타일은 제거 */
-
 .tutorial-highlight {
-  animation: none;
-  box-shadow: none;
-  border-radius: 12px; /* 강조할 요소에 따라 유연하게 적용 */
-  z-index: 100; /* 강조되는 요소가 맨 위로 오도록 */
-  position: relative; /* z-index 적용을 위해 */
+  outline: 2px solid rgba(0, 255, 65, 0.9);
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.8);
+  border-radius: 12px;
+  z-index: 130;
+  position: relative;
+  animation: highlight-glow 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes highlight-glow {
-  0% { box-shadow: 0 0 15px 5px rgba(0,255,65,0.7), inset 0 0 10px rgba(0,255,65,0.5); }
-  100% { box-shadow: 0 0 25px 8px rgba(0,255,65,1), inset 0 0 15px rgba(0,255,65,0.8); }
+  0% {
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 22px rgba(0, 255, 65, 0.9);
+  }
 }
 
-/* 로비 튜토리얼 버튼 */
 #btn-tutorial {
-  position: relative; /* lobby-footer 안에서 상대 위치 */
+  position: relative;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -146,9 +412,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0; /* 공간이 부족해도 줄어들지 않게 */
+  flex-shrink: 0;
 }
 
 #btn-tutorial:hover {
   background: #6a6a6a;
+}
+
+@media screen and (max-width: 768px), screen and (hover: none) and (pointer: coarse) {
+  #tutorial-card.tutorial-card-fixed {
+    --tutorial-card-bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+  }
 }

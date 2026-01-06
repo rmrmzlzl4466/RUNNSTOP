@@ -345,24 +345,24 @@ var Sound = window.Sound = {
     let whineTarget = 0;
     let whineFreq = 600;
 
-    if (isActive) {
-      const w = Math.max(0, Math.min(1, (sr - 0.45) / 0.55));
-      const smooth = w * w * (3 - 2 * w);
-      windTarget = (0.22 * smooth) * (window.qaConfig?.sfxVol ?? 1);
-      windCutoff = 800 + 3200 * smooth;
+      if (isActive) {
+        const w = Math.max(0, Math.min(1, (sr - 0.75) / 0.35));
+        const smooth = w * w * (3 - 2 * w);
+        windTarget = (0.08 * smooth) * (window.qaConfig?.sfxVol ?? 1);
+        windCutoff = 650 + 2600 * smooth;
 
-      const a = Math.max(0, Math.min(1, (sr - 0.6) / 0.35));
-      whineTarget = (0.12 * a) * (window.qaConfig?.sfxVol ?? 1);
+        const a = Math.max(0, Math.min(1, (sr - 0.6) / 0.35));
+        whineTarget = (0.1 * a) * (window.qaConfig?.sfxVol ?? 1);
       if (STATE && gameState === STATE.WARNING) {
         whineTarget *= 0.6;
       }
       whineFreq = 600 + 900 * a;
     }
 
-    if (sr < 0.08) {
-      windTarget = 0;
-      whineTarget = 0;
-    }
+      if (sr < 0.12) {
+        windTarget = 0;
+        whineTarget = 0;
+      }
 
     const now = actx.currentTime;
     SPEED_AUDIO.windGain.gain.setTargetAtTime(windTarget, now, 0.08);
@@ -399,16 +399,16 @@ var Sound = window.Sound = {
   },
 
   // [STEP 7] Updated to be async
-  async sfx(type) {
-    switch (type) {
-      case 'coin': await this.playClip('get_coin', window.qaConfig?.coinSfxVol); break;
-      case 'bit': case 'gem': await this.playClip('get_score', window.qaConfig?.scoreSfxVol); break;
-      case 'item': await this.playClip('collect_item', window.qaConfig?.itemSfxVol); break;
-      case 'dash': await this.playClip('move_Dash', window.qaConfig?.dashSfxVol); break;
-      case 'jump': this.play(200, 'sawtooth', 0.15); break;
-      case 'die': this.play(100, 'sawtooth', 0.5); break;
-      case 'alert': this.play(1200, 'square', 0.1); break;
-      case 'btn': this.play(400, 'sine', 0.1); break;
+    async sfx(type) {
+      switch (type) {
+        case 'coin': await this.playClip('get_coin', window.qaConfig?.coinSfxVol); break;
+        case 'bit': case 'gem': await this.playClip('get_score', window.qaConfig?.scoreSfxVol); break;
+        case 'item': await this.playClip('collect_item', window.qaConfig?.itemSfxVol); break;
+        case 'dash': await this.playClip('move_Dash', window.qaConfig?.dashSfxVol); break;
+        case 'jump': this.play(200, 'sawtooth', 0.15); break;
+        case 'die': this.play(100, 'sawtooth', 0.5); break;
+        case 'alert': this.play(1200, 'square', 0.1); break;
+        case 'btn': this.play(400, 'sine', 0.1); break;
       case 'boost_ready': this.playChord([880, 1100, 1320], 'sine', 0.15, 0.12); break;
       case 'boost_perfect': this.playArpeggio([523, 659, 784, 1047], 'square', 0.08, 0.15); break;
       case 'boost_rush': this.playBoostRush(); break;

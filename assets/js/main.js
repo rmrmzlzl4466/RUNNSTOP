@@ -20,7 +20,7 @@
       window.ytgame.game.gameReady();
     }
   };
-  
+
   // [STEP 2] Asynchronous bootstrap to prevent race conditions
   async function bootstrap() {
     try {
@@ -58,7 +58,7 @@
       window.runtime = runtime;
       window.Game.runtime = runtime;
       
-      // ?�토리얼 ?�료 ?��? ?�인 (최초 ?�행 ???�토리얼�??�동 진입 ?�함)
+      // ?�토리얼 ?�료 ?��? ?�인 (최초 ?�행 ???�토리얼�??�동 진입 ?�함)
       window.shouldStartTutorial = !gameData.tutorialCompleted;
 
       // 4. Subsystem Initializations (after data is ready)
@@ -70,9 +70,10 @@
       window.updateUpgradeUI?.();
       window.renderSkinList?.();
       
-      // ?�토리얼 모듈 초기??      window.GameModules.Tutorial?.init();
+      // ?�토리얼 모듈 초기??      window.GameModules.Tutorial?.init();
       window.GameModules.TutorialUI?.init();
       const tutorialResumeStep = window.GameModules.Tutorial?.getResumeStep?.() ?? 1;
+      const tutorialStartStep = window.shouldStartTutorial ? 1 : tutorialResumeStep;
 
       if (window.Navigation?.register) {
         window.Navigation.register('lobby', {
@@ -104,7 +105,7 @@
       const lifecycle = createLifecycle(canvas, player, qaConfig, gameData, saveGame, runtime);
 
       function startTutorialFlow(step, options = {}) {
-        const targetStep = step ?? (window.GameModules.Tutorial?.getResumeStep?.() ?? tutorialResumeStep);
+        const targetStep = step ?? (options.forceStep ? tutorialStartStep : (window.GameModules.Tutorial?.getResumeStep?.() ?? tutorialStartStep));
         window.Navigation.go('tutorial');
         lifecycle.startGame(null, { isTutorial: true, tutorialStep: targetStep, isRetry: options.isRetry });
       }
@@ -186,7 +187,7 @@
       
         setTimeout(() => {
           if (window.shouldStartTutorial) {
-            startTutorialFlow(tutorialResumeStep);
+            startTutorialFlow(tutorialStartStep, { forceStep: true });
           } else {
             window.Navigation.go('lobby');
           }
@@ -202,11 +203,13 @@
       window.resetSaveData = handleResetSave;
       window.handleTitleTouch = handleTitleTouch;
       window.resumeGame = lifecycle.resume;
+      window.pauseGame = lifecycle.pause;
       
       window.Game.startGame = lifecycle.startGame;
       window.Game.togglePause = lifecycle.togglePause;
       window.Game.restartFromPause = lifecycle.restartFromPause;
       window.Game.quitGame = lifecycle.quitGame;
+      window.Game.pauseGame = lifecycle.pause;
       window.Game.saveGame = saveGame;
       window.Game.resetSaveData = handleResetSave;
       window.Game.loadData = async () => {
@@ -231,7 +234,6 @@
       window.interactLobbyChar = interactLobbyChar;
       
       bindStartButtons();
-
       document.addEventListener('visibilitychange', () => {
         if (window.ytgame?.IN_PLAYABLES_ENV) return;
         if (document.hidden) {
@@ -243,32 +245,56 @@
         }
       });
 
-      if (window.ytgame?.IN_PLAYABLES_ENV) {
-        // [STEP 9] Add verification logs
-        console.log('[Playables] Initializing Playables SDK event handlers.');
-        
-        window.Sound?.setAudioEnabled?.(window.ytgame.system.isAudioEnabled());
-        window.ytgame.system.onAudioEnabledChange((enabled) => {
-          console.log('[Playables] Audio enabled changed:', enabled);
-          window.Sound?.setAudioEnabled?.(enabled);
-        });
-        
-        window.ytgame.system.onPause(() => {
-          console.log('[Playables] onPause event received.');
-          if (runtime.gameActive && runtime.gameState !== STATE.PAUSE) {
-            lifecycle.pause({ showOverlay: false, reason: 'yt_pause' });
-          }
-          window.Sound?.suspendAudio?.();
-          window.SaveManager?.persistAsync?.(window.GameData);
-        });
+      const playablesDisabled = window.DISABLE_PLAYABLES === true;
+      if (!playablesDisabled) {
+        let playablesBound = false;
+        function bindPlayablesHandlers() {
+          // [STEP 9] Add verification logs
+          console.log('[Playables] Initializing Playables SDK event handlers.');
 
-        window.ytgame.system.onResume(() => {
-          console.log('[Playables] onResume event received.');
-          window.Sound?.resumeAudio?.();
-          if (runtime.gameActive && runtime.gameState === STATE.PAUSE && runtime._lastPauseReason === 'yt_pause') {
-            lifecycle.resume();
-          }
-        });
+          window.Sound?.setAudioEnabled?.(window.ytgame.system.isAudioEnabled());
+          window.ytgame.system.onAudioEnabledChange((enabled) => {
+            console.log('[Playables] Audio enabled changed:', enabled);
+            window.Sound?.setAudioEnabled?.(enabled);
+          });
+
+          window.ytgame.system.onPause(() => {
+            console.log('[Playables] onPause event received.');
+            if (runtime.gameActive && runtime.gameState !== STATE.PAUSE) {
+              lifecycle.pause({ showOverlay: false, reason: 'yt_pause' });
+            }
+            window.Sound?.suspendAudio?.();
+            window.SaveManager?.persistAsync?.(window.GameData);
+          });
+
+          window.ytgame.system.onResume(() => {
+            console.log('[Playables] onResume event received.');
+            window.Sound?.resumeAudio?.();
+            if (runtime.gameActive && runtime.gameState === STATE.PAUSE && runtime._lastPauseReason === 'yt_pause') {
+              lifecycle.resume();
+            }
+          });
+        }
+
+        function tryInitPlayables() {
+          if (playablesBound) return true;
+          if (!window.ytgame?.IN_PLAYABLES_ENV) return false;
+          playablesBound = true;
+          bindPlayablesHandlers();
+          return true;
+        }
+
+        tryInitPlayables();
+        if (!playablesBound) {
+          let attempts = 0;
+          const maxAttempts = 100;
+          const checkInterval = setInterval(() => {
+            attempts += 1;
+            if (tryInitPlayables() || attempts >= maxAttempts) {
+              clearInterval(checkInterval);
+            }
+          }, 100);
+        }
       }
 
       window.dashOnClick = function(e) { e.preventDefault(); window.Input?.attemptDash?.(); };

@@ -87,7 +87,45 @@
     <div id="screen-tutorial" class="full-screen">
       <!-- 튜토리얼 오버레이 -->
       <div id="tutorial-overlay">
-        <div id="tutorial-progress">Step 1-1/4</div>
+        <div id="tutorial-dim"></div>
+
+        <div id="tutorial-banner" class="tutorial-banner">
+          <div id="tutorial-progress">Tutorial 1/4</div>
+          <div class="tutorial-progress-bar">
+            <div id="tutorial-progress-fill"></div>
+          </div>
+        </div>
+
+        <div id="tutorial-card" class="tutorial-card tutorial-card-fixed">
+          <div id="tutorial-card-kicker" class="tutorial-card-kicker">TUTORIAL</div>
+          <div id="tutorial-card-title" class="tutorial-card-title"></div>
+          <div id="tutorial-card-body" class="tutorial-card-body"></div>
+          <div id="tutorial-card-status" class="tutorial-card-status"></div>
+          <div class="tutorial-card-actions">
+            <button id="tutorial-next" class="btn-common tutorial-btn-primary" disabled>Next</button>
+            <button id="tutorial-skip" class="tutorial-btn-skip">Exit</button>
+          </div>
+        </div>
+
+        <div id="tutorial-joystick-target" class="tutorial-target"></div>
+
+        <div id="tutorial-entry" class="tutorial-entry">
+          <div class="tutorial-entry-card">
+            <div id="tutorial-entry-title" class="tutorial-entry-title">Tutorial Start</div>
+            <div id="tutorial-entry-meta" class="tutorial-entry-meta">Approx. 2 min · 4 steps</div>
+            <ul id="tutorial-entry-goals" class="tutorial-entry-goals">
+              <li>Learn movement and dash</li>
+              <li>Understand safe colors</li>
+              <li>Avoid storm and reach the goal</li>
+            </ul>
+            <div id="tutorial-entry-note" class="tutorial-entry-note">Steps advance when you are ready.</div>
+            <div class="tutorial-entry-actions">
+              <button id="tutorial-entry-start" class="btn-common tutorial-btn-primary">Start</button>
+              <button id="tutorial-entry-later" class="tutorial-btn-skip">Later</button>
+            </div>
+          </div>
+        </div>
+
         <div id="tutorial-message" class="message-banner"></div>
       </div>
     </div>
@@ -623,8 +661,11 @@
   </div>
   </div>
 
-  <script src="https://www.youtube.com/game_api/v1"></script>
-  <script src="./assets/js/core/config.js"></script>
+  
+    <script>
+    window.DISABLE_PLAYABLES = true;
+  </script>
+<script src="./assets/js/core/config.js"></script>
   <script src="./assets/js/core/storage.js"></script>
   <script src="./assets/js/core/canvas.js"></script>
   <script src="./assets/js/core/particles.js"></script>

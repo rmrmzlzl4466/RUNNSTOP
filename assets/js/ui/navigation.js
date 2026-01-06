@@ -53,21 +53,22 @@ window.Navigation = {
     this.hideOverlay('overlay-pause');
   }
 };
-// ???�작 ???�?��? ?�면 보이�?
+// ???�작 ???�?��? ?�면 보이�?
 window.addEventListener('load', () => {
   const titleScreen = document.getElementById('screen-title');
   if (titleScreen) {
-    const onTitleTouch = () => {
-      // ??로직?� ?�제 main.js??triggerTitleGlitchOut?�서 처리?�니??
-      // ???�벤??리스?�는 ?�전???�요?��?�? ?�제 로직?� main.js???�습?�다.
-      window.handleTitleTouch?.(); 
+    const onTitleTouch = (e) => {
+      if (window.Navigation?.current !== 'title') return;
+      if (e?.preventDefault) e.preventDefault();
+      // ??ë¡œì§?€ ?´ì œ main.js??triggerTitleGlitchOut?ì„œ ì²˜ë¦¬?©ë‹ˆ??
+      // ???´ë²¤??ë¦¬ìŠ¤?ˆëŠ” ?¬ì „???„ìš©?˜ì?ë§? ?¤ì œ ë¡œì§?€ main.js???ˆìŠµ?ˆë‹¤.
+      window.handleTitleTouch?.();
     };
     titleScreen.addEventListener('click', onTitleTouch);
-    titleScreen.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      onTitleTouch();
-    }, { passive: false });
-  }
+    titleScreen.addEventListener('touchstart', onTitleTouch, { passive: false });
+    titleScreen.addEventListener('pointerdown', onTitleTouch);
+    document.addEventListener('pointerdown', onTitleTouch, { passive: false, capture: true });
+}
   window.Navigation.go('title');
   
   // [STEP 8] Mark game as ready for interaction after title screen is set up.

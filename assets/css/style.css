@@ -130,7 +130,7 @@
       position: relative;
       display: flex; align-items: flex-end; justify-content: flex-end; 
       /* Safe Area: Add padding to the bottom and right */
-      padding: 40px calc(40px + env(safe-area-inset-right, 0px)) calc(100px + env(safe-area-inset-bottom, 0px)) 40px;
+        padding: 40px calc(40px + env(safe-area-inset-right, 0px)) calc(120px + env(safe-area-inset-bottom, 0px)) 40px;
     }
 
     #btn-dash-visual {

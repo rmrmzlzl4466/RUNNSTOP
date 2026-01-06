@@ -8,8 +8,9 @@
       obstaclesEnabled: false,
       itemsEnabled: false,
       stormSpeedMult: 0,
+      minHoldMsBySubStep: { 1: 1200, 2: 1200 },
       successCondition: { moveCount: 1, dashCount: 1 },
-      eventTriggers: [], // 1단계는 즉시 시작
+      eventTriggers: [],
     },
     2: {
       lockGameState: null,
@@ -17,9 +18,10 @@
       obstaclesEnabled: false,
       itemsEnabled: false,
       stormSpeedMult: 0,
+      minHoldMs: 1400,
       warningTimeBase: 10.0,
       stopPhaseDuration: 2.0,
-      colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
+      colorPalette: ['NEON_GREEN', 'NEON_PINK'],
       successCondition: { type: 'safe_judgments', value: 2 },
       eventTriggers: [
         { type: 'distance', value: 50, action: 'start_run_stop_cycle', triggered: false }
@@ -31,7 +33,8 @@
       stormSpeedMult: 0.5,
       obstaclesEnabled: true,
       itemsEnabled: true,
-      colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
+      minHoldMs: 1200,
+      colorPalette: ['NEON_GREEN', 'NEON_PINK'],
       successCondition: { type: 'distance_relative', value: 300 },
       eventTriggers: [
         { type: 'fixed_position', value: 100, action: 'spawn_item_shield', triggered: false },
@@ -44,16 +47,46 @@
       stormSpeedMult: 1.0,
       obstaclesEnabled: true,
       itemsEnabled: true,
-      colorPalette: ['NEON_GREEN', 'NEON_PINK'], // 튜토리얼 전용 색상
+      minHoldMs: 1400,
+      colorPalette: ['NEON_GREEN', 'NEON_PINK'],
       successCondition: { type: 'stage_end' },
-      eventTriggers: [], // 4단계는 즉시 모든 요소 활성화
+      eventTriggers: [],
     },
+  };
+
+  const TUTORIAL_ENTRY = {
+    title: 'Tutorial Start',
+    meta: 'Approx. 2 min · 4 steps',
+    goals: [
+      'Learn movement and dash',
+      'Understand safe colors',
+      'Avoid storm and reach the goal'
+    ],
+    note: 'Steps advance when you are ready.',
   };
 
   const TUTORIAL_TEXTS = {
     1: {
       name: 'Basics',
       description: 'Learn move and dash',
+      steps: {
+        1: {
+          title: 'Move',
+          body: {
+            pc: 'Move with WASD.',
+            mobile: 'Move the joystick.'
+          },
+          target: '#tutorial-joystick-target'
+        },
+        2: {
+          title: 'Dash',
+          body: {
+            pc: 'Press Space to dash.',
+            mobile: 'Tap the dash button.'
+          },
+          target: '#btn-dash-visual'
+        }
+      },
       hints: {
         move: {
           pc: 'Move with WASD',
@@ -68,6 +101,16 @@
     2: {
       name: 'Core Cycle',
       description: 'Experience RUN/WARNING/STOP',
+      steps: {
+        1: {
+          title: 'Safe Color',
+          body: {
+            pc: 'Watch the safe color and stand on it.',
+            mobile: 'Stand on the safe color tile.'
+          },
+          target: '#target-display'
+        }
+      },
       hints: {
         safeJudgment: {
           pc: 'Watch the safe color and stand on it',
@@ -78,6 +121,16 @@
     3: {
       name: 'Hazards',
       description: 'Avoid storm and obstacles',
+      steps: {
+        1: {
+          title: 'Storm Gauge',
+          body: {
+            pc: 'Watch the storm gauge and keep your distance.',
+            mobile: 'Watch the storm gauge and keep your distance.'
+          },
+          target: '#chase-ui'
+        }
+      },
       hints: {
         avoidStorm: {
           pc: 'Avoid the storm',
@@ -90,8 +143,17 @@
       },
     },
     4: {
-      name: 'Simulation',
+      name: 'Finish',
       description: 'Reach the end of the stage',
+      steps: {
+        1: {
+          title: 'Finish',
+          body: {
+            pc: 'Reach the end of the stage.',
+            mobile: 'Reach the end of the stage.'
+          }
+        }
+      },
       hints: {
         completeRun: {
           pc: 'Reach the end of the stage!',
@@ -101,7 +163,6 @@
     },
   };
 
-  // StageConfig 오버라이드 함수
   function getTutorialConfig(step) {
     return TUTORIAL_STEP_CONFIG[step] || TUTORIAL_STEP_CONFIG[1];
   }
@@ -123,13 +184,11 @@
       next.colorPalette = tutorialConfig.colorPalette;
     }
 
-    // Tutorial uses a dedicated palette; disable gimmicks only when obstacles are off
     next.theme = { paletteId: 'TUTORIAL' };
     if (tutorialConfig.obstaclesEnabled === false) {
       next.gimmick = { id: 'NONE', params: {} };
     }
 
-    // Additional tutorial-only flags for loop.js to branch on
     next._tutorialRules = {
       lockGameState: tutorialConfig.lockGameState,
       stormEnabled: tutorialConfig.stormEnabled !== false,
@@ -137,7 +196,6 @@
       itemsEnabled: tutorialConfig.itemsEnabled !== false
     };
 
-    // Disable storm entirely when stormEnabled is false
     if (tutorialConfig.stormEnabled === false) {
       next.stormSpeed = 0;
     }
@@ -146,8 +204,9 @@
   }
 
   window.TutorialConfig = {
+    ENTRY: TUTORIAL_ENTRY,
     STEP_CONFIG: TUTORIAL_STEP_CONFIG,
-    TEXTS: TUTORIAL_TEXTS, // 텍스트도 외부에서 접근 가능하도록 추가
+    TEXTS: TUTORIAL_TEXTS,
     getConfig: getTutorialConfig,
     getTexts: (step) => TUTORIAL_TEXTS[step] || null,
     applyOverrides: applyTutorialOverrides,

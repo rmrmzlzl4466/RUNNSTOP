@@ -18,7 +18,11 @@
       stepStartedAt: 0,
       platform: 'unknown',
       activeTriggers: [],
-      isRestarting: false
+      isRestarting: false,
+      waitingForEntry: false,
+      awaitingAdvance: false,
+      pausedByTutorial: false,
+      pauseReason: null
     },
 
     listeners: {},
@@ -62,7 +66,11 @@
         stepStartedAt: 0,
         platform: this.detectPlatform(),
         activeTriggers: [],
-        isRestarting: false
+        isRestarting: false,
+        waitingForEntry: false,
+        awaitingAdvance: false,
+        pausedByTutorial: false,
+        pauseReason: null
       };
     },
 
@@ -84,6 +92,9 @@
       this.state.isActive = true;
       this.state.platform = this.detectPlatform();
       this.state.isRestarting = false;
+      this.state.awaitingAdvance = false;
+      this.state.pausedByTutorial = false;
+      this.state.pauseReason = null;
       if (!options.isRetry) {
         this.state.retryCount = 0;
       }
@@ -99,26 +110,101 @@
         window.runtime.currentLevelGoal = window.runtime._tutorialStageGoal;
       }
 
-      this.resetStepProgress(true);
       if (window.Navigation?.current !== 'tutorial') {
         window.Navigation?.go?.('tutorial');
       }
       this.emit('ui', { action: 'setActive', value: true });
       this.emit('ui', { action: 'updateUIVisibility', step: targetStep });
+
+      const shouldShowEntry = !options.isRetry;
+      this.state.waitingForEntry = shouldShowEntry;
+      if (shouldShowEntry) {
+        this.emit('ui', { action: 'showEntry', step: targetStep, totalSteps: MAX_TUTORIAL_STEP, isResume: targetStep > 1 });
+        this.pauseForTutorial('tutorial_entry');
+        return;
+      }
+
+      this.resetStepProgress(true);
       this.emit('ui', { action: 'showStep', step: targetStep, subStep: this.state.subStep });
       this.emit('ui', { action: 'showHint', step: targetStep, subStep: this.state.subStep, platform: this.state.platform });
     },
 
+    confirmStart() {
+      if (!this.state.isActive || !this.state.waitingForEntry) return false;
+      this.state.waitingForEntry = false;
+      this.resetStepProgress(true);
+      this.emit('ui', { action: 'hideEntry' });
+      this.emit('ui', { action: 'showStep', step: this.state.step, subStep: this.state.subStep });
+      this.emit('ui', { action: 'showHint', step: this.state.step, subStep: this.state.subStep, platform: this.state.platform });
+      this.resumeFromTutorialPause();
+      return true;
+    },
+
+    confirmAdvance() {
+      if (!this.state.isActive || !this.state.awaitingAdvance) return false;
+      this.state.awaitingAdvance = false;
+      this.emit('ui', { action: 'setAdvanceEnabled', enabled: false });
+      this.emit('ui', { action: 'setCardStatus', text: '' });
+      this.onStepComplete();
+      if (this.state.isActive) {
+        this.resumeFromTutorialPause();
+      }
+      return true;
+    },
+
+    pauseForTutorial(reason = 'tutorial') {
+      const runtime = window.runtime;
+      const STATE = window.GameModules.Runtime?.STATE;
+      if (!runtime || !STATE) return false;
+      if (runtime.gameState === STATE.PAUSE) return false;
+      if (!window.Game?.pauseGame) return false;
+      window.Game.pauseGame({ showOverlay: false, reason });
+      this.state.pausedByTutorial = true;
+      this.state.pauseReason = reason;
+      return true;
+    },
+
+    resumeFromTutorialPause() {
+      if (!this.state.pausedByTutorial) return false;
+      const runtime = window.runtime;
+      if (runtime?._lastPauseReason && this.state.pauseReason && runtime._lastPauseReason !== this.state.pauseReason) {
+        this.state.pausedByTutorial = false;
+        this.state.pauseReason = null;
+        return false;
+      }
+      window.resumeGame?.();
+      this.state.pausedByTutorial = false;
+      this.state.pauseReason = null;
+      return true;
+    },
+
     checkStepCondition() {
-      if (!this.state.isActive) return false;
+      if (!this.state.isActive || this.state.waitingForEntry || this.state.awaitingAdvance) return false;
       const config = window.TutorialConfig.getConfig(this.state.step);
       const condition = this.getSuccessCondition(config);
       const handler = this.getStepHandler(this.state.step);
-      return handler?.checkSuccess ? handler.checkSuccess(this, condition) : false;
+      const success = handler?.checkSuccess ? handler.checkSuccess(this, condition) : false;
+      if (!success) return false;
+      return this.isHoldSatisfied(config);
+    },
+
+    getMinHoldMs(config) {
+      if (!config) return 0;
+      const bySubStep = config.minHoldMsBySubStep?.[this.state.subStep];
+      if (Number.isFinite(bySubStep)) return bySubStep;
+      if (Number.isFinite(config.minHoldMs)) return config.minHoldMs;
+      return 0;
+    },
+
+    isHoldSatisfied(config) {
+      const holdMs = this.getMinHoldMs(config);
+      if (!holdMs) return true;
+      const elapsed = performance.now() - (this.state.stepStartedAt || 0);
+      return elapsed >= holdMs;
     },
 
     checkEventTriggers() {
-      if (!this.state.isActive) return;
+      if (!this.state.isActive || this.state.waitingForEntry || this.state.awaitingAdvance) return;
       if (!this.state.activeTriggers.length) return;
       const traveled = this.getTraveledDistance();
       const playerDist = window.player?.dist ?? 0;
@@ -199,6 +285,7 @@
       if (!this.state.isActive || this.state.isRestarting) return false;
       this.state.retryCount++;
       this.state.isRestarting = true;
+      this.state.awaitingAdvance = false;
       this.resetStepProgress();
 
       if (this.state.retryCount >= 2) {
@@ -245,6 +332,10 @@
     },
     onTutorialComplete() {
       this.state.isActive = false;
+      this.state.awaitingAdvance = false;
+      this.state.waitingForEntry = false;
+      this.state.pausedByTutorial = false;
+      this.state.pauseReason = null;
       this.persistProgress(MAX_TUTORIAL_STEP, true);
       window.shouldStartTutorial = false;
       const runtime = window.runtime;
@@ -317,13 +408,26 @@
     },
 
     tick() {
-      if (!this.state.isActive) return false;
+      if (!this.state.isActive || this.state.waitingForEntry) return false;
+      if (this.state.awaitingAdvance) return false;
       this.checkEventTriggers();
       if (this.checkStepCondition()) {
-        this.onStepComplete();
+        this.handleStepSuccess();
         return true;
       }
       return false;
+    },
+
+    handleStepSuccess() {
+      const nextSubStep = this.getNextSubStep(this.state.step, this.state.subStep);
+      if (nextSubStep) {
+        this.enterSubStep(nextSubStep);
+        return;
+      }
+      if (this.state.awaitingAdvance) return;
+      this.state.awaitingAdvance = true;
+      this.emit('ui', { action: 'setCardStatus', text: 'Complete! Tap Next to continue.' });
+      this.emit('ui', { action: 'setAdvanceEnabled', enabled: true });
     },
 
     dispatchEvent(type, payload) {
@@ -331,13 +435,14 @@
     },
 
     handleEvent(type) {
-      if (!this.state.isActive) return false;
+      if (!this.state.isActive || this.state.waitingForEntry || this.state.awaitingAdvance) return false;
       const handler = this.getStepHandler(this.state.step);
       return handler?.onEvent ? handler.onEvent(this, type) : false;
     },
 
     enterSubStep(subStep) {
       this.state.subStep = subStep;
+      this.state.awaitingAdvance = false;
       this.setRuntimeStep(this.state.step, this.state.subStep);
       this.resetStepProgress(false);
       this.emit('ui', { action: 'showStep', step: this.state.step, subStep: this.state.subStep });
@@ -349,6 +454,8 @@
       this.state.step = step;
       this.state.subStep = 1;
       this.state.retryCount = 0;
+      this.state.awaitingAdvance = false;
+      this.state.waitingForEntry = false;
       this.setRuntimeStep(step, this.state.subStep);
       this.applyRuntimeFlags(window.TutorialConfig.getConfig(step));
       this.resetStepProgress(true);
@@ -562,9 +669,14 @@
 
     quitTutorial() {
       this.state.isActive = false;
+      this.state.awaitingAdvance = false;
+      this.state.waitingForEntry = false;
+      this.state.pausedByTutorial = false;
+      this.state.pauseReason = null;
       this.deactivateRuntime();
       this.emit('ui', { action: 'removeHighlights' });
       this.emit('ui', { action: 'setActive', value: false });
+      this.emit('ui', { action: 'hideEntry' });
       window.Navigation?.hideOverlay?.('overlay-pause');
       window.Navigation?.go('lobby');
     }
